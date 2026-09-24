@@ -142,12 +142,11 @@ final class UhifadhiRosterBundle extends AbstractBundle
          * @see vendor/symfony/framework-bundle/DependencyInjection/Configuration.php — the asset_mapper "paths" node
          */
         if ($builder->hasExtension('framework') && interface_exists(AssetMapperInterface::class)) {
-            // PREPENDED, THE SHAPE EVERY symfony/ux BUNDLE WRITES. `extension()`
-            // appends even when called from prependExtension(), which puts this
-            // path LAST, where it overrules an installation's own framework
-            // config instead of deferring to it; prepended, "any other settings
-            // done explicitly inside the config/* files would override these
-            // prepended settings".
+            // PREPENDED, THE SHAPE EVERY symfony/ux BUNDLE WRITES — and the one form
+            // every block in this method takes, `prependExtensionConfig()` on the
+            // builder, so this path goes FIRST and an installation's own framework
+            // config wins: \"any other settings done explicitly inside the config/*
+            // files would override these prepended settings\".
             //
             // @see https://symfony.com/doc/current/bundles/prepend_extension.html
             // @see https://symfony.com/doc/current/frontend/create_ux_bundle.html
@@ -184,11 +183,11 @@ final class UhifadhiRosterBundle extends AbstractBundle
          * @see https://symfony.com/bundles/DoctrineMigrationsBundle/current/index.html
          */
         if ($builder->hasExtension('doctrine_migrations')) {
-            $container->extension('doctrine_migrations', [
+            $builder->prependExtensionConfig('doctrine_migrations', [
                 'migrations_paths' => [
                     'Uhifadhi\\Roster\\Migrations' => __DIR__.'/../migrations',
                 ],
-            ], prepend: true);
+            ]);
         }
 
         /*
@@ -207,7 +206,7 @@ final class UhifadhiRosterBundle extends AbstractBundle
          * @see vendor/symfony/ux-icons/src/DependencyInjection/UXIconsExtension.php
          */
         if ($builder->hasExtension('ux_icons')) {
-            $container->extension('ux_icons', [
+            $builder->prependExtensionConfig('ux_icons', [
                 'icon_sets' => [
                     'roster' => ['path' => __DIR__.'/../assets/icons/roster'],
                 ],
@@ -225,7 +224,7 @@ final class UhifadhiRosterBundle extends AbstractBundle
          * @see vendor/doctrine/doctrine-bundle/src/DependencyInjection/DoctrineExtension.php — setMappingDriverConfig()
          */
         if ($builder->hasExtension('doctrine')) {
-            $container->extension('doctrine', [
+            $builder->prependExtensionConfig('doctrine', [
                 'orm' => [
                     'mappings' => [
                         'UhifadhiRoster' => [
