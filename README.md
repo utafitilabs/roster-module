@@ -97,7 +97,7 @@ php bin/console asset-map:compile
 php bin/console cache:clear
 ```
 
-The **Flex recipe** (`uhifadhi/roster-module/0.1` in `uhifadhilabs/recipes`)
+The **Flex recipe** (`uhifadhi/roster-module/0.1` in `utafitilabs/recipes`)
 adds `Uhifadhi\Roster\UhifadhiRosterBundle` to `config/bundles.php`, mounts
 `config/routes/roster.yaml` and writes `config/packages/roster.yaml` with the
 vocabulary below. Entity mapping, the migrations path and the module's icon

@@ -23,7 +23,7 @@
     "repositories": [
         {
             "type": "vcs",
-            "url": "https://github.com/uhifadhilabs/uhifadhi"
+            "url": "https://github.com/utafitilabs/uhifadhi"
         }
     ],
     "require": {
