@@ -128,12 +128,26 @@ it.
 check the compiled map rather than trusting the eye.
 
 Then **switch it on per area** — a module is installed but parked, and every
-page answers 404 in an area that has not taken it — and grant `roster.configure`
-to whoever changes how the area runs its roster. Reading needs nothing.
+page answers 404 in an area that has not taken it — and hand out the two
+grants this module declares: `roster.record` to whoever fills, publishes and
+swaps the day's watches, and `roster.configure` to whoever changes how the
+area runs its roster at all. Every page that only reads opens on the ground's
+own `areas.read`, so a reader who may open the area may read its roster.
 
-> **A heavy console run goes with `--no-debug`.** A warm-up that walks the
-> registry collects every query of every request while the debug kernel is on,
-> and on a small box that is how `cache:warmup` meets the memory limit.
+### What a development machine needs
+
+Set **`opcache.enable_cli=1`** in `php.ini`. The opcode cache is off for the
+CLI by default, so every console run recompiles every file it touches — and
+the runs this module asks for walk the registry, the entity mappings and the
+templates each time. A production image compiles its cache once at build and
+never pays that cost.
+
+> "opcache.enable_cli *bool* — Enables the opcode cache for the CLI version of
+> PHP." Default `0`.
+> — <https://www.php.net/manual/en/opcache.configuration.php#ini.opcache.enable-cli>
+
+Nothing else is different in development: the four commands above are the
+whole sequence, and there is no by-hand warm-up beyond `cache:warmup`.
 
 ## Configuration
 
