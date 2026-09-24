@@ -43,7 +43,7 @@
         "symfony/twig-bundle": "^7.3 || ^8.0",
         "symfony/uid": "^7.3 || ^8.0",
         "symfony/ux-icons": "^2.20 || ^3.0",
-        "uhifadhi/uhifadhi": "^1.0@dev"
+        "uhifadhi/uhifadhi": "^0.1"
     },
     "require-dev": {
         "api-platform/core": "^4.4",
@@ -83,11 +83,6 @@
     },
     "config": {
         "sort-packages": true
-    },
-    "extra": {
-        "branch-alias": {
-            "dev-main": "0.1-dev"
-        }
     },
     "minimum-stability": "stable",
     "prefer-stable": true
