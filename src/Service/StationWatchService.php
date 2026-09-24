@@ -84,9 +84,6 @@ final readonly class StationWatchService
             $station,
             $this->defaultSilenceWindowMinutes,
             $this->defaultOfflineAfterMinutes,
-            // RETIRED, and written only because the column is not nullable
-            // until the drop. Nothing reads it; see {@see StationWatch}.
-            $settings->getDefaultCatchmentMetres(),
         );
         $this->entityManager->persist($watch);
 

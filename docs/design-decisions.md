@@ -18,6 +18,7 @@ Each deliberate modelling choice, **why**, and **the trigger that reopens it**
 - [A preset is a shape, and the post's own watches fill it](#a-preset-is-a-shape-and-the-posts-own-watches-fill-it)
 - [Two doors put a post on the books, and neither is the seeder](#two-doors-put-a-post-on-the-books-and-neither-is-the-seeder)
 - [A seeder reads the injected clock; a screen reads the wall](#a-seeder-reads-the-injected-clock-a-screen-reads-the-wall)
+- [The watch's catchment is dropped, not kept nullable](#the-watchs-catchment-is-dropped-not-kept-nullable)
 - [What the design asks for that nothing can answer yet](#what-the-design-asks-for-that-nothing-can-answer-yet)
 
 ## The scaffold was reconciled, not preserved
@@ -453,6 +454,34 @@ default it — which is the cheaper half of the same discipline.
 an "as at" reading, or a snapshot for a report. That is the change that makes
 the controllers' clock worth injecting, and it should be done in one pass with
 the services above rather than one controller at a time.
+
+## The watch's catchment is dropped, not kept nullable
+
+**Decision.** `roster_station_watch.catchment_metres` is removed outright by
+`Version20260924000000`, together with the property that mapped it and its two
+deprecated accessors. It is not widened to nullable and left in place.
+
+**Why.** One distance, one home: a post's ring is `station.catchment_m`, which
+is what the area measures a claim of "at post" against and what its own service
+writes. A second column holding the same number is two answers the day somebody
+edits one of them — a state the configure page briefly had to carry a flag
+about. A nullable leftover would keep that second answer reachable while
+pretending it had gone, which is the worse half of both options.
+
+**Why now and not earlier.** The release before this stopped reading the column
+and said so in `docs/upgrading.md`, so there is a version in which both columns
+existed and only one was read. Dropping it in the same release that stopped
+reading it would have taken an installation's data away with no version to
+upgrade through.
+
+**The unwind is not empty.** `down()` re-adds the column nullable, fills it
+from the post's own ring — falling back to the area's roster default, then to
+the configured 1500 metres — and tightens it. A rollback that re-added it empty
+and `NOT NULL` would fail on the first installation with a watch in it.
+
+**Reopens when** a post needs more than one ring — a different distance per
+shift, say. That is a new column with a new meaning on the watch, not this one
+coming back.
 
 ## What the design asks for that nothing can answer yet
 

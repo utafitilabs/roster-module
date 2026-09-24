@@ -16,7 +16,7 @@ namespace Uhifadhi\Roster\Tests\Unit;
 use PHPUnit\Framework\TestCase;
 
 /**
- * ONE DISTANCE, ONE HOME — and the retired column stays unread until it goes.
+ * ONE DISTANCE, ONE HOME — and the second one is gone for good.
  *
  * A POST'S RING IS `station.catchment_m`. That is the column the AREA
  * measures a claim against and the one its own service writes; this module
@@ -25,45 +25,31 @@ use PHPUnit\Framework\TestCase;
  * distance are two answers the day somebody edits one of them — which was
  * exactly the state the configure page had to carry a flag about.
  *
- * SO IT IS RETIRED RATHER THAN DROPPED. The column is not nullable and an
- * installation's rows still hold values, so it survives one release written
- * and never read; the release after this drops it with a `@destructive`
- * migration. What this test holds is the "never read" half — the half that
- * is easy to undo by accident, because the getter is still right there.
+ * THE RETIREMENT IS OVER. The property, its accessors and the column all
+ * went in the release after the one that stopped reading them. What this
+ * test holds now is that nothing brings any of them back by hand: an entity
+ * property is a schema change that looks like a one-line edit, and the next
+ * `diff` would hand an installation SQL re-adding a column somebody
+ * deliberately dropped.
  *
- * THE WRITE ON INSERT IS THE ONE EXCEPTION, and it is named here rather
- * than excluded silently: a NOT NULL column has to be given something until
- * the day it is dropped.
+ * `default_catchment_metres` — the AREA's fallback ring, a configured setting
+ * and not this column — is deliberately not matched: the pattern names the
+ * retired property and its accessors, which is what a return of the column
+ * actually looks like.
+ *
+ * @see \Uhifadhi\Roster\Migrations\Version20260924000000
  */
 final class RetiredCatchmentColumnTest extends TestCase
 {
     private const string SRC = __DIR__.'/../../src';
+
     private const string TEMPLATES = __DIR__.'/../../templates';
 
-    /**
-     * `default_catchment_metres` — the AREA's fallback ring, a configured
-     * setting and not this column — is deliberately not matched: the
-     * pattern names the property and its accessors, which is what a read
-     * of the retired column actually looks like.
-     */
-
-    /** The only place allowed to name it, and why. */
-    private const array MAY_NAME_IT = [
-        // Declares the column and marks it retired.
-        'src/Entity/StationWatch.php',
-        // Writes it on insert, because it is NOT NULL until the drop.
-        'src/Service/StationWatchService.php',
-    ];
-
-    public function testNothingInTheModuleReadsTheRetiredColumn(): void
+    public function testNothingInTheModuleCarriesAWatchCatchmentAgain(): void
     {
         $offenders = [];
 
         foreach ($this->sources() as $path => $code) {
-            if (\in_array($path, self::MAY_NAME_IT, true)) {
-                continue;
-            }
-
             if (preg_match('/\b(getCatchmentMetres|setCatchmentMetres|catchmentMetres)\b/', $code)) {
                 $offenders[] = $path;
             }
@@ -72,18 +58,16 @@ final class RetiredCatchmentColumnTest extends TestCase
         self::assertSame(
             [],
             $offenders,
-            "These read the RETIRED watch catchment. The ring is the post's — read Station::getCatchmentM() and write through StationService::setCatchment():\n  ".implode("\n  ", $offenders),
+            "These name the DROPPED watch catchment. The ring is the post's — read Station::getCatchmentM() and write through StationService::setCatchment():\n  ".implode("\n  ", $offenders),
         );
     }
 
-    /** AND THE ONE PLACE THAT WRITES IT SAYS WHY, so the drop is findable. */
-    public function testTheColumnIsMarkedRetiredWhereItIsDeclared(): void
+    /** And nothing maps the column that was dropped. */
+    public function testTheWatchMapsNoCatchmentColumn(): void
     {
         $entity = (string) file_get_contents(self::SRC.'/Entity/StationWatch.php');
 
-        self::assertStringContainsString('RETIRED', $entity);
-        self::assertStringContainsString('station.catchment_m', $entity, 'It names where the ring actually lives.');
-        self::assertStringContainsString('@deprecated', $entity, 'The getter and the setter are marked, so an editor says so too.');
+        self::assertStringNotContainsString('catchment_metres', $entity);
     }
 
     /**

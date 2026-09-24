@@ -85,25 +85,6 @@ class StationWatch
     private int $offlineAfterMinutes;
 
     /**
-     * RETIRED. Nothing reads this — the ring lives on the POST.
-     *
-     * ONE DISTANCE, ONE HOME (ruled). How close a ping has to be for a
-     * claim of "at post" to read as verified is measured against
-     * `station.catchment_m`, which is the column the AREA's verification
-     * actually reads and the area's own service writes. This one held the
-     * same number in a second place, and two columns for one distance are
-     * two answers the day somebody edits one of them.
-     *
-     * IT IS STILL HERE FOR ONE RELEASE. The column is not nullable, so it
-     * is written on insert and never read; the release after this drops
-     * it, as a `@destructive` migration. Dropping it in the same release
-     * that stopped reading it would take an installation's data away
-     * before it had a version where both were true.
-     */
-    #[ORM\Column(name: 'catchment_metres')]
-    private int $catchmentMetres;
-
-    /**
      * HOW MANY PEOPLE THIS STATION NEEDS ON EACH SHIFT IT RUNS, keyed by
      * shift key — "day 2, night 2".
      *
@@ -165,12 +146,10 @@ class StationWatch
         Station $station,
         int $silenceWindowMinutes,
         int $offlineAfterMinutes,
-        int $catchmentMetres,
     ) {
         $this->station = $station;
         $this->silenceWindowMinutes = $silenceWindowMinutes;
         $this->offlineAfterMinutes = $offlineAfterMinutes;
-        $this->catchmentMetres = $catchmentMetres;
         $this->guardThresholds();
     }
 
@@ -222,30 +201,6 @@ class StationWatch
         $this->silenceWindowMinutes = $silenceWindowMinutes;
         $this->offlineAfterMinutes = $offlineAfterMinutes;
         $this->guardThresholds();
-
-        return $this;
-    }
-
-    /**
-     * @deprecated RETIRED — the ring is the post's. Read `Station::getCatchmentM()`,
-     *             which is what verification measures against. Dropped next release.
-     */
-    public function getCatchmentMetres(): int
-    {
-        return $this->catchmentMetres;
-    }
-
-    /**
-     * @deprecated RETIRED — write through `StationService::setCatchment()`,
-     *             the area's own verb. Dropped next release.
-     */
-    public function setCatchmentMetres(int $catchmentMetres): static
-    {
-        if ($catchmentMetres < 1) {
-            throw new \InvalidArgumentException('A catchment is a distance from the post, so it is at least one metre. Zero would flag everybody standing in the compound.');
-        }
-
-        $this->catchmentMetres = $catchmentMetres;
 
         return $this;
     }
