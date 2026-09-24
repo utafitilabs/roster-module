@@ -16,6 +16,8 @@ namespace Uhifadhi\Roster\Tests\Functional;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\Routing\RouterInterface;
+use Uhifadhi\Bundle\AreaBundle\Controller\StationConfigureController;
 use Uhifadhi\Bundle\AreaBundle\Entity\AreaOfInterest;
 use Uhifadhi\Bundle\AreaBundle\Entity\Station;
 use Uhifadhi\Bundle\AreaBundle\Enum\PostingSource;
@@ -230,7 +232,12 @@ final class TheDutyFlowStartsTest extends WebTestCase
         // ONE CARD'S BODY IS RENDERED AT A TIME on that page, and only the
         // open one is asked of its modules — so the post has to be opened
         // for this module to be asked about it at all.
-        $crawler = $this->client->request('GET', '/areas/'.$this->area->getUuidString().'/stations/settings?open='.$this->gate->getUuidString());
+        $router = static::getContainer()->get('router');
+        self::assertInstanceOf(RouterInterface::class, $router);
+        $crawler = $this->client->request('GET', $router->generate(
+            StationConfigureController::ROUTE,
+            ['uuid' => (string) $this->area->getUuidString(), 'open' => (string) $this->gate->getUuidString()],
+        ));
         self::assertResponseIsSuccessful();
 
         $heading = $crawler->filter('.ao-by.roster')->ancestors()->first()->text();
@@ -252,7 +259,10 @@ final class TheDutyFlowStartsTest extends WebTestCase
 
         // BACK TO THE CARD IT WAS PRESSED ON, with that post still open.
         self::assertResponseRedirects();
-        self::assertStringContainsString('/stations/settings', (string) $this->client->getResponse()->headers->get('Location'));
+        self::assertStringContainsString(
+            $router->generate(StationConfigureController::ROUTE, ['uuid' => (string) $this->area->getUuidString()]),
+            (string) $this->client->getResponse()->headers->get('Location'),
+        );
         self::assertInstanceOf(StationWatch::class, $this->watchService()->forStation($this->gate));
     }
 

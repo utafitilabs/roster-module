@@ -21,6 +21,7 @@ use Symfony\Component\HttpFoundation\Session\FlashBagAwareSessionInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Routing\Requirement\Requirement;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Uid\Uuid;
 use Twig\Environment;
 use Uhifadhi\Bundle\AreaBundle\Entity\AreaOfInterest;
@@ -126,6 +127,7 @@ final class RosterWidgetsController
         methods: ['GET'],
         priority: 2,
     )]
+    #[IsGranted('areas.read', subject: 'area')]
     public function library(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
     ): Response {
@@ -278,6 +280,7 @@ final class RosterWidgetsController
     }
 
     #[Route('/areas/{uuid}/modules/roster/widgets/{surface}/save', name: self::SAVE_ROUTE, requirements: ['uuid' => Requirement::UUID, 'surface' => self::SURFACES], methods: ['POST'], priority: 2)]
+    #[IsGranted('areas.read', subject: 'area')]
     public function save(
         Request $request,
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
@@ -287,6 +290,7 @@ final class RosterWidgetsController
     }
 
     #[Route('/areas/{uuid}/modules/roster/widgets/{surface}/reset', name: self::RESET_ROUTE, requirements: ['uuid' => Requirement::UUID, 'surface' => self::SURFACES], methods: ['POST'], priority: 2)]
+    #[IsGranted('areas.read', subject: 'area')]
     public function reset(
         Request $request,
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
@@ -305,6 +309,7 @@ final class RosterWidgetsController
     }
 
     #[Route('/areas/{uuid}/modules/roster/widgets/{surface}/preset/{presetId}', name: self::PRESET_ROUTE, requirements: ['uuid' => Requirement::UUID, 'surface' => self::SURFACES, 'presetId' => '[a-z0-9_-]+'], methods: ['POST'], priority: 2)]
+    #[IsGranted('areas.read', subject: 'area')]
     public function applyPreset(
         Request $request,
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
@@ -325,6 +330,7 @@ final class RosterWidgetsController
     }
 
     #[Route('/areas/{uuid}/modules/roster/widgets/{surface}/preset/{presetId}/copy', name: self::PRESET_COPY_ROUTE, requirements: ['uuid' => Requirement::UUID, 'surface' => self::SURFACES, 'presetId' => '[a-z0-9_-]+'], methods: ['POST'], priority: 3)]
+    #[IsGranted('areas.read', subject: 'area')]
     public function copyPreset(
         Request $request,
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
@@ -340,6 +346,7 @@ final class RosterWidgetsController
     }
 
     #[Route('/areas/{uuid}/modules/roster/widgets/{surface}/presets', name: self::PRESET_CREATE_ROUTE, requirements: ['uuid' => Requirement::UUID, 'surface' => self::SURFACES], methods: ['POST'], priority: 2)]
+    #[IsGranted('areas.read', subject: 'area')]
     public function createPreset(
         Request $request,
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
@@ -354,6 +361,7 @@ final class RosterWidgetsController
     }
 
     #[Route('/areas/{uuid}/modules/roster/widgets/{surface}/presets/{presetUuid}/apply', name: self::PRESET_APPLY_ROUTE, requirements: ['uuid' => Requirement::UUID, 'surface' => self::SURFACES, 'presetUuid' => Requirement::UUID], methods: ['POST'], priority: 2)]
+    #[IsGranted('areas.read', subject: 'area')]
     public function applyCustomPreset(
         Request $request,
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
@@ -369,6 +377,7 @@ final class RosterWidgetsController
     }
 
     #[Route('/areas/{uuid}/modules/roster/widgets/{surface}/presets/{presetUuid}/rename', name: self::PRESET_RENAME_ROUTE, requirements: ['uuid' => Requirement::UUID, 'surface' => self::SURFACES, 'presetUuid' => Requirement::UUID], methods: ['POST'], priority: 2)]
+    #[IsGranted('areas.read', subject: 'area')]
     public function renameCustomPreset(
         Request $request,
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
@@ -384,6 +393,7 @@ final class RosterWidgetsController
     }
 
     #[Route('/areas/{uuid}/modules/roster/widgets/{surface}/presets/{presetUuid}/delete', name: self::PRESET_DELETE_ROUTE, requirements: ['uuid' => Requirement::UUID, 'surface' => self::SURFACES, 'presetUuid' => Requirement::UUID], methods: ['POST'], priority: 2)]
+    #[IsGranted('areas.read', subject: 'area')]
     public function deleteCustomPreset(
         Request $request,
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,

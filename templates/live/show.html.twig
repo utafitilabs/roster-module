@@ -15,6 +15,10 @@
    ========================================================================== #}
 {% extends '@UhifadhiRoster/base.html.twig' %}
 
+{# WHETHER THIS PERSON MAY COMPOSE THE RAIL — the pair the rail's own edit
+   route carries. A button that answers 403 is worse than no button. #}
+{% set mayCompose = door('roster.record', area) %}
+
 {% block title %}{{ area.name }} · Roster · live{% endblock %}
 
 {% block shell_page_title %}Roster{% endblock %}
@@ -112,7 +116,7 @@
                        element, so a twin in the library is this markup with
                        the chrome left off rather than a second shape. #}
                     {% for cell in railLists %}
-                        {{ include('@UhifadhiRoster/rail/_' ~ cell.id ~ '.html.twig', cell.context, with_context: false) }}
+                        {{ include('@UhifadhiRoster/rail/_' ~ cell.id ~ '.html.twig', cell.context|merge({mayCompose: mayCompose}), with_context: false) }}
                     {% else %}
                         <div class="rfrag"><b>The rail carries no list</b><em>every list has been taken out of it &mdash; the widget library puts one back</em></div>
                     {% endfor %}

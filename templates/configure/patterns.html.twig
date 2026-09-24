@@ -40,6 +40,11 @@
    ========================================================================== #}
 {% extends '@UhifadhiRoster/configure/_frame.html.twig' %}
 
+{# WHETHER THIS PERSON MAY CHANGE HOW THE AREA FILLS A STATION — the pair
+   both writes on this page carry. The page itself opens on the ground,
+   so a reader sees the cycles with every control disabled. #}
+{% set mayManage = door('roster.configure', area) %}
+
 {% set here = path(constant('Uhifadhi\\Roster\\Controller\\RosterPatternsController::ROUTE'), {uuid: area.uuid}) %}
 {% set blank = here ~ '?' ~ constant('Uhifadhi\\Roster\\Controller\\RosterPatternsController::NEW_QUERY') %}
 

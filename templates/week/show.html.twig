@@ -104,6 +104,11 @@
    ========================================================================== #}
 {% extends '@UhifadhiRoster/base.html.twig' %}
 
+{# WHETHER THIS PERSON MAY PLAN. The door names the pair every write on
+   this sheet carries — filling it, offering a watch, publishing the day —
+   so a control is drawn only where the route behind it would accept it. #}
+{% set mayPlan = door('roster.record', area) %}
+
 {% block title %}{{ area.name }} · Roster · week{% endblock %}
 
 {% block shell_page_title %}Roster{% endblock %}

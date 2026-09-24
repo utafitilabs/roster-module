@@ -15,6 +15,7 @@ namespace Uhifadhi\Roster\Controller;
 
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Twig\Environment;
 use Uhifadhi\Bundle\ShellBundle\Service\Scopes;
 use Uhifadhi\Bundle\ShellBundle\Widget\Service\WidgetEndpoint;
@@ -61,6 +62,7 @@ final class RosterOrgController
     }
 
     #[Route('/roster', name: self::OVERVIEW_ROUTE, methods: ['GET'])]
+    #[IsGranted('areas.read')]
     public function overview(): Response
     {
         [$scope, $areas, $day, $now] = $this->reading();
@@ -76,6 +78,7 @@ final class RosterOrgController
     }
 
     #[Route('/roster/today', name: self::TODAY_ROUTE, methods: ['GET'])]
+    #[IsGranted('areas.read')]
     public function today(): Response
     {
         [$scope, $areas, $day, $now] = $this->reading();
@@ -87,6 +90,7 @@ final class RosterOrgController
     }
 
     #[Route('/roster/live', name: self::LIVE_ROUTE, methods: ['GET'])]
+    #[IsGranted('areas.read')]
     public function live(): Response
     {
         [$scope, $areas, $day, $now] = $this->reading();

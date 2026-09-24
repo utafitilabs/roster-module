@@ -24,6 +24,11 @@
    ========================================================================== #}
 {% extends '@UhifadhiRoster/configure/_frame.html.twig' %}
 
+{# WHETHER THIS PERSON MAY CHANGE HOW THE AREA RUNS ITS ROSTER — the pair
+   every write on this page carries. The page itself opens on the ground,
+   so a reader sees the setup with every control disabled. #}
+{% set mayManage = door('roster.configure', area) %}
+
 {# THE PAGE HEADER'S ONE ACCENT ACTION, and the frame writes Configure after
    it. Ruled by the design: creating a rotation is a page-level act, not a
    footer button and not a card. #}

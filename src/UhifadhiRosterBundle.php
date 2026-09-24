@@ -583,7 +583,6 @@ final class UhifadhiRosterBundle extends AbstractBundle
                 // Null where the installation runs no security: the week tab
                 // then offers no swap, because there is nobody to attribute
                 // an offer to and nothing to refuse one with.
-                service('security.authorization_checker')->nullOnInvalid(),
                 service('security.token_storage')->nullOnInvalid(),
                 service('security.csrf.token_manager')->nullOnInvalid(),
             ])
@@ -632,7 +631,6 @@ final class UhifadhiRosterBundle extends AbstractBundle
                     service('roster.rotation_preview'),
                     service('roster.rotation_generator'),
                     service(RotationRepository::class),
-                    service('security.authorization_checker'),
                     service('security.csrf.token_manager'),
                 ])
                 ->public();
@@ -651,7 +649,6 @@ final class UhifadhiRosterBundle extends AbstractBundle
                     service('roster.identity'),
                     service('roster.patterns'),
                     service(PatternRepository::class),
-                    service('security.authorization_checker'),
                     service('security.csrf.token_manager'),
                 ])
                 ->public();

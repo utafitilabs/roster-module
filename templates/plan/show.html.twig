@@ -16,6 +16,10 @@
    ========================================================================== #}
 {% extends '@UhifadhiRoster/base.html.twig' %}
 
+{# WHETHER THIS PERSON MAY PLAN — the pair the publish route carries. A
+   pick that could never be published is a form that refuses on submit. #}
+{% set mayPlan = door('roster.record', area) %}
+
 {% block title %}{{ area.name }} · Roster · plan the day{% endblock %}
 
 {% block shell_page_title %}Plan the day &mdash; <time datetime="{{ day.format('Y-m-d') }}" data-localtime-format="day">{{ day.format('D j F')|lower }}</time>{% endblock %}

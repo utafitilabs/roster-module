@@ -35,6 +35,11 @@
    ========================================================================== #}
 {% extends '@UhifadhiRoster/configure/_frame.html.twig' %}
 
+{# WHETHER THIS PERSON MAY CHANGE HOW THE AREA RUNS ITS ROSTER — the pair
+   every write on this page carries. The page itself opens on the ground,
+   so a reader sees the setup with every control disabled. #}
+{% set mayManage = door('roster.configure', area) %}
+
 {# THE DESIGN'S OWN SUBLINE, as fragments. #}
 {% block shell_page_subtitle %}What this module cannot guess about this organization &middot; each answer a field, with a default and the consequence of choosing wrong &middot; shifts and rules live on Watches{% endblock %}
 

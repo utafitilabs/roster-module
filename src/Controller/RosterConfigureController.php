@@ -23,9 +23,9 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Routing\Requirement\Requirement;
-use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 use Symfony\Component\Security\Csrf\CsrfToken;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Uid\Uuid;
 use Twig\Environment;
 use Uhifadhi\Bundle\AreaBundle\Controller\StationConfigureController;
@@ -78,12 +78,18 @@ use Uhifadhi\Roster\Service\StationWatchService;
  * shell's bare `/configure` answers 302 to the first of them — one rule,
  * both shapes.
  *
- * EVERY WRITE RIDES ON THE ROSTER'S CONFIGURE GRANT AND A CSRF TOKEN. The check
- * is in CODE rather than an #[IsGranted] attribute, so the class stays
- * loadable in an installation with no security-bundle attributes to resolve —
- * and the whole controller is registered only where SecurityBundle is in the
- * kernel, so a security-less installation gets no routes at all rather than
- * open write endpoints.
+ * EVERY WRITE RIDES ON THE ROSTER'S CONFIGURE GRANT AND A CSRF TOKEN. The
+ * grant is the route's own `#[IsGranted]` and nothing else — one gate, in the
+ * one place a test can walk and a template's `door()` can mirror — and the
+ * token is the only thing an action still asks for itself. The whole
+ * controller is registered only where SecurityBundle is in the kernel, so a
+ * security-less installation gets no routes at all rather than open write
+ * endpoints.
+ *
+ * THE THREE SECTION PAGES OPEN ON THE GROUND AND NOT ON THE GRANT. Reading
+ * how an area runs its roster is `areas.read`, which is what lets the
+ * commonest visitor the page has — somebody who may read the setup and not
+ * change it — see every field, disabled, instead of a refusal.
  */
 #[Route(defaults: ['_uhifadhi_module' => RosterModuleProvider::SLUG])]
 final class RosterConfigureController
@@ -153,12 +159,12 @@ final class RosterConfigureController
         private readonly RotationPreview $preview,
         private readonly RotationGenerator $generator,
         private readonly RotationRepository $rotations,
-        private readonly AuthorizationCheckerInterface $authorization,
         private readonly CsrfTokenManagerInterface $csrfTokenManager,
     ) {
     }
 
     #[Route('/areas/{uuid}/modules/roster/rotation', name: self::ROTATION_ROUTE, requirements: ['uuid' => Requirement::UUID], methods: ['GET'])]
+    #[IsGranted('areas.read', subject: 'area')]
     public function rotation(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         Request $request,
@@ -197,7 +203,6 @@ final class RosterConfigureController
             // fixed, and the section strip is two clicks away.
             'declarable' => $this->declarablePosts($area),
             'presets' => RotationPreset::cases(),
-            'mayManage' => $this->authorization->isGranted(self::CONFIGURE, $area),
         ]));
     }
 
@@ -216,11 +221,12 @@ final class RosterConfigureController
      * pressed on rather than to a page nobody asked for.
      */
     #[Route('/areas/{uuid}/modules/roster/watches/add', name: self::ADD_TO_ROSTER_ROUTE, requirements: ['uuid' => Requirement::UUID], methods: ['POST'])]
+    #[IsGranted('roster.configure', subject: 'area')]
     public function addToRoster(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         Request $request,
     ): Response {
-        $this->guardWrite($area, $request);
+        $this->guardTheForm($request);
 
         $station = $this->stationIn($area, $request->request->get('station'));
         if (null === $station) {
@@ -249,11 +255,12 @@ final class RosterConfigureController
      * generate anything.
      */
     #[Route('/areas/{uuid}/modules/roster/rotation/new', name: self::DECLARE_ROTATION_ROUTE, requirements: ['uuid' => Requirement::UUID], methods: ['POST'])]
+    #[IsGranted('roster.configure', subject: 'area')]
     public function declareRotation(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         Request $request,
     ): Response {
-        $this->guardWrite($area, $request);
+        $this->guardTheForm($request);
 
         $station = $this->stationIn($area, $request->request->get('station'));
         $preset = RotationPreset::tryFrom((string) $request->request->get('preset')) ?? RotationPreset::OneOfEachThenOff;
@@ -312,6 +319,7 @@ final class RosterConfigureController
      * different moments.
      */
     #[Route('/areas/{uuid}/modules/roster/watches', name: self::WATCHES_ROUTE, requirements: ['uuid' => Requirement::UUID], methods: ['GET'])]
+    #[IsGranted('areas.read', subject: 'area')]
     public function watches(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
     ): Response {
@@ -346,7 +354,6 @@ final class RosterConfigureController
             'rows' => $this->stationRows($area, $shifts),
             // The area's other posts — what "Add a post to the roster" offers.
             'postsOffTheBooks' => $this->postsOffTheBooks($area, $watches),
-            'mayManage' => $this->authorization->isGranted(self::CONFIGURE, $area),
             'csrfToken' => $this->csrfTokenManager->getToken(self::CSRF_TOKEN_ID)->getValue(),
         ]));
     }
@@ -361,11 +368,12 @@ final class RosterConfigureController
      * the grid, which is what the person pressing it means.
      */
     #[Route('/areas/{uuid}/modules/roster/rules', name: self::SAVE_SHIFTS_AND_RULES_ROUTE, requirements: ['uuid' => Requirement::UUID], methods: ['POST'])]
+    #[IsGranted('roster.configure', subject: 'area')]
     public function saveShiftsAndRules(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         Request $request,
     ): Response {
-        $this->guardWrite($area, $request);
+        $this->guardTheForm($request);
 
         try {
             $this->applyShiftRows($area, $request);
@@ -383,11 +391,12 @@ final class RosterConfigureController
      * first keystroke after that.
      */
     #[Route('/areas/{uuid}/modules/roster/shifts/add', name: self::ADD_SHIFT_ROUTE, requirements: ['uuid' => Requirement::UUID], methods: ['POST'])]
+    #[IsGranted('roster.configure', subject: 'area')]
     public function addShift(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         Request $request,
     ): Response {
-        $this->guardWrite($area, $request);
+        $this->guardTheForm($request);
 
         try {
             // THE ROWS ALREADY ON THE PAGE ARE SAVED FIRST. Adding a shift
@@ -412,11 +421,12 @@ final class RosterConfigureController
      * offered and every row that used it stays readable.
      */
     #[Route('/areas/{uuid}/modules/roster/shifts/close', name: self::CLOSE_SHIFT_ROUTE, requirements: ['uuid' => Requirement::UUID], methods: ['POST'])]
+    #[IsGranted('roster.configure', subject: 'area')]
     public function closeShift(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         Request $request,
     ): Response {
-        $this->guardWrite($area, $request);
+        $this->guardTheForm($request);
 
         $asked = $request->request->get('close');
         $subject = null;
@@ -450,6 +460,7 @@ final class RosterConfigureController
     }
 
     #[Route('/areas/{uuid}/modules/roster/settings', name: self::SETTINGS_ROUTE, requirements: ['uuid' => Requirement::UUID], methods: ['GET'])]
+    #[IsGranted('areas.read', subject: 'area')]
     public function settings(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
     ): Response {
@@ -462,7 +473,6 @@ final class RosterConfigureController
             // shows them because this is where somebody configuring the
             // roster looks for them, and links to where they are edited.
             'checkInStatuses' => $this->checkInStatuses->offeredBy($area),
-            'mayManage' => $this->authorization->isGranted(self::CONFIGURE, $area),
             'csrfToken' => $this->csrfTokenManager->getToken(self::CSRF_TOKEN_ID)->getValue(),
         ]));
     }
@@ -477,12 +487,13 @@ final class RosterConfigureController
      * that is the one that writes rows.
      */
     #[Route('/areas/{uuid}/modules/roster/rotation/{rotation}', name: self::SAVE_ROTATION_ROUTE, requirements: ['uuid' => Requirement::UUID, 'rotation' => Requirement::UUID], methods: ['POST'])]
+    #[IsGranted('roster.configure', subject: 'area')]
     public function saveRotation(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         string $rotation,
         Request $request,
     ): Response {
-        $this->guardWrite($area, $request);
+        $this->guardTheForm($request);
 
         $subject = $this->rotations->findOneByUuid($area, Uuid::fromString($rotation));
         if (null === $subject) {
@@ -517,12 +528,13 @@ final class RosterConfigureController
      * underneath them would move somebody who is at a post.
      */
     #[Route('/areas/{uuid}/modules/roster/rotation/{rotation}/generate', name: self::GENERATE_ROTATION_ROUTE, requirements: ['uuid' => Requirement::UUID, 'rotation' => Requirement::UUID], methods: ['POST'])]
+    #[IsGranted('roster.configure', subject: 'area')]
     public function generateRotation(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         string $rotation,
         Request $request,
     ): Response {
-        $this->guardWrite($area, $request);
+        $this->guardTheForm($request);
 
         $subject = $this->rotations->findOneByUuid($area, Uuid::fromString($rotation));
         if (null === $subject) {
@@ -557,11 +569,12 @@ final class RosterConfigureController
      * save that merged would make the cross on an exception do nothing.
      */
     #[Route('/areas/{uuid}/modules/roster/watches', name: self::SAVE_WATCHES_ROUTE, requirements: ['uuid' => Requirement::UUID], methods: ['POST'])]
+    #[IsGranted('roster.configure', subject: 'area')]
     public function saveWatches(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         Request $request,
     ): Response {
-        $this->guardWrite($area, $request);
+        $this->guardTheForm($request);
 
         foreach ($this->watches->forArea($area) as $watch) {
             $station = $watch->getStation();
@@ -861,11 +874,12 @@ final class RosterConfigureController
     }
 
     #[Route('/areas/{uuid}/modules/roster/settings', name: self::SAVE_SETTINGS_ROUTE, requirements: ['uuid' => Requirement::UUID], methods: ['POST'])]
+    #[IsGranted('roster.configure', subject: 'area')]
     public function saveSettings(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         Request $request,
     ): Response {
-        $this->guardWrite($area, $request);
+        $this->guardTheForm($request);
 
         $current = $this->settings->forArea($area);
 
@@ -890,16 +904,12 @@ final class RosterConfigureController
     }
 
     /**
-     * THE TWO THINGS EVERY WRITE ON THIS PAGE ASKS, in one place so neither
-     * can be forgotten on the next form: does this person hold the
-     * permission, and did this request come from the page.
+     * DID THIS REQUEST COME FROM THE PAGE — the one thing an action still
+     * asks for itself, in one place so it cannot be forgotten on the next
+     * form. Who may write is the route's `#[IsGranted]`.
      */
-    private function guardWrite(AreaOfInterest $area, Request $request): void
+    private function guardTheForm(Request $request): void
     {
-        if (!$this->authorization->isGranted(self::CONFIGURE, $area)) {
-            throw new AccessDeniedHttpException('Changing how this area runs its roster needs the "'.self::CONFIGURE.'" grant.');
-        }
-
         $token = $request->request->get('_token');
         if (!\is_string($token) || !$this->csrfTokenManager->isTokenValid(new CsrfToken(self::CSRF_TOKEN_ID, $token))) {
             throw new AccessDeniedHttpException('That form did not come from this page.');

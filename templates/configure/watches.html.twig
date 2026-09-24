@@ -56,6 +56,11 @@
    ========================================================================== #}
 {% extends '@UhifadhiRoster/configure/_frame.html.twig' %}
 
+{# WHETHER THIS PERSON MAY CHANGE HOW THE AREA RUNS ITS ROSTER — the pair
+   every write on this page carries. The page itself opens on the ground,
+   so a reader sees the setup with every control disabled. #}
+{% set mayManage = door('roster.configure', area) %}
+
 {% set save_grid = path(constant('Uhifadhi\\Roster\\Controller\\RosterConfigureController::SAVE_SHIFTS_AND_RULES_ROUTE'), {uuid: area.uuid}) %}
 {% set runs_at_least_one = rows|filter(r => r.runs|filter(v => v)|length > 0)|length %}
 

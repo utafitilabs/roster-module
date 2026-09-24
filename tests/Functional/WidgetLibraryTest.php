@@ -403,6 +403,13 @@ use Uhifadhi\Roster\Widget\RosterWidgets;
     /** AND THE DOOR ON THE LIVE TAB OPENS IT, rather than the page. */
     public function testTheLiveTabsDoorLandsOnTheRailsSection(): void
     {
+        // SOMEBODY IS SIGNED IN, because the Live tab opens on the ground it
+        // draws: its route names `areas.read`, so an anonymous reader is
+        // asked to sign in rather than handed the page.
+        $user = $this->em->getRepository(User::class)->findOneBy(['email' => FixedManageVoter::MANAGER_EMAIL]);
+        self::assertInstanceOf(User::class, $user);
+        $this->client->loginUser($user);
+
         $router = static::getContainer()->get('router');
         self::assertInstanceOf(\Symfony\Component\Routing\RouterInterface::class, $router);
 

@@ -23,9 +23,9 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Routing\Requirement\Requirement;
-use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 use Symfony\Component\Security\Csrf\CsrfToken;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Uid\Uuid;
 use Twig\Environment;
 use Uhifadhi\Bundle\AreaBundle\Entity\AreaOfInterest;
@@ -78,12 +78,12 @@ final class RosterPatternsController
         private readonly RosterIdentityService $identity,
         private readonly PatternService $patterns,
         private readonly PatternRepository $register,
-        private readonly AuthorizationCheckerInterface $authorization,
         private readonly CsrfTokenManagerInterface $csrfTokenManager,
     ) {
     }
 
     #[Route('/areas/{uuid}/modules/roster/patterns', name: self::ROUTE, requirements: ['uuid' => Requirement::UUID], methods: ['GET'])]
+    #[IsGranted('areas.read', subject: 'area')]
     public function index(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         Request $request,
@@ -108,7 +108,6 @@ final class RosterPatternsController
             // to a second screen to start would be two pages for one act.
             'declaring' => null === $open && $request->query->has(self::NEW_QUERY),
             'shifts' => $this->patterns->shiftsFor($area),
-            'mayManage' => $this->authorization->isGranted(RosterConfigureController::CONFIGURE, $area),
             'csrfToken' => $this->csrfTokenManager->getToken(RosterConfigureController::CSRF_TOKEN_ID)->getValue(),
         ]));
     }
@@ -147,11 +146,12 @@ final class RosterPatternsController
      * does NOT do — it writes a cycle and no duty, at any station running it.
      */
     #[Route('/areas/{uuid}/modules/roster/patterns', name: self::SAVE_ROUTE, requirements: ['uuid' => Requirement::UUID], methods: ['POST'])]
+    #[IsGranted('roster.configure', subject: 'area')]
     public function save(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         Request $request,
     ): Response {
-        $this->guardWrite($area, $request);
+        $this->guardTheForm($request);
 
         try {
             $cycle = $this->submittedCycle($area, $request);
@@ -185,12 +185,13 @@ final class RosterPatternsController
      * everything else, every planned day included.
      */
     #[Route('/areas/{uuid}/modules/roster/patterns/{pattern}/delete', name: self::DELETE_ROUTE, requirements: ['uuid' => Requirement::UUID, 'pattern' => Requirement::UUID], methods: ['POST'])]
+    #[IsGranted('roster.configure', subject: 'area')]
     public function delete(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         string $pattern,
         Request $request,
     ): Response {
-        $this->guardWrite($area, $request);
+        $this->guardTheForm($request);
 
         $subject = $this->patternIn($area, $pattern);
         if (null === $subject) {
@@ -313,12 +314,12 @@ final class RosterPatternsController
         return Uuid::isValid($uuid) ? $this->register->findOneByUuid($area, Uuid::fromString($uuid)) : null;
     }
 
-    private function guardWrite(AreaOfInterest $area, Request $request): void
+    /**
+     * DID THIS REQUEST COME FROM THE PAGE — the one thing an action still
+     * asks for itself. Who may write is the route's `#[IsGranted]`.
+     */
+    private function guardTheForm(Request $request): void
     {
-        if (!$this->authorization->isGranted(RosterConfigureController::CONFIGURE, $area)) {
-            throw new AccessDeniedHttpException('Changing how this area fills a station needs the "'.RosterConfigureController::CONFIGURE.'" grant.');
-        }
-
         $token = $request->request->get('_token');
         if (!\is_string($token) || !$this->csrfTokenManager->isTokenValid(new CsrfToken(RosterConfigureController::CSRF_TOKEN_ID, $token))) {
             throw new AccessDeniedHttpException('That form did not come from this page.');

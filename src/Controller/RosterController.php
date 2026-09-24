@@ -26,9 +26,9 @@ use Symfony\Component\Routing\Exception\RouteNotFoundException;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
-use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 use Symfony\Component\Security\Csrf\CsrfToken;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Uid\Uuid;
 use Twig\Environment;
 use Uhifadhi\Bundle\AreaBundle\Controller\StationsController;
@@ -221,22 +221,22 @@ final class RosterController
          * nothing to refuse one with — and the page reads as a plan rather
          * than a form that cannot post.
          */
-        private readonly ?AuthorizationCheckerInterface $authorization = null,
         private readonly ?TokenStorageInterface $tokens = null,
         private readonly ?CsrfTokenManagerInterface $csrfTokenManager = null,
     ) {
     }
 
     /**
-     * THE TWO THINGS EVERY SWAP WRITE ASKS: does this person hold
-     * the roster's RECORD grant, and did the request come from the page.
+     * DID THE REQUEST COME FROM THE PAGE — and nothing else, because the
+     * other question a write asks is the route's own.
+     *
+     * WHO MAY WRITE IS THE `#[IsGranted]` ON THE ROUTE. A second check here
+     * would be a gate in a place no test walks and no door mirrors: the
+     * template draws its control through `door()` naming the pair the route
+     * carries, and the two are held together by the module's conformance.
      */
-    private function guardPlan(AreaOfInterest $area, Request $request): void
+    private function guardTheForm(Request $request): void
     {
-        if (null === $this->authorization || !$this->authorization->isGranted(self::RECORD, $area)) {
-            throw new AccessDeniedHttpException('Offering a watch to somebody needs the "'.self::RECORD.'" grant.');
-        }
-
         $token = $request->request->get('_token');
         if (null === $this->csrfTokenManager || !\is_string($token) || !$this->csrfTokenManager->isTokenValid(new CsrfToken(self::CSRF_TOKEN_ID, $token))) {
             throw new AccessDeniedHttpException('That form did not come from this page.');
@@ -278,6 +278,7 @@ final class RosterController
      * is ruled never to invent.
      */
     #[Route('/areas/{uuid}/modules/roster', name: self::OVERVIEW_ROUTE, requirements: ['uuid' => Requirement::UUID], methods: ['GET'])]
+    #[IsGranted('areas.read', subject: 'area')]
     public function overview(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
     ): Response {
@@ -319,6 +320,7 @@ final class RosterController
      * the only tab where the donor and the gap are in the same screenful.
      */
     #[Route('/areas/{uuid}/modules/roster/week', name: self::WEEK_ROUTE, requirements: ['uuid' => Requirement::UUID], methods: ['GET'])]
+    #[IsGranted('areas.read', subject: 'area')]
     public function week(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         Request $request,
@@ -381,10 +383,6 @@ final class RosterController
             'recent' => $this->swaps->recentBetween($area, $from, $through, 5),
             'offering' => $offering = $this->swaps->offering($area, $request->query->get('give'), $request->query->get('take')),
             'cost' => null === $offering ? null : $this->cost->of($offering['duty'], $offering['taking']),
-            // NULL WHERE THE INSTALLATION RUNS NO SECURITY: no checker, so
-            // nobody may plan, and the page reads as a plan rather than a
-            // form that cannot post.
-            'mayPlan' => null !== $this->authorization && $this->authorization->isGranted(self::RECORD, $area),
             'csrfToken' => $this->csrfTokenManager?->getToken(self::CSRF_TOKEN_ID)->getValue() ?? '',
         ]));
     }
@@ -398,11 +396,12 @@ final class RosterController
      * just folded one station of twelve to the top of the sheet.
      */
     #[Route('/areas/{uuid}/modules/roster/sheet/prefs', name: self::SHEET_PREFS_ROUTE, requirements: ['uuid' => Requirement::UUID], methods: ['POST'])]
+    #[IsGranted('roster.record', subject: 'area')]
     public function sheetPreferences(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         Request $request,
     ): Response {
-        $this->guardPlan($area, $request);
+        $this->guardTheForm($request);
 
         $viewer = $this->viewer();
 
@@ -430,11 +429,12 @@ final class RosterController
      * do, which is the same walk with nothing written.
      */
     #[Route('/areas/{uuid}/modules/roster/sheet/fill', name: self::SHEET_FILL_ROUTE, requirements: ['uuid' => Requirement::UUID], methods: ['POST'])]
+    #[IsGranted('roster.record', subject: 'area')]
     public function sheetFill(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         Request $request,
     ): Response {
-        $this->guardPlan($area, $request);
+        $this->guardTheForm($request);
 
         $station = $this->stationIn($area, $request->request->get('station'));
         $pattern = $this->patternIn($area, $request->request->get('pattern'));
@@ -472,11 +472,12 @@ final class RosterController
      * again.
      */
     #[Route('/areas/{uuid}/modules/roster/sheet/day', name: self::SHEET_DAY_ROUTE, requirements: ['uuid' => Requirement::UUID], methods: ['POST'])]
+    #[IsGranted('roster.record', subject: 'area')]
     public function sheetDay(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         Request $request,
     ): Response {
-        $this->guardPlan($area, $request);
+        $this->guardTheForm($request);
 
         $duty = $this->dutyIn($area, $request->request->get('duty'));
 
@@ -508,11 +509,12 @@ final class RosterController
      * case, because the commonest edit is taking somebody off a watch.
      */
     #[Route('/areas/{uuid}/modules/roster/sheet/mark/clear', name: self::SHEET_CLEAR_MARK_ROUTE, requirements: ['uuid' => Requirement::UUID], methods: ['POST'])]
+    #[IsGranted('roster.record', subject: 'area')]
     public function clearTheMark(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         Request $request,
     ): Response {
-        $this->guardPlan($area, $request);
+        $this->guardTheForm($request);
 
         $station = $this->stationIn($area, $request->request->get('station'));
         $day = self::readDate((string) $request->request->get('day', ''));
@@ -742,11 +744,12 @@ final class RosterController
      * stand exactly as the rotation generated them.
      */
     #[Route('/areas/{uuid}/modules/roster/week/offer', name: self::OFFER_SWAP_ROUTE, requirements: ['uuid' => Requirement::UUID], methods: ['POST'])]
+    #[IsGranted('roster.record', subject: 'area')]
     public function offerSwap(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         Request $request,
     ): Response {
-        $this->guardPlan($area, $request);
+        $this->guardTheForm($request);
 
         try {
             $this->swaps->offerFromRequest(
@@ -764,11 +767,12 @@ final class RosterController
 
     /** Take an offer back, before it has been answered. */
     #[Route('/areas/{uuid}/modules/roster/week/withdraw', name: self::WITHDRAW_SWAP_ROUTE, requirements: ['uuid' => Requirement::UUID], methods: ['POST'])]
+    #[IsGranted('roster.record', subject: 'area')]
     public function withdrawSwap(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         Request $request,
     ): Response {
-        $this->guardPlan($area, $request);
+        $this->guardTheForm($request);
 
         try {
             $this->swaps->withdrawFromRequest($area, (string) $request->request->get('swap'), new \DateTimeImmutable());
@@ -790,6 +794,7 @@ final class RosterController
      * away.
      */
     #[Route('/areas/{uuid}/modules/roster/today', name: self::TODAY_ROUTE, requirements: ['uuid' => Requirement::UUID], methods: ['GET'])]
+    #[IsGranted('areas.read', subject: 'area')]
     public function today(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         Request $request,
@@ -837,6 +842,7 @@ final class RosterController
      * belongs to the watch that began yesterday.
      */
     #[Route('/areas/{uuid}/modules/roster/board', name: self::BOARD_ROUTE, requirements: ['uuid' => Requirement::UUID], methods: ['GET'])]
+    #[IsGranted('areas.read', subject: 'area')]
     public function board(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         Request $request,
@@ -884,6 +890,7 @@ final class RosterController
      * grid of its own, which is the whole reason the component exists.
      */
     #[Route('/areas/{uuid}/modules/roster/calendar', name: self::CALENDAR_ROUTE, requirements: ['uuid' => Requirement::UUID], methods: ['GET'])]
+    #[IsGranted('areas.read', subject: 'area')]
     public function calendar(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         Request $request,
@@ -915,6 +922,7 @@ final class RosterController
      * ground, and the roster reads the states over them.
      */
     #[Route('/areas/{uuid}/modules/roster/live', name: self::LIVE_ROUTE, requirements: ['uuid' => Requirement::UUID], methods: ['GET'])]
+    #[IsGranted('areas.read', subject: 'area')]
     public function live(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         Request $request,
@@ -949,10 +957,6 @@ final class RosterController
         $zones = $this->liveService->zones($area, $live);
         $people = RosterLiveService::rail($live, $narrowed, $this->shifts->windowsFor($area), $now);
 
-        // WHETHER THIS PERSON MAY COMPOSE THE RAIL. The controls are drawn
-        // only for somebody the write would accept, because a button that
-        // answers 403 is worse than no button.
-        $mayCompose = null !== $this->authorization && $this->authorization->isGranted(self::RECORD, $area);
         $centre = self::centreAsked($request);
 
         $shown = [];
@@ -972,7 +976,6 @@ final class RosterController
             $common = [
                 'position' => $position,
                 'total' => \count($shown),
-                'mayCompose' => $mayCompose,
                 'centre' => $centre,
                 // THE RAIL'S OWN CHROME, asked for by the rail. The same
                 // partial renders in the widget library without any of it,
@@ -1026,7 +1029,6 @@ final class RosterController
             'railLists' => $lists,
             'railCount' => \sprintf('%d in %d list%s', $counted, \count($lists), 1 === \count($lists) ? '' : 's'),
             'centre' => $centre,
-            'mayCompose' => $mayCompose,
             'railAll' => $railAll,
             'railPresets' => $catalog->presets(),
             'railPreset' => $active['id'],
@@ -1121,6 +1123,7 @@ final class RosterController
      * through, over this surface's own catalogue.
      */
     #[Route('/areas/{uuid}/modules/roster/live/rail/{presetId}', name: self::RAIL_PRESET_ROUTE, requirements: ['uuid' => Requirement::UUID, 'presetId' => '[a-z0-9_-]+'], methods: ['GET', 'POST'])]
+    #[IsGranted('areas.read', subject: 'area')]
     public function adoptRailPreset(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         Request $request,
@@ -1146,13 +1149,14 @@ final class RosterController
      * because "The duty officer, mine" is what it is.
      */
     #[Route('/areas/{uuid}/modules/roster/live/rail/{op}/{list}', name: self::RAIL_EDIT_ROUTE, requirements: ['uuid' => Requirement::UUID, 'op' => 'up|down|remove|add', 'list' => '[a-z]+'], methods: ['POST'])]
+    #[IsGranted('roster.record', subject: 'area')]
     public function composeRail(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         Request $request,
         string $op,
         string $list,
     ): Response {
-        $this->guardPlan($area, $request);
+        $this->guardTheForm($request);
 
         $viewer = $this->viewer();
         $catalog = RosterRailWidgets::declaration();
@@ -1383,6 +1387,7 @@ final class RosterController
      * these rows — the line this screen must not cross.
      */
     #[Route('/areas/{uuid}/modules/roster/plan', name: self::PLAN_ROUTE, requirements: ['uuid' => Requirement::UUID], methods: ['GET'])]
+    #[IsGranted('areas.read', subject: 'area')]
     public function plan(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         Request $request,
@@ -1414,7 +1419,6 @@ final class RosterController
             'nights' => $nights,
             'free' => DayPlanService::whoIsFree($sheet),
             'away' => $this->absences->findOverlapping($area, $day, $day->modify(\sprintf('+%d days', RotaService::DAYS - 1))),
-            'mayPlan' => null !== $this->authorization && $this->authorization->isGranted(self::RECORD, $area),
             'csrfToken' => $this->csrfTokenManager?->getToken(self::CSRF_TOKEN_ID)->getValue() ?? '',
         ]));
     }
@@ -1429,11 +1433,12 @@ final class RosterController
      * rather than written.
      */
     #[Route('/areas/{uuid}/modules/roster/plan/publish', name: self::PUBLISH_ROUTE, requirements: ['uuid' => Requirement::UUID], methods: ['POST'])]
+    #[IsGranted('roster.record', subject: 'area')]
     public function publishThePlan(
         #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
         Request $request,
     ): Response {
-        $this->guardPlan($area, $request);
+        $this->guardTheForm($request);
 
         $day = self::dayAsked($request, $request->request->get('day')) ?? new \DateTimeImmutable('tomorrow');
 
