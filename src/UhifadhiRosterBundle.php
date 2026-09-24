@@ -33,11 +33,13 @@ use Uhifadhi\Bundle\ShellBundle\Widget\Service\WidgetEndpoint;
 use Uhifadhi\Bundle\ShellBundle\Widget\Service\WidgetService;
 use Uhifadhi\Bundle\TeamBundle\Repository\DepartmentRepository;
 use Uhifadhi\Bundle\TeamBundle\Repository\UserRepository;
+use Uhifadhi\Contracts\Access\ConcernSourceInterface;
 use Uhifadhi\Contracts\Area\LivePositionsInterface;
 use Uhifadhi\Contracts\Area\StationSectionsInterface;
 use Uhifadhi\Contracts\Roster\WatchProviderInterface;
 use Uhifadhi\Contracts\Shell\ConfigurationSectionsInterface;
 use Uhifadhi\Contracts\Shell\ModuleTabsInterface;
+use Uhifadhi\Roster\Access\RosterConcerns;
 use Uhifadhi\Roster\Controller\RosterConfigureController;
 use Uhifadhi\Roster\Controller\RosterController;
 use Uhifadhi\Roster\Controller\RosterOrgController;
@@ -264,6 +266,19 @@ final class UhifadhiRosterBundle extends AbstractBundle
             // names the screens this module contributes once across every
             // area; the shell mounts them and draws the chrome.
             ->tag('shell.org_pages');
+
+        /*
+         * WHAT THERE IS TO HAVE A PERMISSION ABOUT HERE, declared to the
+         * installation's catalogue of concerns so an administrator has the
+         * rows to tick. Declaring hands nobody anything; it only says the
+         * concern exists and which verbs this module enforces on it.
+         *
+         * Tagged BY HAND, like everything else in this bundle: a reusable
+         * bundle is not autoconfigured, and a declaration that forgot its
+         * tag is a module whose grants never appear on the positions page.
+         */
+        $services->set('roster.access.concerns', RosterConcerns::class)
+            ->tag(ConcernSourceInterface::TAG);
 
         // THE DEPLOYMENT'S SHIFT VOCABULARY, as a parameter for the services
         // that read it. Shape-checked on the way in: phpstan max will demand
@@ -579,7 +594,7 @@ final class UhifadhiRosterBundle extends AbstractBundle
         /*
          * THE CONFIGURE SECTIONS ARE REGISTERED ONLY WHERE SECURITYBUNDLE IS
          * ACTUALLY IN THE KERNEL. Every write on that page changes how an area
-         * runs its roster and rides on "roster.manage"; without an
+         * runs its roster and rides on the roster's CONFIGURE grant; without an
          * authorization checker there is nothing to enforce it, so an
          * installation in that state gets NO configure routes (they fail
          * loudly) rather than three open write endpoints.

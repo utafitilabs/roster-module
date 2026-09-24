@@ -34,6 +34,8 @@ use Uhifadhi\Bundle\AreaBundle\Entity\Station;
 use Uhifadhi\Bundle\AreaBundle\Repository\PostingRepository;
 use Uhifadhi\Bundle\AreaBundle\Repository\StationRepository;
 use Uhifadhi\Bundle\AreaBundle\Service\CheckInStatusService;
+use Uhifadhi\Contracts\Access\Verb;
+use Uhifadhi\Roster\Access\RosterConcerns;
 use Uhifadhi\Roster\Entity\Rotation;
 use Uhifadhi\Roster\Entity\RotationPoolMember;
 use Uhifadhi\Roster\Entity\Shift;
@@ -114,12 +116,11 @@ final class RosterConfigureController
     /**
      * WHAT A PERSON MUST HOLD TO CHANGE HOW THIS AREA'S ROSTER IS SET UP.
      *
-     * Declared by the module provider against this exact constant, and read
-     * here. The string is never retyped: a permission whose declaration and
-     * whose check differ by one character is a screen nobody can open and an
-     * admin checkbox that grants nothing.
+     * The pair is COMPOSED from the declaration rather than retyped: a gate
+     * whose concern or verb differs from the declared one by a character is a
+     * screen nobody can open and an admin checkbox that grants nothing.
      */
-    public const string MANAGE_PERMISSION = 'roster.manage';
+    public const string CONFIGURE = RosterConcerns::ROSTER.'.'.Verb::Configure->value;
 
     /** One token id for the whole configure page; each form carries it. */
     public const string CSRF_TOKEN_ID = 'roster_configure';
@@ -196,7 +197,7 @@ final class RosterConfigureController
             // fixed, and the section strip is two clicks away.
             'declarable' => $this->declarablePosts($area),
             'presets' => RotationPreset::cases(),
-            'mayManage' => $this->authorization->isGranted(self::MANAGE_PERMISSION, $area),
+            'mayManage' => $this->authorization->isGranted(self::CONFIGURE, $area),
         ]));
     }
 
@@ -345,7 +346,7 @@ final class RosterConfigureController
             'rows' => $this->stationRows($area, $shifts),
             // The area's other posts — what "Add a post to the roster" offers.
             'postsOffTheBooks' => $this->postsOffTheBooks($area, $watches),
-            'mayManage' => $this->authorization->isGranted(self::MANAGE_PERMISSION, $area),
+            'mayManage' => $this->authorization->isGranted(self::CONFIGURE, $area),
             'csrfToken' => $this->csrfTokenManager->getToken(self::CSRF_TOKEN_ID)->getValue(),
         ]));
     }
@@ -461,7 +462,7 @@ final class RosterConfigureController
             // shows them because this is where somebody configuring the
             // roster looks for them, and links to where they are edited.
             'checkInStatuses' => $this->checkInStatuses->offeredBy($area),
-            'mayManage' => $this->authorization->isGranted(self::MANAGE_PERMISSION, $area),
+            'mayManage' => $this->authorization->isGranted(self::CONFIGURE, $area),
             'csrfToken' => $this->csrfTokenManager->getToken(self::CSRF_TOKEN_ID)->getValue(),
         ]));
     }
@@ -895,8 +896,8 @@ final class RosterConfigureController
      */
     private function guardWrite(AreaOfInterest $area, Request $request): void
     {
-        if (!$this->authorization->isGranted(self::MANAGE_PERMISSION, $area)) {
-            throw new AccessDeniedHttpException('Changing how this area runs its roster needs the "roster.manage" permission.');
+        if (!$this->authorization->isGranted(self::CONFIGURE, $area)) {
+            throw new AccessDeniedHttpException('Changing how this area runs its roster needs the "'.self::CONFIGURE.'" grant.');
         }
 
         $token = $request->request->get('_token');

@@ -36,10 +36,12 @@ use Uhifadhi\Bundle\AreaBundle\Entity\AreaOfInterest;
 use Uhifadhi\Bundle\AreaBundle\Entity\Station;
 use Uhifadhi\Bundle\AreaBundle\Repository\StationRepository;
 use Uhifadhi\Bundle\ShellBundle\Widget\Service\WidgetService;
+use Uhifadhi\Contracts\Access\Verb;
 use Uhifadhi\Contracts\Area\DayState;
 use Uhifadhi\Contracts\Area\LivePositionsInterface;
 use Uhifadhi\Contracts\Atlas\YearMonth;
 use Uhifadhi\Contracts\Entity\UserInterface;
+use Uhifadhi\Roster\Access\RosterConcerns;
 use Uhifadhi\Roster\Entity\Duty;
 use Uhifadhi\Roster\Entity\Pattern;
 use Uhifadhi\Roster\Enum\NightThenDay;
@@ -133,12 +135,12 @@ final class RosterController
     /**
      * WHAT A PERSON MUST HOLD TO OFFER A WATCH TO SOMEBODY ELSE.
      *
-     * Its own permission and not `roster.manage`: moving one watch between
-     * two people on one night is a duty officer's daily work, and making it
-     * need the permission that rewrites the area's rotations would push
-     * every shift change up to whoever holds that.
+     * RECORD and not CONFIGURE: moving one watch between two people on one
+     * night is a duty officer's daily work, and making it need the verb that
+     * rewrites the area's rotations would push every shift change up to
+     * whoever holds that.
      */
-    public const string PLAN_PERMISSION = 'roster.plan';
+    public const string RECORD = RosterConcerns::ROSTER.'.'.Verb::Record->value;
 
     /** One token id for the writes this controller makes. */
     public const string CSRF_TOKEN_ID = 'roster_week';
@@ -227,12 +229,12 @@ final class RosterController
 
     /**
      * THE TWO THINGS EVERY SWAP WRITE ASKS: does this person hold
-     * `roster.plan`, and did the request come from the page.
+     * the roster's RECORD grant, and did the request come from the page.
      */
     private function guardPlan(AreaOfInterest $area, Request $request): void
     {
-        if (null === $this->authorization || !$this->authorization->isGranted(self::PLAN_PERMISSION, $area)) {
-            throw new AccessDeniedHttpException('Offering a watch to somebody needs the "roster.plan" permission.');
+        if (null === $this->authorization || !$this->authorization->isGranted(self::RECORD, $area)) {
+            throw new AccessDeniedHttpException('Offering a watch to somebody needs the "'.self::RECORD.'" grant.');
         }
 
         $token = $request->request->get('_token');
@@ -382,7 +384,7 @@ final class RosterController
             // NULL WHERE THE INSTALLATION RUNS NO SECURITY: no checker, so
             // nobody may plan, and the page reads as a plan rather than a
             // form that cannot post.
-            'mayPlan' => null !== $this->authorization && $this->authorization->isGranted(self::PLAN_PERMISSION, $area),
+            'mayPlan' => null !== $this->authorization && $this->authorization->isGranted(self::RECORD, $area),
             'csrfToken' => $this->csrfTokenManager?->getToken(self::CSRF_TOKEN_ID)->getValue() ?? '',
         ]));
     }
@@ -950,7 +952,7 @@ final class RosterController
         // WHETHER THIS PERSON MAY COMPOSE THE RAIL. The controls are drawn
         // only for somebody the write would accept, because a button that
         // answers 403 is worse than no button.
-        $mayCompose = null !== $this->authorization && $this->authorization->isGranted(self::PLAN_PERMISSION, $area);
+        $mayCompose = null !== $this->authorization && $this->authorization->isGranted(self::RECORD, $area);
         $centre = self::centreAsked($request);
 
         $shown = [];
@@ -1412,7 +1414,7 @@ final class RosterController
             'nights' => $nights,
             'free' => DayPlanService::whoIsFree($sheet),
             'away' => $this->absences->findOverlapping($area, $day, $day->modify(\sprintf('+%d days', RotaService::DAYS - 1))),
-            'mayPlan' => null !== $this->authorization && $this->authorization->isGranted(self::PLAN_PERMISSION, $area),
+            'mayPlan' => null !== $this->authorization && $this->authorization->isGranted(self::RECORD, $area),
             'csrfToken' => $this->csrfTokenManager?->getToken(self::CSRF_TOKEN_ID)->getValue() ?? '',
         ]));
     }

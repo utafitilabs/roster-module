@@ -25,7 +25,7 @@ use Uhifadhi\Roster\Controller\RosterController;
 
 /**
  * Test stand-in for the INSTALLATION's permission voter: this module only
- * DECLARES "roster.manage"; deciding who holds it is Team's job.
+ * DECLARES the roster concern; deciding who holds its verbs is Team's job.
  *
  * TWO ACCOUNTS AND A DIFFERENT ANSWER FOR EACH, on purpose. A blanket "may do
  * everything" stub could never show the case the configure page is built
@@ -71,8 +71,8 @@ final class FixedManageVoter extends Voter
     protected function supports(string $attribute, mixed $subject): bool
     {
         return \in_array($attribute, [
-            RosterConfigureController::MANAGE_PERMISSION,
-            RosterController::PLAN_PERMISSION,
+            RosterConfigureController::CONFIGURE,
+            RosterController::RECORD,
             ...self::groundPairs(),
         ], true);
     }

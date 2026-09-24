@@ -13,12 +13,10 @@ declare(strict_types=1);
 
 namespace Uhifadhi\Roster\Module;
 
-use Uhifadhi\Contracts\ModulePermission;
 use Uhifadhi\Contracts\ModuleProviderInterface;
 use Uhifadhi\Contracts\ModuleProviderTrait;
 use Uhifadhi\Contracts\Shell\OrgPage;
 use Uhifadhi\Contracts\Shell\OrgPagesInterface;
-use Uhifadhi\Roster\Controller\RosterConfigureController;
 use Uhifadhi\Roster\Controller\RosterController;
 use Uhifadhi\Roster\Controller\RosterOrgController;
 
@@ -103,40 +101,13 @@ final class RosterModuleProvider implements ModuleProviderInterface, OrgPagesInt
         return RosterController::OVERVIEW_ROUTE;
     }
 
-    /**
-     * DECLARED, NEVER GRANTED. The module says the permission exists and what
-     * holding it lets a person do; Team folds it into the catalogue for
-     * admins to assign, and it vanishes with the module on uninstall. This
-     * module names no default holder and maps to no role.
-     *
-     * The value is the controller's own constant and not a retyped string: a
-     * permission whose declaration and whose check differ by one character is
-     * a screen nobody can open and a checkbox that grants nothing.
+    /*
+     * IT DECLARES NOTHING TO TICK HERE, and that is where the declaration
+     * lives rather than an omission. What there is to have a permission
+     * about in this module is declared through the access seam - one
+     * source, one concern, and the two verbs this module actually enforces:
+     * {@see \Uhifadhi\Roster\Access\RosterConcerns}.
      */
-    public function permissions(): array
-    {
-        return [
-            new ModulePermission(
-                RosterConfigureController::MANAGE_PERMISSION,
-                'Roster',
-                'Manage',
-                'Change how this area runs its roster: the rotations, what each post’s watch expects, and the module’s settings.',
-            ),
-            /*
-             * ITS OWN PERMISSION, not a second use of "manage". Moving one
-             * watch between two people on one night is a duty officer's
-             * daily work; making it need the permission that rewrites an
-             * area's rotations would push every shift change up to whoever
-             * holds that one.
-             */
-            new ModulePermission(
-                RosterController::PLAN_PERMISSION,
-                'Roster',
-                'Plan',
-                'Fill the day\'s watches and publish them, offer a watch to somebody else, and take an offer back before it is answered.',
-            ),
-        ];
-    }
 
     /**
      * THE ROSTER READ ACROSS EVERY AREA AT ONCE — the module's own screens

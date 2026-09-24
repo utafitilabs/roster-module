@@ -14,8 +14,9 @@ declare(strict_types=1);
 namespace Uhifadhi\Roster\Tests\Unit\Module;
 
 use PHPUnit\Framework\TestCase;
-use Uhifadhi\Contracts\ModulePermission;
+use Uhifadhi\Contracts\Access\Grant;
 use Uhifadhi\Contracts\ModuleProviderInterface;
+use Uhifadhi\Roster\Access\RosterConcerns;
 use Uhifadhi\Roster\Controller\RosterConfigureController;
 use Uhifadhi\Roster\Controller\RosterController;
 use Uhifadhi\Roster\Module\RosterModuleProvider;
@@ -63,28 +64,35 @@ final class RosterModuleProviderTest extends TestCase
     }
 
     /**
-     * DECLARED, NEVER GRANTED — and declared against the exact attribute the
-     * controller checks. A permission whose declaration and whose check
-     * differ by one character is a screen nobody can open and an admin
-     * checkbox that grants nothing, and neither failure says so anywhere.
+     * DECLARED THROUGH THE ACCESS SEAM, AND AGAINST THE EXACT PAIR THE
+     * CONTROLLER CHECKS. A gate whose declaration and whose check differ by
+     * one character is a screen nobody can open and an admin checkbox that
+     * grants nothing, and neither failure says so anywhere.
      */
-    public function testItDeclaresTheTwoPermissionsItsWritesActuallyCheck(): void
+    public function testTheConcernItDeclaresCarriesTheTwoPairsItsWritesCheck(): void
     {
-        $permissions = new RosterModuleProvider('operations')->permissions();
-        $values = array_map(static fn (ModulePermission $p): string => $p->value, $permissions);
+        $pairs = [];
+        foreach (new RosterConcerns()->concerns() as $concern) {
+            foreach ($concern->verbs() as $verb) {
+                $pairs[] = (string) Grant::of($concern->key(), $verb);
+            }
+        }
 
         // TWO, AND THEY ARE DIFFERENT JOBS. Moving one watch between two
         // people on one night is a duty officer's daily work; rewriting an
-        // area's rotations is not, and one permission for both would push
-        // every shift change up to whoever holds the second.
+        // area's rotations is not, and one verb for both would push every
+        // shift change up to whoever holds the second.
         self::assertSame([
-            RosterConfigureController::MANAGE_PERMISSION,
-            RosterController::PLAN_PERMISSION,
-        ], $values);
+            RosterController::RECORD,
+            RosterConfigureController::CONFIGURE,
+        ], $pairs);
+    }
 
-        foreach ($permissions as $permission) {
-            self::assertSame('Roster', $permission->umbrella);
-            self::assertNotSame('', trim($permission->description));
+    /** The module itself names this module, so a department gate can reach it. */
+    public function testEveryConcernNamesThisModule(): void
+    {
+        foreach (new RosterConcerns()->concerns() as $concern) {
+            self::assertSame(RosterModuleProvider::SLUG, $concern->moduleSlug());
         }
     }
 }

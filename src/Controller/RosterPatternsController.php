@@ -108,7 +108,7 @@ final class RosterPatternsController
             // to a second screen to start would be two pages for one act.
             'declaring' => null === $open && $request->query->has(self::NEW_QUERY),
             'shifts' => $this->patterns->shiftsFor($area),
-            'mayManage' => $this->authorization->isGranted(RosterConfigureController::MANAGE_PERMISSION, $area),
+            'mayManage' => $this->authorization->isGranted(RosterConfigureController::CONFIGURE, $area),
             'csrfToken' => $this->csrfTokenManager->getToken(RosterConfigureController::CSRF_TOKEN_ID)->getValue(),
         ]));
     }
@@ -315,8 +315,8 @@ final class RosterPatternsController
 
     private function guardWrite(AreaOfInterest $area, Request $request): void
     {
-        if (!$this->authorization->isGranted(RosterConfigureController::MANAGE_PERMISSION, $area)) {
-            throw new AccessDeniedHttpException('Changing how this area fills a station needs the "roster.manage" permission.');
+        if (!$this->authorization->isGranted(RosterConfigureController::CONFIGURE, $area)) {
+            throw new AccessDeniedHttpException('Changing how this area fills a station needs the "'.RosterConfigureController::CONFIGURE.'" grant.');
         }
 
         $token = $request->request->get('_token');
