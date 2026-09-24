@@ -190,7 +190,7 @@ final class TestKernel extends Kernel
         $container->extension('ux_map', ['renderer' => 'leaflet://default']);
 
         // THE INSTALLATION'S PERMISSION VOTER, played by a fixture: this
-        // module declares "roster.manage" and grants it to nobody, so
+        // module declares the roster concern and grants nobody its verbs, so
         // something has to decide who holds it. Tagged by hand — a
         // reusable-bundle test kernel does not autoconfigure.
         $container->services()->set(FixedManageVoter::class)->tag('security.voter');

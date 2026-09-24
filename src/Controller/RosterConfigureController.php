@@ -78,7 +78,7 @@ use Uhifadhi\Roster\Service\StationWatchService;
  * shell's bare `/configure` answers 302 to the first of them — one rule,
  * both shapes.
  *
- * EVERY WRITE RIDES ON "roster.manage" AND A CSRF TOKEN. The permission check
+ * EVERY WRITE RIDES ON THE ROSTER'S CONFIGURE GRANT AND A CSRF TOKEN. The check
  * is in CODE rather than an #[IsGranted] attribute, so the class stays
  * loadable in an installation with no security-bundle attributes to resolve —
  * and the whole controller is registered only where SecurityBundle is in the

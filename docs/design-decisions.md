@@ -333,8 +333,8 @@ one *quietly*. `SwapCostService` answers with sentences; nothing refuses.
 is shareable, refreshable and gone the moment somebody navigates away, where a
 half-built swap in a session would follow a duty officer around the product.
 
-**`roster.plan` is its own permission.** Moving one watch between two people
-on one night is a duty officer's daily work; making it need `roster.manage`
+**`roster.record` is its own verb.** Moving one watch between two people
+on one night is a duty officer's daily work; making it need `roster.configure`
 would push every shift change up to whoever rewrites rotations.
 
 ## A dashboard card states facts, not sentences

@@ -127,7 +127,7 @@ it.
 check the compiled map rather than trusting the eye.
 
 Then **switch it on per area** — a module is installed but parked, and every
-page answers 404 in an area that has not taken it — and grant `roster.manage`
+page answers 404 in an area that has not taken it — and grant `roster.configure`
 to whoever changes how the area runs its roster. Reading needs nothing.
 
 > **A heavy console run goes with `--no-debug`.** A warm-up that walks the
