@@ -263,7 +263,7 @@ final class RotationGeneratorTest extends IntegrationTestCase
     }
 
     /**
-     * "Two day watches, saturdays stood down" — the shape Lerai runs, and the
+     * "Two day watches, saturdays stood down" — the shape Fig Tree runs, and the
      * one a ring alone cannot express.
      */
     public function testAStoodDownWeekdayGeneratesNothingAtThatPost(): void

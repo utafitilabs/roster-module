@@ -53,7 +53,7 @@ final class SheetFillServiceTest extends IntegrationTestCase
         parent::setUp();
 
         $this->area = $this->anArea();
-        $this->gate = $this->aStation($this->area, 'seneto gate post', 'ST-01');
+        $this->gate = $this->aStation($this->area, 'eastgate post', 'ST-01');
         $this->theShiftVocabulary($this->area);
         $this->ada = $this->aPerson('ada@example.test', 'Ada', 'Example');
         $this->em->flush();

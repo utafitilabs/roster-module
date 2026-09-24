@@ -179,7 +179,7 @@ final readonly class PatternService
 
     /**
      * AND THE STATIONS THEMSELVES, NAMED — what a register card prints as
-     * "running at 2 stations — Kakesio Ranger Post, Olbalbal Ranger Post".
+     * "running at 2 stations — Salt Flats Ranger Post, Ridge Ranger Post".
      *
      * NAMED RATHER THAN COUNTED, because a count alone is a figure nobody
      * can act on: the whole question a reader has about a pattern they are

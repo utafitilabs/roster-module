@@ -49,7 +49,7 @@ final class SheetServiceTest extends IntegrationTestCase
         parent::setUp();
 
         $this->area = $this->anArea();
-        $this->gate = $this->aStation($this->area, 'seneto gate post', 'ST-01');
+        $this->gate = $this->aStation($this->area, 'eastgate post', 'ST-01');
         $this->theShiftVocabulary($this->area);
         $this->ada = $this->aPerson('ada@example.test', 'Ada', 'Example');
         $this->bea = $this->aPerson('bea@example.test', 'Bea', 'Example');
@@ -93,7 +93,7 @@ final class SheetServiceTest extends IntegrationTestCase
      */
     public function testEveryStationOnTheBooksGetsABand(): void
     {
-        $this->aStation($this->area, 'lemagrut roadside post', 'ST-12');
+        $this->aStation($this->area, 'escarpment roadside post', 'ST-12');
         $this->em->flush();
 
         $sheet = $this->sheet()->read($this->area, $this->window());
@@ -268,7 +268,7 @@ final class SheetServiceTest extends IntegrationTestCase
     public function testTheFirstReadOfAnAreaThatHasNamedNoShiftIsStillInColour(): void
     {
         $fresh = $this->anArea();
-        $station = $this->aStation($fresh, 'loduare gate post', 'ST-05');
+        $station = $this->aStation($fresh, 'ridge gate post', 'ST-05');
         $person = $this->aPerson('cyd@example.test', 'Cyd', 'Example');
         $this->em->flush();
         $this->em->persist(
@@ -287,7 +287,7 @@ final class SheetServiceTest extends IntegrationTestCase
     /** ONE STATION ONLY, when the head's filter names one. */
     public function testTheFilterNarrowsTheSheetToOneStation(): void
     {
-        $this->aStation($this->area, 'lerai ranger post', 'ST-02');
+        $this->aStation($this->area, 'fig tree ranger post', 'ST-02');
         $this->em->flush();
 
         $sheet = $this->sheet()->read($this->area, $this->window())->only((string) $this->gate->getUuidString());

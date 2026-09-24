@@ -63,7 +63,7 @@ final class SheetBrowserDumpTest extends WebTestCase
         $stations = [];
         $people = [];
 
-        foreach ([['seneto gate post', 'ST-01'], ['lerai ranger post', 'ST-02'], ['endulen ranger post', 'ST-03']] as $seat => [$name, $code]) {
+        foreach ([['eastgate post', 'ST-01'], ['fig tree ranger post', 'ST-02'], ['lakeshore post', 'ST-03']] as $seat => [$name, $code]) {
             $station = new Station()->setArea($this->area)->setName($name)->setCode($code)
                 ->setPoint(\sprintf('{"type":"Point","coordinates":[12.%d,-5.7]}', 3 + $seat));
             $this->em->persist($station);
