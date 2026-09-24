@@ -88,14 +88,14 @@ installation writes no doctrine block and no asset path for it.
 
 ## Installation
 
-```bash
+```console
 composer require uhifadhi/roster-module
+php bin/console cache:clear --no-warmup
 php bin/console doctrine:migrations:migrate
-php bin/console doctrine:migrations:diff     # must say "No changes detected"
-php bin/console registry:sync
-php bin/console asset-map:compile
-php bin/console cache:clear
+php bin/console cache:warmup
 ```
+
+Those are the installation's three commands after the require, the same three after every change to it. `doctrine:migrations:diff` must then report no changes: this module ships its own versions. There is no catalogue command; the registry reconciles itself when the cache is warmed, and in development AssetMapper serves the module's assets from source while the production image compiles them.
 
 The **Flex recipe** (`uhifadhi/roster-module/0.1` in `utafitilabs/recipes`)
 adds `Uhifadhi\Roster\UhifadhiRosterBundle` to `config/bundles.php`, mounts
