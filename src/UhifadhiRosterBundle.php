@@ -125,10 +125,20 @@ final class UhifadhiRosterBundle extends AbstractBundle
         // `bundles/uhifadhiroster` and content-versioned — no config here, no
         // assets:install.
 
-        // Ship the bundle's Stimulus controllers (assets/) under an AssetMapper
-        // namespace, exactly as symfony/ux-turbo does (TurboExtension::prepend).
-        // Guarded on BOTH conditions: a kernel may have no framework extension,
-        // and AssetMapper is optional.
+        /*
+         * Ship the bundle's Stimulus controllers (assets/) under an AssetMapper
+         * namespace, exactly as symfony/ux-turbo does (TurboExtension::prepend).
+         * Guarded on BOTH conditions: a kernel may have no framework extension,
+         * and AssetMapper is optional.
+         *
+         * The `path => namespace` shape is the one the framework's own config
+         * node normalises: "Can be a simple array of an array of
+         * ['path/to/assets': 'namespace']", read back as
+         * `$result[$item['value']] = $item['namespace']`.
+         *
+         * @see https://symfony.com/doc/current/frontend/asset_mapper.html
+         * @see vendor/symfony/framework-bundle/DependencyInjection/Configuration.php — the asset_mapper "paths" node
+         */
         if ($builder->hasExtension('framework') && interface_exists(AssetMapperInterface::class)) {
             $container->extension('framework', [
                 'asset_mapper' => [
@@ -175,6 +185,13 @@ final class UhifadhiRosterBundle extends AbstractBundle
          * a remote lucide at render time: an installation behind a firewall
          * still draws its buttons, and a missing icon fails loudly at build
          * rather than silently at a customer's.
+         *
+         * One prefix maps to one local directory and is answered only from it —
+         * `icon_sets.<prefix>.path`, which the extension reads straight into the
+         * icon-set paths and which may not be combined with `alias`.
+         *
+         * @see https://symfony.com/bundles/ux-icons/current/index.html#full-configuration
+         * @see vendor/symfony/ux-icons/src/DependencyInjection/UXIconsExtension.php
          */
         if ($builder->hasExtension('ux_icons')) {
             $container->extension('ux_icons', [
@@ -184,8 +201,16 @@ final class UhifadhiRosterBundle extends AbstractBundle
             ]);
         }
 
-        // Zero-config persistence: the bundle maps its own entities, so
-        // installations never write a doctrine mappings block for roster_*.
+        /*
+         * Zero-config persistence: the bundle maps its own entities, so
+         * installations never write a doctrine mappings block for roster_*.
+         * `is_bundle: false` with an absolute `dir` and the namespace `prefix`
+         * is the shape DoctrineBundle's own mapping node resolves without
+         * looking the directory up inside a bundle.
+         *
+         * @see https://symfony.com/doc/current/doctrine.html
+         * @see vendor/doctrine/doctrine-bundle/src/DependencyInjection/DoctrineExtension.php — setMappingDriverConfig()
+         */
         if ($builder->hasExtension('doctrine')) {
             $container->extension('doctrine', [
                 'orm' => [
