@@ -236,7 +236,7 @@ use Uhifadhi\Roster\Widget\RosterWidgets;
         self::assertCount(3, $sections, 'One section per surface, and the module has three.');
 
         self::assertSame(
-            ['The module dashboard', 'The organisation roster', 'The Live tab’s plate rail'],
+            ['The module dashboard', 'The organization roster', 'The Live tab’s plate rail'],
             $sections->each(static fn (\Symfony\Component\DomCrawler\Crawler $s): string => html_entity_decode(trim($s->filter('h2.zone')->text()))),
             'The house section, in the order the page reads.',
         );

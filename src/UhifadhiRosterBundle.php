@@ -260,7 +260,7 @@ final class UhifadhiRosterBundle extends AbstractBundle
         $services->set('roster.module_provider', RosterModuleProvider::class)
             ->args([$category])
             ->tag('uhifadhi.module')
-            // AND IT ANSWERS AT ORGANISATION LEVEL TOO. The same provider
+            // AND IT ANSWERS AT ORGANIZATION LEVEL TOO. The same provider
             // names the screens this module contributes once across every
             // area; the shell mounts them and draws the chrome.
             ->tag('shell.org_pages');
@@ -336,7 +336,7 @@ final class UhifadhiRosterBundle extends AbstractBundle
             ->tag(StationSectionsInterface::TAG);
 
         /*
-         * WHAT THIS MODULE PUTS ON THE ORGANISATION DASHBOARD — the "on
+         * WHAT THIS MODULE PUTS ON THE ORGANIZATION DASHBOARD — the "on
          * duty now" figure in the strip, and today's watches across every
          * area. The design declares both; this registers them.
          *

@@ -21,7 +21,7 @@ use Uhifadhi\Roster\Enum\VacancyAnnounce;
 use Uhifadhi\Roster\Repository\AreaRosterSettingsRepository;
 
 /**
- * THE SIX ANSWERS THIS MODULE CANNOT GUESS ABOUT AN ORGANISATION.
+ * THE SIX ANSWERS THIS MODULE CANNOT GUESS ABOUT AN ORGANIZATION.
  *
  * Every one of them was an open verdict while the module was being designed.
  * They are settings now rather than questions, each with a default and a
@@ -69,7 +69,7 @@ class AreaRosterSettings
      * STATE: a ranger the ring stands down is not expected to check in and has
      * failed at nothing. False means a rest day reads as a missing check-in,
      * which colours every one of them red, and is only right for an
-     * organisation that genuinely requires a daily check-in from everybody.
+     * organization that genuinely requires a daily check-in from everybody.
      */
     #[ORM\Column(name: 'off_day_has_no_state')]
     private bool $offDayHasNoState = true;

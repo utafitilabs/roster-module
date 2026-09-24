@@ -24,7 +24,7 @@ use Uhifadhi\Roster\Service\RosterOrgService;
 use Uhifadhi\Roster\Widget\RosterOrgWidgets;
 
 /**
- * THE ROSTER AT ORGANISATION SCOPE — three screens, read across every area.
+ * THE ROSTER AT ORGANIZATION SCOPE — three screens, read across every area.
  *
  * THE SHELL DRAWS THE CHROME. The row in Observatory, the tab strip and the
  * scope control are the shell's, mounted from what this module's provider
@@ -68,7 +68,7 @@ final class RosterOrgController
         return new Response($this->twig->render('@UhifadhiRoster/org/overview.html.twig', [
             ...$this->common($scope, $areas, $day, $now),
             // THE SURFACE IS RESOLVED PER PERSON AND NOT PER AREA: an
-            // organisation-level arrangement is one somebody chose once,
+            // organization-level arrangement is one somebody chose once,
             // and there is no area for it to hang on.
             'widgets' => $this->widgets->resolve(RosterOrgWidgets::declaration(), $this->endpoint->user(), null),
             'plate' => $this->org->plate($areas, $now),
@@ -106,7 +106,7 @@ final class RosterOrgController
      */
     private function reading(): array
     {
-        $scope = $this->scopes->current() ?? Scope::organisation();
+        $scope = $this->scopes->current() ?? Scope::organization();
         $now = new \DateTimeImmutable();
 
         return [$scope, $this->org->areasIn($scope, $this->scopes->available()), $now->setTime(0, 0), $now];

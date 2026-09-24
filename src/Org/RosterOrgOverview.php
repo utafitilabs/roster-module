@@ -26,7 +26,7 @@ use Uhifadhi\Roster\Service\RosterOrgService;
 use Uhifadhi\Roster\UhifadhiRosterBundle;
 
 /**
- * WHAT THE ROSTER PUTS ON THE ORGANISATION DASHBOARD — the figure "on duty
+ * WHAT THE ROSTER PUTS ON THE ORGANIZATION DASHBOARD — the figure "on duty
  * now" in the strip, and today's watches across every area.
  *
  * DECLARED BY THE DESIGN, not chosen here: `org.widgets.js` gives this
@@ -41,7 +41,7 @@ use Uhifadhi\Roster\UhifadhiRosterBundle;
  * because a second aggregate for this screen would be two answers to one
  * question with no way to say which was right.
  *
- * THE SCOPE IS THE ONE IT IS HANDED. The dashboard is the organisation
+ * THE SCOPE IS THE ONE IT IS HANDED. The dashboard is the organization
  * today, but the contract passes a scope rather than assuming one, and this
  * answers whatever it is given — which is what will let the same cells be
  * drawn for one area the day a scope control appears above them.
@@ -66,7 +66,7 @@ final readonly class RosterOrgOverview implements OrgOverviewContributorInterfac
     /**
      * HOW MANY ROWS THE CELL DRAWS BEFORE IT STOPS.
      *
-     * A DASHBOARD CARD NEVER GROWS WITH ITS DATA (ruled): an organisation
+     * A DASHBOARD CARD NEVER GROWS WITH ITS DATA (ruled): an organization
      * of forty stations would otherwise push every cell under it off the
      * screen. The rest are reached through the one door the card carries,
      * and the tab says how many there are so the cap is never silent.
@@ -89,7 +89,7 @@ final readonly class RosterOrgOverview implements OrgOverviewContributorInterfac
         return new WidgetGroup(
             self::SLUG,
             'Roster',
-            'Who is working, where they are, and how old that answer is — at organisation scope.',
+            'Who is working, where they are, and how old that answer is — at organization scope.',
         );
     }
 
@@ -124,12 +124,12 @@ final readonly class RosterOrgOverview implements OrgOverviewContributorInterfac
     }
 
     /**
-     * ONE FIGURE — who is on duty across the organisation right now.
+     * ONE FIGURE — who is on duty across the organization right now.
      *
      * THE DENOMINATOR IS WHO WAS DUE, not who exists. "14 of 22" answers
      * "did the day get staffed", which is the question a control room opens
      * this page for; against a headcount it would answer "is the
-     * organisation fully employed", which nobody asks at six in the
+     * organization fully employed", which nobody asks at six in the
      * morning.
      *
      * A NO-CHECK-IN IS THE ALARM AND NEVER PART OF THE SUBLINE. It is the
@@ -148,7 +148,7 @@ final readonly class RosterOrgOverview implements OrgOverviewContributorInterfac
         $day = $now->setTime(0, 0);
         $figures = $this->org->figuresFor($areas, $day, $now);
 
-        // NOTHING ON THE BOOKS IS NOT A ZERO. An organisation that has
+        // NOTHING ON THE BOOKS IS NOT A ZERO. An organization that has
         // given no station a watch has not staffed nobody — it has not been
         // set up, and the strip's own empty tile says that better than a
         // nought would.
@@ -202,7 +202,7 @@ final readonly class RosterOrgOverview implements OrgOverviewContributorInterfac
             'onTheWatch' => $onTheWatch,
             'short' => $short,
             'shown' => self::ROWS_SHOWN,
-            // THE DOOR IS THE ORGANISATION'S OWN ROSTER, never one area's:
+            // THE DOOR IS THE ORGANIZATION'S OWN ROSTER, never one area's:
             // a card that read across every area and led into one of them
             // would answer a question nobody asked it.
             'rosterUrl' => $this->router->generate(RosterOrgController::TODAY_ROUTE),

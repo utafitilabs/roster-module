@@ -88,7 +88,7 @@ final class RosterWidgetsController
     /** The id of the rail's section, which the Live tab's door names. */
     public const string RAIL_ANCHOR = 'rail';
 
-    /** And the organisation section's, for a door from that scope. */
+    /** And the organization section's, for a door from that scope. */
     public const string ORG_ANCHOR = 'org';
 
     /**
@@ -176,7 +176,7 @@ final class RosterWidgetsController
                     // the module's library, and a person arranging one will
                     // want the others.
                     'anchor' => self::ORG_ANCHOR,
-                    'label' => 'The organisation roster',
+                    'label' => 'The organization roster',
                     'intro' => 'The same module one scope wider: every area at once. The figures under these widgets are the area page’s own, with the area filter widened — never a second aggregate.',
                     'catalog' => $org,
                     'builtins' => $org->builtins(),
@@ -224,7 +224,7 @@ final class RosterWidgetsController
      * @return array<string, mixed>
      */
     /**
-     * WHAT THE ORGANISATION WIDGETS NEED TO DRAW THEMSELVES.
+     * WHAT THE ORGANIZATION WIDGETS NEED TO DRAW THEMSELVES.
      *
      * THE PREVIEW IS THE WIDGET, so these are the real partials on the
      * real reading — read across every area this installation has, which
@@ -236,7 +236,7 @@ final class RosterWidgetsController
     private function orgPreview(\DateTimeImmutable $now): array
     {
         $day = $now->setTime(0, 0);
-        $areas = $this->org->areasIn(Scope::organisation(), []);
+        $areas = $this->org->areasIn(Scope::organization(), []);
 
         return [
             'areas' => $areas,
@@ -417,7 +417,7 @@ final class RosterWidgetsController
     {
         return match ($surface) {
             RosterRailWidgets::SURFACE => 'Live plate rail',
-            RosterOrgWidgets::SURFACE => 'organisation roster',
+            RosterOrgWidgets::SURFACE => 'organization roster',
             default => 'roster dashboard',
         };
     }

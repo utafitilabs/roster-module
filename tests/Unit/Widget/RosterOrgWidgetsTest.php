@@ -19,7 +19,7 @@ use Uhifadhi\Roster\Widget\RosterRailWidgets;
 use Uhifadhi\Roster\Widget\RosterWidgets;
 
 /**
- * THE ORGANISATION SURFACE, AS THE DESIGN DECLARES IT.
+ * THE ORGANIZATION SURFACE, AS THE DESIGN DECLARES IT.
  *
  * IT IS A THIRD SURFACE AND NOT A PRESET OF THE FIRST. The Overview composes
  * one area's page, the rail composes a column beside a plate, and this one

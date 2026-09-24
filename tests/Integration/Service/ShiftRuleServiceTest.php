@@ -233,7 +233,7 @@ final class ShiftRuleServiceTest extends IntegrationTestCase
 
     /**
      * THE PROJECTION. Saving the rules recomputes the columns the sheet,
-     * the day board and the organisation dashboard already read, so the
+     * the day board and the organization dashboard already read, so the
      * card and the surfaces cannot disagree for a single request.
      */
     public function testSavingTheRulesReachesTheColumnsTheLiveSurfacesRead(): void

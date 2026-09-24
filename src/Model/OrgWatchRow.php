@@ -14,12 +14,12 @@ declare(strict_types=1);
 namespace Uhifadhi\Roster\Model;
 
 /**
- * ONE STATION'S WATCH TODAY, ANYWHERE IN THE ORGANISATION — a row of the
+ * ONE STATION'S WATCH TODAY, ANYWHERE IN THE ORGANIZATION — a row of the
  * dashboard's watches cell.
  *
  * IT CARRIES ITS AREA, and that is the only thing this row has that the
  * per-area reading does not. Everything else is the area reading verbatim:
- * the organisation's answer is the areas' answers, and a row that recomputed
+ * the organization's answer is the areas' answers, and a row that recomputed
  * anything would be a second opinion with no way to say which was right.
  *
  * THE READING IS DERIVED AND STORED NOWHERE. A station's state is measured

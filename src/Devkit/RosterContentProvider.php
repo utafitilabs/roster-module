@@ -586,7 +586,7 @@ final readonly class RosterContentProvider implements ContentProviderInterface
      *
      * A SQUAD IS A DEPARTMENT'S PEOPLE, NOT A POST'S. That is the entire
      * difference between the two scopes: a post rings whoever the area
-     * posts there, a squad carries whoever the organisation put in a
+     * posts there, a squad carries whoever the organization put in a
      * department, and it takes them wherever it is sent. Drawing the demo's
      * squad from postings would produce a per-post ring wearing the other
      * scope's name.

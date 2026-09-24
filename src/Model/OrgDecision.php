@@ -19,7 +19,7 @@ namespace Uhifadhi\Roster\Model;
  * ORDERED BY THE QUESTION, NEVER BY THE AREA. A missing check-in in one
  * park outranks a late one in another, and a list grouped by area would
  * make a reader open four groups to find the loudest thing in the
- * organisation — which is the one thing this page exists to show.
+ * organization — which is the one thing this page exists to show.
  */
 final readonly class OrgDecision
 {

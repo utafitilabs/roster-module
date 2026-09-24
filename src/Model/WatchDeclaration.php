@@ -20,7 +20,7 @@ use Uhifadhi\Roster\Entity\Shift;
  * WHAT A STATION'S WATCH ASKS FOR, in the words every register prints —
  * "day 2 · night 2", or "no watch".
  *
- * ONE SENTENCE, ONE IMPLEMENTATION. The rota's heading, the organisation
+ * ONE SENTENCE, ONE IMPLEMENTATION. The rota's heading, the organization
  * dashboard's watches cell and anything that comes after all print this same
  * phrase; a second copy would say "day 2, night 2" somewhere within a
  * release, and the two would be read side by side on the same screen.

@@ -28,11 +28,11 @@ use Uhifadhi\Roster\Tests\FreshDatabase;
 use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
 
 /**
- * THE ROSTER AT ORGANISATION SCOPE — three screens, read across every area.
+ * THE ROSTER AT ORGANIZATION SCOPE — three screens, read across every area.
  *
  * WHAT IS ASSERTED IS THE WIDENING. Every figure on these pages has to be
  * the area query with the area filter widened, so the tests that matter
- * compare the organisation's number against the sum of the areas' own —
+ * compare the organization's number against the sum of the areas' own —
  * a second aggregate would pass a "does it render" test and fail this one.
  *
  * AND WHICH AREA IS A COLUMN. At this scope every row has to say which area
@@ -127,7 +127,7 @@ final class OrgRosterTest extends WebTestCase
     }
 
     /**
-     * THE ORGANISATION'S FIGURE IS THE AREAS' OWN, ADDED — not a second
+     * THE ORGANIZATION'S FIGURE IS THE AREAS' OWN, ADDED — not a second
      * aggregate that happens to agree today.
      */
     public function testEveryFigureIsTheAreaQueryOneScopeWider(): void
@@ -144,7 +144,7 @@ final class OrgRosterTest extends WebTestCase
         }
 
         self::assertSame(2, $orgPosts, 'The fixture puts one post on the books in each of two areas.');
-        self::assertSame($orgPosts, $summed, 'The organisation figure is the areas added, so it cannot drift from them.');
+        self::assertSame($orgPosts, $summed, 'The organization figure is the areas added, so it cannot drift from them.');
     }
 
     /** What the "posts reporting" card says it is counting against. */

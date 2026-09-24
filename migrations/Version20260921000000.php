@@ -21,7 +21,7 @@ use Doctrine\Migrations\AbstractMigration;
  * their per-station exceptions, and the pattern.
  *
  * EXPAND AND BACKFILL, AND NOTHING DROPPED. Every existing surface — the
- * rota, the day board, the plan sheet, the generator, the organisation
+ * rota, the day board, the plan sheet, the generator, the organization
  * dashboard — still reads `roster_rotation` and it is left exactly as it
  * is. What this migration does is give the new model the same facts, so
  * the two agree from the moment it runs; the DESTRUCTIVE half, dropping

@@ -55,7 +55,7 @@ final class RosterVocabularyConformanceTest extends VocabularyConformanceTestCas
             /*
              * AND THE AREA'S OWN SHEET, because one of this module's
              * templates is not drawn on one of this module's pages: the
-             * organisation dashboard's watches cell is rendered by the
+             * organization dashboard's watches cell is rendered by the
              * CORE, on a page that links the area vocabulary before any
              * module's. The contributor tag `.ao-by` and the honest-absent
              * paragraph are that vocabulary, and a cell that restated them

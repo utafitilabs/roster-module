@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace Uhifadhi\Roster\Model;
 
 /**
- * ONE AREA'S DAY, AS THE ORGANISATION READS IT — a band, not a card.
+ * ONE AREA'S DAY, AS THE ORGANIZATION READS IT — a band, not a card.
  *
  * WHICH AREA IS A COLUMN AT THIS SCOPE, and it is the only thing the wider
  * reading adds: every figure here is the area's own, from the same service

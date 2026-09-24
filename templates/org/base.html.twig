@@ -1,5 +1,5 @@
 {# ============================================================================
-   THE ROSTER AT ORGANISATION SCOPE — the frame its three screens share.
+   THE ROSTER AT ORGANIZATION SCOPE — the frame its three screens share.
 
    THE FRAME IS THE SHELL'S, WHOLE. The trail, the tab strip and the scope
    control are drawn by `@Shell/org_page.html.twig` from the same
@@ -11,7 +11,7 @@
    WHAT IS LEFT HERE is what only this module can say: the sheet its own
    vocabulary lives in, and the sentence under the page title. There is no
    area anywhere in it, which is the whole difference from the area base —
-   an organisation-level screen is the area screen one scope wider.
+   an organization-level screen is the area screen one scope wider.
    ========================================================================== #}
 {% extends '@Shell/org_page.html.twig' %}
 
@@ -22,6 +22,6 @@
     <link rel="stylesheet" href="{{ asset(constant('Uhifadhi\\Roster\\UhifadhiRosterBundle::STYLESHEET')) }}">
 {% endblock %}
 
-{% block shell_page_subtitle %}Who is due, who checked in, and where their handset says they actually are &mdash; <b>{{ scope.isOrganisation ? 'across every area' : scope.label }}</b>. The stations and the live positions are each area&rsquo;s.{% endblock %}
+{% block shell_page_subtitle %}Who is due, who checked in, and where their handset says they actually are &mdash; <b>{{ scope.isOrganization ? 'across every area' : scope.label }}</b>. The stations and the live positions are each area&rsquo;s.{% endblock %}
 
 {% block shell_page %}{% block roster_org_page %}{% endblock %}{% endblock %}

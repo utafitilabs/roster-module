@@ -45,7 +45,7 @@ use Uhifadhi\Roster\Repository\StationWatchRepository;
  * AND THE ANSWER IS PROJECTED ONTO WHAT ALREADY READS IT. Every live
  * surface in this module was written against three columns that predate the
  * rules — a watch's silence window, its offline window, and a station's own
- * catchment — and the sheet, the day board and the organisation dashboard
+ * catchment — and the sheet, the day board and the organization dashboard
  * all read them today. So this service is the one WRITER and those columns
  * are its PROJECTION: saving a rule or an exception recomputes them, and no
  * reader had to learn anything. The release that moves the readers onto

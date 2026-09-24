@@ -23,7 +23,7 @@ namespace Uhifadhi\Roster\Service;
  * older grid beside it would be shipping two answers to one question.
  *
  * WHAT REMAINS IS THE WINDOW ITSELF, because the dashboard, the
- * organisation surface and the demo content all still count in the same
+ * organization surface and the demo content all still count in the same
  * monday-anchored fortnight and all of them said so by naming this class.
  * A window that began on the day somebody happened to look is not a window
  * two people can compare notes in.

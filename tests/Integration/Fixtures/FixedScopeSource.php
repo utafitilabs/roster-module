@@ -22,7 +22,7 @@ use Uhifadhi\Contracts\Shell\ScopeSourceInterface;
  *
  * THE SHELL HOLDS NO AREAS AND NO VOTERS, so the scope list is the
  * application's — and in this suite there is no application, so something
- * has to stand where one would. It offers the organisation and every area,
+ * has to stand where one would. It offers the organization and every area,
  * which is what an installation offers somebody who may see them all.
  *
  * IT IS NOT A STUB OF THIS MODULE'S BEHAVIOUR. What is under test is that
@@ -38,7 +38,7 @@ final readonly class FixedScopeSource implements ScopeSourceInterface
 
     public function scopes(): iterable
     {
-        yield Scope::organisation();
+        yield Scope::organization();
 
         foreach ($this->areas->findBy([], ['id' => 'ASC']) as $area) {
             yield Scope::area((string) $area->getUuidString(), (string) $area->getName());

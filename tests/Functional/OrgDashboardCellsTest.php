@@ -33,7 +33,7 @@ use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
 use Uhifadhi\Roster\UhifadhiRosterBundle;
 
 /**
- * WHAT THIS MODULE PUTS ON THE ORGANISATION DASHBOARD — `/`, the core's own
+ * WHAT THIS MODULE PUTS ON THE ORGANIZATION DASHBOARD — `/`, the core's own
  * page, rendered over real HTTP with this module installed.
  *
  * THE SEAM IS THE SUBJECT, NOT THE FIGURES. Every number here has its own
@@ -175,10 +175,10 @@ final class OrgDashboardCellsTest extends WebTestCase
 
     /**
      * THE CELL IS BOUNDED AND HAS A WAY OUT — a card never grows with its
-     * data, and the way out is the organisation's own roster, not an
+     * data, and the way out is the organization's own roster, not an
      * area's.
      */
-    public function testTheCellIsBoundedAndLeadsToTheOrganisationsRoster(): void
+    public function testTheCellIsBoundedAndLeadsToTheOrganizationsRoster(): void
     {
         $cell = $this->dashboard()->filter('[data-w="'.RosterOrgOverview::WATCHES.'"]');
 

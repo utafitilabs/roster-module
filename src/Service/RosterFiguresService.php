@@ -66,13 +66,13 @@ final readonly class RosterFiguresService
     }
 
     /**
-     * THE SAME DAY, ONE SCOPE WIDER — the organisation, or one area.
+     * THE SAME DAY, ONE SCOPE WIDER — the organization, or one area.
      *
      * IT IS THE AREA QUERY WITH THE AREA FILTER WIDENED, and that is the
      * whole of it: this walks the areas the scope names and folds what
      * `forDay()` already answers for each. A second aggregate written
      * beside it — one SQL for the area page and another for the
-     * organisation — would be two numbers for one question, and the day
+     * organization — would be two numbers for one question, and the day
      * they disagreed nobody could say which was right.
      *
      * ONE AREA IS NOT A SPECIAL CASE. A scope naming a single area calls
@@ -89,7 +89,7 @@ final readonly class RosterFiguresService
             $folded = null === $folded ? $figures : self::add($folded, $figures);
         }
 
-        // AN ORGANISATION WITH NO AREAS IS A REAL STATE — a fresh
+        // AN ORGANIZATION WITH NO AREAS IS A REAL STATE — a fresh
         // installation — and it reads as noughts rather than as an error.
         return $folded ?? self::fold([], 0, 0);
     }

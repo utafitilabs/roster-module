@@ -28,7 +28,7 @@ use PHPUnit\Framework\TestCase;
  * Porting a design well means bringing its markup across faithfully, and
  * the index code sits in the middle of the very `<span class="tab">` a
  * porter is copying. It reached six of this module's partials the first
- * time an organisation-level surface was ported, in the comments as well as
+ * time an organization-level surface was ported, in the comments as well as
  * the markup.
  *
  * WHAT THE HOUSE HOLDS, THIS FILE NO LONGER DOES. The rest of this

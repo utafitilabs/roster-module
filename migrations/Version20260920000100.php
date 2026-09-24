@@ -18,7 +18,7 @@ use Doctrine\Migrations\AbstractMigration;
 
 /**
  * WHAT THE CONFIGURE PAGE WRITES — the four columns this module owns on a
- * station, and the answers it cannot guess about an organisation.
+ * station, and the answers it cannot guess about an organization.
  *
  * TWO NEW TABLES AND NOTHING TOUCHED. No column is added to a table that
  * already has rows, so there is nothing to expand, backfill or contract; the

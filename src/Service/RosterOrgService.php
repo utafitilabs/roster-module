@@ -39,7 +39,7 @@ use Uhifadhi\Roster\Repository\StationWatchRepository;
  * which was right.
  *
  * ONE AREA IS NOT A SPECIAL CASE. A scope naming a single area walks a list
- * of one, so the narrowed organisation page and that area's own page are
+ * of one, so the narrowed organization page and that area's own page are
  * the same reading and cannot differ.
  *
  * THE SCOPE IS ALREADY NARROWED to what the account may open — the shell's
@@ -80,7 +80,7 @@ final readonly class RosterOrgService
     {
         $ordered = $this->declaredOrder();
 
-        if (!$scope->isOrganisation()) {
+        if (!$scope->isOrganization()) {
             foreach ($ordered as $area) {
                 if ((string) $area->getUuidString() === $scope->areaUuid) {
                     return [$area];
@@ -90,9 +90,9 @@ final readonly class RosterOrgService
             return [];
         }
 
-        // THE ORGANISATION IS THE AREAS THE READER WAS OFFERED, and not
+        // THE ORGANIZATION IS THE AREAS THE READER WAS OFFERED, and not
         // every area there is: somebody who may open two of five is shown
-        // an organisation of two. The control is the authority on that.
+        // an organization of two. The control is the authority on that.
         $offered = [];
         foreach ($available as $one) {
             if (null !== $one->areaUuid) {
@@ -152,13 +152,13 @@ final readonly class RosterOrgService
     }
 
     /**
-     * TODAY'S WATCHES ACROSS THE ORGANISATION — one row per station on this
+     * TODAY'S WATCHES ACROSS THE ORGANIZATION — one row per station on this
      * module's books, in any area.
      *
      * IT IS THE AREA READING WITH THE AREA COLUMN ADDED, and nothing else.
      * Every figure on a row comes from {@see PresenceReader::postsOn()} —
      * the same call the area's own stations card makes — so the
-     * organisation's answer is the areas' answers, station for station. The
+     * organization's answer is the areas' answers, station for station. The
      * only thing this adds is which area a row is in, which is the one fact
      * a per-area reading has no need of.
      *

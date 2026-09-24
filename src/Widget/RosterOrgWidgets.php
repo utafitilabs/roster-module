@@ -20,7 +20,7 @@ use Uhifadhi\Bundle\ShellBundle\Widget\Model\WidgetPreset;
 use Uhifadhi\Bundle\ShellBundle\Widget\Registry\WidgetSurfaceInterface;
 
 /**
- * THE ROSTER AT ORGANISATION SCOPE — the module's third surface.
+ * THE ROSTER AT ORGANIZATION SCOPE — the module's third surface.
  *
  * IT IS THE AREA PAGE ONE SCOPE WIDER, and that is the whole design. Every
  * figure on it is the area query with the area filter WIDENED — the same
@@ -50,7 +50,7 @@ final class RosterOrgWidgets implements WidgetSurfaceInterface
     /** What the arrangement this module ships with is CALLED. */
     public const string DEFAULT_LABEL = 'Every area at once';
 
-    public const string DEFAULT_DESCRIPTION = 'The organisation’s day on one screen: the figures, the questions, a band per area and the plate. The only direction that answers "which area is the problem" without picking one first; a single area’s detail is one click away and deliberately not here.';
+    public const string DEFAULT_DESCRIPTION = 'The organization’s day on one screen: the figures, the questions, a band per area and the plate. The only direction that answers "which area is the problem" without picking one first; a single area’s detail is one click away and deliberately not here.';
 
     /** The one heading the library files these widgets under. */
     public const string GROUP = 'a';
@@ -68,7 +68,7 @@ final class RosterOrgWidgets implements WidgetSurfaceInterface
             [new WidgetGroup(
                 self::GROUP,
                 'Every area at once',
-                'The organisation’s day: the four figures, what needs an answer in any area, one band per area, and every live position on one plate.',
+                'The organization’s day: the four figures, what needs an answer in any area, one band per area, and every live position on one plate.',
             )],
             [
                 new Widget('kpis', 'The day’s check-ins, org-wide', self::GROUP, 12, [12], on: true, note: 'Four figures, every area counted: due, verified at a post, needing an answer, and the posts still reporting.'),
