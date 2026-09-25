@@ -66,27 +66,30 @@
         </div>
     </div>
 
+    {# BOTH CARDS ARE BOUNDED — RULED 25 sep, the sheet's height rule
+       (`roster--bound`, `.rscroll`): they never grow with the posts, and
+       scroll inside themselves under a head that stays. #}
     <h2 class="zone">The day, hour by hour</h2>
-    <div class="c">
+    <div class="c" data-controller="roster--bound">
         <span class="tab">The day board<span class="src">&middot; <time datetime="{{ day.format('Y-m-d') }}" data-localtime-format="day">{{ day.format('D j M')|lower }}</time> &middot; {{ figures.onTheWatchNow }} rostered &middot; {{ figures.day.verified }} verified at a post</span></span>
         <a class="more" href="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterController::TODAY_ROUTE'), {uuid: area.uuid}) }}">The agenda &rarr;</a>
 
         {% if posts is empty %}
             <div class="rfrag"><b>No post is on the roster&rsquo;s books</b><em>a watch is given to a post deliberately, so none is assumed</em></div>
         {% else %}
-            {{ include('@UhifadhiRoster/board/_wall.html.twig', {posts: posts, blocks: blocks, day: day, area: area}, with_context: false) }}
+            {{ include('@UhifadhiRoster/board/_wall.html.twig', {posts: posts, blocks: blocks, day: day, area: area, bounded: true}, with_context: false) }}
         {% endif %}
     </div>
 
     <h2 class="zone">Who is actually on those posts</h2>
-    <div class="c">
+    <div class="c" data-controller="roster--bound">
         <span class="tab">Here now, against the watch<span class="src">&middot; from the pings &middot; {{ figures.day.verified }} of {{ figures.day.expected }} rostered are verified</span></span>
         <a class="more" href="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterController::LIVE_ROUTE'), {uuid: area.uuid}) }}">On the map &rarr;</a>
 
         {# ROSTERED AND MEASURED, SIDE BY SIDE. The count on the right is how
            many of the post's own expectation the pings actually bear out;
            the sentence beside each name is why. #}
-        <div class="r-preslist">
+        <div class="r-preslist rscroll" data-roster--bound-target="scroller">
             {% for post in posts %}
                 <div class="r-pres">
                     <span class="nm">{{ post.stationName }}<em>{{ post.state.label }}</em></span>

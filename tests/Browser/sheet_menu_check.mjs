@@ -77,7 +77,7 @@ const run = async (weeks, w, h) => {
       card: card.offsetHeight,
       wrap: wrap.offsetHeight,
       chrome: card.offsetHeight - wrap.offsetHeight,
-      sheetmax: wrap.style.getPropertyValue('--sheetmax'),
+      sheetmax: wrap.style.getPropertyValue('--cardmax'),
       rowH: row ? Math.round(row.getBoundingClientRect().height) : 0,
       rowsVisible: row ? Math.floor((wrap.clientHeight - (document.querySelector('.psheetwrap thead')?.offsetHeight || 0)) / row.getBoundingClientRect().height) : 0,
       menus: document.querySelectorAll('.pmenuwrap').length,
@@ -86,7 +86,7 @@ const run = async (weeks, w, h) => {
   });
   say(`browser: ${browser.version()}  (playwright chromium build)`);
   say(`anchor-positioning supported: ${geo.anchored}`);
-  say(`card ${geo.card}px  scroller ${geo.wrap}px  chrome ${geo.chrome}px  --sheetmax ${geo.sheetmax}  row ${geo.rowH}px  rows visible ~${geo.rowsVisible}`);
+  say(`card ${geo.card}px  scroller ${geo.wrap}px  chrome ${geo.chrome}px  --cardmax ${geo.sheetmax}  row ${geo.rowH}px  rows visible ~${geo.rowsVisible}`);
   say(`cells with a menu: ${geo.menus}  verb rows in the document: ${geo.verbs}`);
 
   // 2. the height must not depend on the scroll position

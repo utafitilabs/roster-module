@@ -17,6 +17,21 @@ Not released yet.
    there — "3/4" where it read a dash — and a day nobody stands there wears
    the empty mark; such a day is never counted as short cover
    (`SheetCover::$againstStationed`, `SheetCover::countsAsShort()`)
+ * the day board's line at "now" stays at the centre of the board and the
+   hours scroll under it: the hours are wider than the window
+   (`--r-day-hours`, twelve by default), the post names and the hour scale
+   are pinned, and every minute the `now-line` controller scrolls the board
+   so now sits at the centre of the window, clamped at the two ends of the
+   day; a scroll by hand is left alone until the viewer's day changes, and a
+   resize re-centres. The hour scale's labels sit at the start of their
+   hours, as the design draws them
+ * one height for every bounded card: the day board, "here now", the
+   agenda's day and the roster under the live plate scroll inside
+   themselves by the week sheet's rule, with their heads pinned, measured by
+   the new `bound` controller (`CardBound`); the week sheet spends the same
+   rule and is a fifth shorter — a 536px floor, and 0.8 of the measured card.
+   The scroller's bound is `--cardmax` on `.rscroll`; `--sheetmax` is gone.
+   Enable `@uhifadhi/roster-module/bound` (docs/upgrading.md)
 
 ## 0.1.2
 

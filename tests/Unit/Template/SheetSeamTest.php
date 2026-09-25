@@ -49,6 +49,17 @@ final class SheetSeamTest extends TestCase
 
     private const string SHEET_CSS = __DIR__.'/../../../public/roster.css';
 
+    private const string BOUND = __DIR__.'/../../../assets/controllers/bound_controller.js';
+
+    private const string WALL = __DIR__.'/../../../templates/board/_wall.html.twig';
+
+    /** The other cards bounded by the sheet's rule: the board, the agenda, the live page. */
+    private const array BOUNDED = [
+        __DIR__.'/../../../templates/board/show.html.twig',
+        __DIR__.'/../../../templates/today/show.html.twig',
+        __DIR__.'/../../../templates/live/show.html.twig',
+    ];
+
     private static function read(string $path): string
     {
         $contents = file_get_contents($path);
@@ -202,8 +213,74 @@ final class SheetSeamTest extends TestCase
      */
     public function testTheMeasuredBoundIsTheOneTheSheetSpends(): void
     {
-        self::assertStringContainsString("setProperty('--sheetmax'", self::read(self::SHEET));
-        self::assertStringContainsString('var(--sheetmax', self::read(self::SHEET_CSS));
+        self::assertStringContainsString("setProperty('--cardmax'", self::read(self::BOUND));
+        self::assertStringContainsString('var(--cardmax', self::read(self::SHEET_CSS));
+        self::assertStringNotContainsString('--sheetmax', self::read(self::SHEET).self::read(self::SHEET_CSS), 'One bound, one name.');
+    }
+
+    /**
+     * ONE HEIGHT RULE FOR EVERY BOUNDED CARD — RULED 25 sep. The sheet,
+     * the day board, "here now" on the board, the day on the agenda and
+     * the roster under the live plate share it: the sheet's shape — what
+     * the screen leaves below the card taken at 1.3, capped at one
+     * viewport less the card's chrome, floored — and the whole card at
+     * 80 % of what the sheet was (670px floor to 536, and 20 % off the
+     * measured height).
+     */
+    public function testEveryBoundedCardSharesTheSheetsRuleAtFourFifths(): void
+    {
+        $bound = self::read(self::BOUND);
+
+        self::assertStringContainsString('CARD_FLOOR: 536,', $bound, '670 × 0.8');
+        self::assertStringContainsString('SCROLLER_FLOOR: 240,', $bound, '300 × 0.8');
+        self::assertStringContainsString('GROW: 1.3,', $bound, 'what the screen leaves, taken at the sheet\'s 1.3');
+        self::assertStringContainsString('SHARE: 0.8,', $bound, 'and the card at four fifths of it');
+        self::assertStringContainsString('Math.min(free * CardBound.GROW, cap)', $bound);
+        self::assertStringContainsString('(chrome + grown) * CardBound.SHARE', $bound);
+        self::assertStringContainsString('Math.max(CardBound.SCROLLER_FLOOR, CardBound.CARD_FLOOR - chrome)', $bound);
+
+        // The sheet spends the same rule rather than a copy of it.
+        $sheet = self::read(self::SHEET);
+        self::assertStringContainsString("import { CardBound } from './bound_controller.js';", $sheet);
+        self::assertStringContainsString('CardBound.apply(this.element, this.scrollerTarget)', $sheet);
+        self::assertStringNotContainsString('CARD_FLOOR = ', $sheet, 'No second set of numbers.');
+
+        // One rule in the sheet, read by every scroller that is bounded.
+        $css = self::read(self::SHEET_CSS);
+        self::assertMatchesRegularExpression('/\.rscroll \{[^}]*overflow: auto;[^}]*max-height: var\(--cardmax, calc\(80vh - 240px\)\);/s', $css);
+        self::assertDoesNotMatchRegularExpression('/\.psheetwrap \{[^}]*max-height/s', $css, 'The sheet has no bound of its own any more.');
+        self::assertStringContainsString('class="psheetwrap rscroll', self::read(self::PAGE));
+
+        // Every bounded card is the one controller and the one class.
+        foreach (self::BOUNDED as $template) {
+            $markup = self::read($template);
+            self::assertStringContainsString('data-controller="roster--bound"', $markup, $template.' measures it.');
+            self::assertStringContainsString('data-roster--bound-target="scroller"', $markup.self::read(self::WALL), $template.' names what scrolls.');
+        }
+
+        $manifest = json_decode(self::read(self::PACKAGE), true, 512, \JSON_THROW_ON_ERROR);
+        self::assertIsArray($manifest);
+        $symfony = $manifest['symfony'] ?? null;
+        self::assertIsArray($symfony);
+        $controllers = $symfony['controllers'] ?? null;
+        self::assertIsArray($controllers);
+        self::assertSame(
+            ['main' => 'controllers/bound_controller.js', 'name' => 'roster--bound', 'fetch' => 'eager', 'enabled' => true],
+            $controllers['bound'] ?? null,
+        );
+    }
+
+    /**
+     * A HEAD INSIDE A BOUNDED SCROLLER IS PINNED: a table's column head,
+     * and the day board's hour scale and post names.
+     */
+    public function testTheHeadsInsideABoundedScrollerArePinned(): void
+    {
+        $css = self::read(self::SHEET_CSS);
+
+        self::assertMatchesRegularExpression('/\.rscroll > table\.tbl > thead th \{[^}]*position: sticky; top: 0;/s', $css);
+        self::assertMatchesRegularExpression('/\.r-ruler \{[^}]*position: sticky; top: 0;/s', $css);
+        self::assertMatchesRegularExpression('/\.r-dayrow \.lbl \{[^}]*position: sticky; left: 0;/s', $css);
     }
 
     /**

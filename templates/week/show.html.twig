@@ -46,11 +46,11 @@
    | .prow Preview · Fill these days         | control | —                               | says what a fill would do; fills  | present both                          | pass   |
    | .prow2 what it would do, in words       | data    | the last preview, or the rules  | none                              | present both                          | pass   |
    | .prow2 .pfills read-only caption        | data    | the four filling rules          | one door: Watches →               | present both                          | pass   |
-   | .sheetcard bounded card                 | chrome  | measured (--sheetmax)           | none                              | 1132×670 → 1132×670                   | pass   |
+   | .sheetcard bounded card                 | chrome  | measured (--cardmax)            | none                              | 1132×670 → 1132×670                   | pass   |
    | .sheetcard .tab "The sheet"             | chrome  | static                          | none                              | present both                          | pass   |
    | .shead .rb-ttl "N rangers across N"     | data    | the sheet                       | none                              | 1130×56 head, both                    | pass   |
    | .shead eight .mchip on one baseline     | control | the window, stations, weeks     | moves, narrows and resizes it     | 8 chips × 28px high → 8 × 28px        | pass   |
-   | .psheetwrap bounded scroller            | chrome  | measured (--sheetmax)           | scrolls, head and days pinned     | head pinned at 0 in both              | pass   |
+   | .psheetwrap bounded scroller            | chrome  | measured (--cardmax)            | scrolls, head and days pinned     | head pinned at 0 in both              | pass   |
    | thead th, today tinted                  | data    | the window                      | none                              | 60.3×33 → 60.1×33                     | pass   |
    | thead th.who — the ranger column        | chrome  | static                          | none                              | 257.3 → 258 wide                      | pass   |
    | tr.stfold band head                     | control | a station's rows                | folds that band, per person       | 1100×44 → 1100×44                     | pass   |
@@ -273,7 +273,7 @@
             {% if sheet.isEmpty %}
                 <div class="rfrag"><b>No station is on the area&rsquo;s books</b><em>a sheet is people down at a place, so the first station comes first</em></div>
             {% else %}
-                <div class="psheetwrap {{ window.widthClass }}" data-roster--sheet-target="scroller">
+                <div class="psheetwrap rscroll {{ window.widthClass }}" data-roster--sheet-target="scroller">
                     <table class="fg-rota csheet">
                         <colgroup><col class="who">{% for day in days %}<col class="dy">{% endfor %}</colgroup>
                         <thead>

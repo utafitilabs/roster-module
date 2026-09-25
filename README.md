@@ -117,7 +117,8 @@ it is missing:
 // assets/controllers.json
 "@uhifadhi/roster-module": {
     "rotation": { "enabled": true, "fetch": "eager" },   // the cycle editor
-    "now-line":  { "enabled": true, "fetch": "eager" }   // the day board's line at "now"
+    "now-line":  { "enabled": true, "fetch": "eager" },  // the day board's line at "now"
+    "bound":     { "enabled": true, "fetch": "eager" }   // one height for every bounded card
 }
 ```
 

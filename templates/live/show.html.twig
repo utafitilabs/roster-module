@@ -153,16 +153,21 @@
         </div>
     </div>
 
+    {# BOUNDED — RULED 25 sep, the sheet's height rule (`roster--bound`,
+       `.rscroll`): the table scrolls inside the card under a pinned column
+       head, and never grows with the posts. #}
     <h2 class="zone">The roster, underneath</h2>
-    <div class="c">
+    <div class="c" data-controller="roster--bound">
         <span class="tab">The roster, underneath<span class="src">&middot; <time datetime="{{ day.format('Y-m-d') }}" data-localtime-format="day">{{ day.format('D j M')|lower }}</time> &middot; {{ posts|length }} post{{ posts|length == 1 ? '' : 's' }} on the books</span></span>
         <a class="more" href="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterController::TODAY_ROUTE'), {uuid: area.uuid}) }}">The agenda &rarr;</a>
 
         {% if posts is empty %}
             <div class="rfrag"><b>No post is on the roster&rsquo;s books</b><em>a watch is given to a post deliberately, so none is assumed</em></div>
         {% else %}
+            <div class="rscroll" data-roster--bound-target="scroller">
             <table class="tbl">
-                <tr><th>post</th><th>the watch</th><th>on it now</th><th>check-ins today</th><th>verified</th><th>the state of the post</th></tr>
+                <thead><tr><th>post</th><th>the watch</th><th>on it now</th><th>check-ins today</th><th>verified</th><th>the state of the post</th></tr></thead>
+                <tbody>
                 {% for post in posts %}
                     <tr>
                         <td><b>{{ post.stationName }}</b></td>
@@ -181,7 +186,9 @@
                         </td>
                     </tr>
                 {% endfor %}
+                </tbody>
             </table>
+            </div>
 
         {% endif %}
     </div>

@@ -12,6 +12,7 @@ hand is a release with a note under it.
 - [0.1.0 — `now-line`, the day board's line at "now"](#010--now-line-the-day-boards-line-at-now)
 - [`station_watch.catchment_metres` is dropped](#station_watchcatchment_metres-is-dropped)
 - [0.1.2 — the ping interval is the area's](#012--the-ping-interval-is-the-areas)
+- [0.1.3 — `bound`, one height for every bounded card](#013--bound-one-height-for-every-bounded-card)
 
 ## The rule for anything this module ships to a host
 
@@ -179,3 +180,29 @@ at the area's value.
 | `AreaRosterSettings::getPingIntervalMinutes()` / `setPingIntervalMinutes()` | deprecated, reading and writing the column nothing reads — read `PingInterval::for($area)` | removed with the column |
 | `AreaRosterSettings::lateAfterMinutes()` | removed — it counted from the roster's copy; read `RosterSettingsService::lateAfterMinutes($area)` | — |
 | `RosterSettingsService::save()` | takes no interval: `save($area, $offDayHasNoState, $leaveApprovalShown, $catchmentMetres, $lateThreshold, $vacancyAnnounce)` | — |
+
+## 0.1.3 — `bound`, one height for every bounded card
+
+The day board, "here now" beside it, the agenda's day and the roster under
+the live plate are bounded by the week sheet's height rule and scroll inside
+themselves, with their heads pinned; the week sheet itself is a fifth shorter.
+The rule is measured by the new `bound` controller, which the sheet's own
+controller also spends.
+
+Enable `@uhifadhi/roster-module/bound` as above:
+
+```jsonc
+// assets/controllers.json
+"@uhifadhi/roster-module": {
+    "bound": { "enabled": true, "fetch": "eager" }
+}
+```
+
+Without it the four cards are still bounded, by the no-script fallback in
+`roster.css` (`calc(80vh - 240px)`), but not measured against the card's
+place on the page. The week sheet is measured either way.
+
+The day board's line at "now" now stays at the centre of the board and the
+hours scroll under it; that is the `now-line` controller the installation
+already has, and it needs nothing new. Then `asset-map:compile` and
+`cache:clear`, and check the compiled map as above.

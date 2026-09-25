@@ -163,6 +163,26 @@ use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
         self::assertGreaterThan(0, $crawler->filter('.fg-live .map-plate')->count(), 'And the atlas plate itself is in it.');
     }
 
+    /**
+     * THE ROSTER UNDERNEATH IS BOUNDED AND SCROLLS INSIDE ITS CARD — RULED
+     * 25 sep, the sheet's own height rule — with its column head pinned.
+     */
+    public function testTheRosterUnderneathIsBoundedWithItsHeadPinned(): void
+    {
+        $crawler = $this->open();
+
+        $card = $crawler->filter('.c[data-controller="roster--bound"]');
+        self::assertCount(1, $card);
+        self::assertSame('roster--bound', $card->attr('data-controller'));
+        self::assertStringStartsWith('The roster, underneath', html_entity_decode(trim($card->filter('.tab')->text())));
+
+        $scroller = $card->filter('.rscroll');
+        self::assertCount(1, $scroller);
+        self::assertSame('scroller', $scroller->attr('data-roster--bound-target'));
+        self::assertCount(1, $scroller->filter('table.tbl > thead > tr'), 'The column head is a thead, which is what pins.');
+        self::assertCount(6, $scroller->filter('table.tbl > thead th'));
+    }
+
     /** THE FILTER ROW, the house's, pointed at this page. */
     public function testItWearsTheHouseFilterRow(): void
     {

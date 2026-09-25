@@ -42,6 +42,8 @@ final class NowLineSeamTest extends TestCase
 
     private const string PACKAGE = __DIR__.'/../../../assets/package.json';
 
+    private const string CSS = __DIR__.'/../../../public/roster.css';
+
     private static function read(string $path): string
     {
         $contents = file_get_contents($path);
@@ -124,6 +126,61 @@ final class NowLineSeamTest extends TestCase
         self::assertStringContainsString('60000 - (Date.now() % 60000)', $controller, 'It ticks on the minute boundary, not sixty seconds after load.');
         self::assertStringContainsString('setTimeout', $controller);
         self::assertStringContainsString('clearTimeout', $controller, 'And stops when the element goes away.');
+    }
+
+    /**
+     * THE LINE STAYS AT THE CENTRE AND THE DAY SCROLLS UNDER IT — RULED
+     * 25 sep. The line is drawn at now's place on the hours, and the
+     * scroller is moved so that place sits in the middle of the window
+     * the pinned post names leave; at either end of the day it cannot be
+     * centred and is clamped, which is correct.
+     */
+    public function testTheBoardIsScrolledSoNowSitsAtTheCentreOfTheWindow(): void
+    {
+        $controller = self::read(self::CONTROLLER);
+
+        self::assertStringContainsString("static targets = ['scroller', 'axis', 'line'];", $controller);
+        self::assertStringContainsString('const x = axisStart + axisWidth * percent / 100;', $controller, 'where now is, in the scroller\'s own coordinates');
+        self::assertStringContainsString('const centre = axisStart + (viewportWidth - axisStart) / 2;', $controller, 'the middle of the window the post names leave');
+        self::assertStringContainsString('return Math.min(Math.max(0, x - centre), Math.max(0, scrollWidth - viewportWidth));', $controller, 'clamped at the start and the end of the day');
+        self::assertStringContainsString('this.scrollerTarget.scrollLeft = NowLine.centredScrollLeft(', $controller);
+        self::assertStringContainsString('this.lineTarget.style.left = `${percent}%`;', $controller, 'the line is drawn at now on the hours and scrolls with them');
+    }
+
+    /**
+     * A READER WHO SCROLLS BY HAND IS NOT FOUGHT. Only a change the
+     * controller did not make counts; the board stays there until the
+     * viewer's day changes, and a resize, which changes the geometry the
+     * reader chose in, re-centres.
+     */
+    public function testAScrollByHandIsLeftAloneUntilTheDayChanges(): void
+    {
+        $controller = self::read(self::CONTROLLER);
+        $wall = self::read(self::WALL);
+
+        self::assertStringContainsString('scroll->roster--now-line#scrolled', $wall);
+        self::assertMatchesRegularExpression('/scrolled\(\) \{.*?Math\.abs\(left - this\.left\) > 1.*?this\.userScrolled = true;/s', $controller, 'a horizontal move the controller did not make');
+        self::assertMatchesRegularExpression('/tick\(\) \{.*?this\.place\(\{ follow: true \}\)/s', $controller, 'every minute re-places the line and follows now');
+        self::assertMatchesRegularExpression('/if \(follow && !this\.userScrolled\) \{\s*this\.centre\(percent\);/', $controller, 'unless the reader has taken the board');
+        self::assertMatchesRegularExpression('/if \(today !== this\.today\) \{\s*this\.today = today;\s*this\.userScrolled = false;/', $controller, 'a new day hands the board back to the clock');
+        self::assertStringContainsString('new ResizeObserver(', $controller);
+        self::assertMatchesRegularExpression('/resized\(\) \{.*?this\.userScrolled = false;.*?this\.place\(\{ follow: true \}\)/s', $controller, 'a resize re-centres');
+        self::assertStringContainsString('this.observer?.disconnect()', $controller);
+    }
+
+    /**
+     * THE HOURS ARE WIDER THAN THE WINDOW. Twenty-four hours over a window
+     * of `--r-day-hours`, and the post names and the hour scale pinned so
+     * the reader always knows which row and which hour.
+     */
+    public function testTheHoursAreWiderThanTheWindowAndTheLineRunsAlongThem(): void
+    {
+        $css = self::read(self::CSS);
+
+        self::assertMatchesRegularExpression('/\.r-dayscroll \{[^}]*overflow-x: auto;/s', $css);
+        self::assertStringContainsString('width: calc(var(--r-axis-at) + (100% - var(--r-axis-at)) * 24 / var(--r-day-hours));', $css);
+        self::assertMatchesRegularExpression('/\.r-nowlayer \{[^}]*position: absolute;[^}]*left: var\(--r-axis-at\);[^}]*right: 0;/s', $css);
+        self::assertDoesNotMatchRegularExpression('/\.r-now \{[^}]*margin-left/s', $css, 'the line is placed on the hours, not offset across the labels');
     }
 
     /** The asset namespace the manifest is keyed by is the bundle's own. */

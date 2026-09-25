@@ -7,43 +7,65 @@
 
    A NIGHT WATCH IS TWO BLOCKS. It crosses midnight, so the morning before
    06:00 belongs to the watch that began yesterday; drawing it as one would
-   be a lie about the day it belongs to. #}
-    <div class="r-day">
-        <div class="r-ruler">
-            <span></span>
-            <span class="hrs">{% for hour in [0, 3, 6, 9, 12, 15, 18, 21] %}<span>{{ '%02d'|format(hour) }}</span>{% endfor %}</span>
-        </div>
-        <div class="r-daywrap">
-            {% for post in posts %}
-                <div class="r-dayrow">
-                    <span class="lbl">{{ post.stationName }}<em>{{ post.state.label }}</em></span>
-                    <span class="r-track">
-                        {%- for block in blocks[post.stationUuid]|default([]) %}
-                            <span class="r-blk{{ block.crossesMidnight ? ' night' : '' }}"
-                                  style="left:{{ block.leftPercent }}%;width:{{ block.widthPercent }}%"
-                                  title="{{ block.label }}{{ block.fromYesterday ? ' — began yesterday' : '' }}: {{ block.people|join(' · ') }}">
-                                <span class="n">{{ block.count }}</span> {{ block.people|join(' · ') }}
-                            </span>
-                        {%- else %}
-                            <span class="r-blk gap" style="left:0;width:100%">
-                                {{ post.state.value == 'no_watch' ? 'no watch declared — never counted, never late, never a hole' : 'nothing rostered on this day' }}
-                            </span>
-                        {%- endfor %}
-                    </span>
-                </div>
-            {% endfor %}
-            {# WHERE NOW IS, PLACED BY THE VIEWER'S OWN CLOCK.
+   be a lie about the day it belongs to.
 
-               The server renders the DAY and nothing else. It cannot place
-               this line: the ruling is that the viewer's clock is the
-               authority for every instant, a server-rendered percent is in
-               the server's timezone, and — the defect somebody actually
-               reported — it is frozen at render, so on the office-wall
-               screen this board is built for it stops moving the moment the
-               page loads. The controller places it from the browser's clock
-               and again on every minute boundary, and hides it outright on
-               a day that is not the viewer's today. #}
-            <div class="r-now" hidden
-                 data-controller="roster--now-line"
-                 data-roster--now-line-day-value="{{ day.format('Y-m-d') }}"></div>
+   THE LINE STAYS IN THE MIDDLE AND THE DAY MOVES UNDER IT — RULED 25 sep.
+   The hours are wider than the window and scroll inside `.r-dayscroll`; the
+   now-line controller holds the wall, places the line at now on the hours
+   and scrolls them so now sits at the centre of the window, every minute,
+   until the reader scrolls by hand. `bounded` is the Day board tab's: its
+   card is bounded by the sheet's height rule and the hours scroll
+   vertically too, under a pinned hour scale. #}
+{% set bounded = bounded|default(false) %}
+    <div class="r-day"
+         data-controller="roster--now-line"
+         data-roster--now-line-day-value="{{ day.format('Y-m-d') }}">
+        <div class="r-dayscroll{{ bounded ? ' rscroll' : '' }}"
+             data-roster--now-line-target="scroller"
+             {%- if bounded %} data-roster--bound-target="scroller"{% endif %}
+             data-action="scroll->roster--now-line#scrolled">
+            <div class="r-dayboard">
+                <div class="r-ruler">
+                    <span></span>
+                    <span class="hrs">{% for hour in [0, 3, 6, 9, 12, 15, 18, 21] %}<span>{{ '%02d'|format(hour) }}</span>{% endfor %}</span>
+                </div>
+                <div class="r-daywrap">
+                    {% for post in posts %}
+                        <div class="r-dayrow">
+                            <span class="lbl">{{ post.stationName }}<em>{{ post.state.label }}</em></span>
+                            <span class="r-track">
+                                {%- for block in blocks[post.stationUuid]|default([]) %}
+                                    <span class="r-blk{{ block.crossesMidnight ? ' night' : '' }}"
+                                          style="left:{{ block.leftPercent }}%;width:{{ block.widthPercent }}%"
+                                          title="{{ block.label }}{{ block.fromYesterday ? ' — began yesterday' : '' }}: {{ block.people|join(' · ') }}">
+                                        <span class="n">{{ block.count }}</span> {{ block.people|join(' · ') }}
+                                    </span>
+                                {%- else %}
+                                    <span class="r-blk gap" style="left:0;width:100%">
+                                        {{ post.state.value == 'no_watch' ? 'no watch declared — never counted, never late, never a hole' : 'nothing rostered on this day' }}
+                                    </span>
+                                {%- endfor %}
+                            </span>
+                        </div>
+                    {% endfor %}
+                    {# WHERE NOW IS, PLACED BY THE VIEWER'S OWN CLOCK.
+
+                       The server renders the DAY and nothing else. It cannot place
+                       this line: the ruling is that the viewer's clock is the
+                       authority for every instant, a server-rendered percent is in
+                       the server's timezone, and — the defect somebody actually
+                       reported — it is frozen at render, so on the office-wall
+                       screen this board is built for it stops moving the moment the
+                       page loads. The controller places it from the browser's clock
+                       and again on every minute boundary, and hides it outright on
+                       a day that is not the viewer's today.
+
+                       `.r-nowlayer` is the hours' own span, so the line's percent
+                       of the day is a percent of the tracks it runs over. #}
+                    <div class="r-nowlayer" data-roster--now-line-target="axis">
+                        <div class="r-now" hidden data-roster--now-line-target="line"></div>
+                    </div>
+                </div>
+            </div>
         </div>
+    </div>

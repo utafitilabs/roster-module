@@ -52,8 +52,11 @@
         </div>
     </div>
 
+    {# THE DAY'S CARD IS BOUNDED — RULED 25 sep, the sheet's height rule
+       (`roster--bound`, `.rscroll`): the agenda scrolls inside it under its
+       tab, and never grows with the posts. #}
     <h2 class="zone">{{ isToday ? 'Today' : 'The day' }}</h2>
-    <div class="c">
+    <div class="c" data-controller="roster--bound">
         <span class="tab">{{ isToday ? 'Today' : 'The day' }}<span class="src">&middot; <time datetime="{{ day.format('Y-m-d') }}" data-localtime-format="day">{{ day.format('D j M')|lower }}</time> &middot; {{ figures.onTheWatchNow }} on the watch &middot; {{ figures.day.checkedIn }} check-ins in</span></span>
         <a class="more" href="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterController::PLAN_ROUTE'), {uuid: area.uuid, day: day.format('Y-m-d')}) }}">Edit the day &rarr;</a>
 
@@ -61,7 +64,9 @@
             <div class="rfrag"><b>{{ posts|length }} post{{ posts|length == 1 ? '' : 's' }} match</b><em>the figures above are the whole day&rsquo;s, not this selection&rsquo;s</em></div>
         {% endif %}
 
-        {{ include('@UhifadhiRoster/today/_agenda.html.twig', {posts: posts, reported: true, empty: filter.isEverything ? 'No post is on the roster’s books' : 'Nothing matches that', emptyWhy: filter.isEverything ? 'a watch is given to a post deliberately, so none is assumed' : 'no watch on this day is both at these posts and in that state'}) }}
+        <div class="rscroll" data-roster--bound-target="scroller">
+            {{ include('@UhifadhiRoster/today/_agenda.html.twig', {posts: posts, reported: true, empty: filter.isEverything ? 'No post is on the roster’s books' : 'Nothing matches that', emptyWhy: filter.isEverything ? 'a watch is given to a post deliberately, so none is assumed' : 'no watch on this day is both at these posts and in that state'}) }}
+        </div>
     </div>
 
     <h2 class="zone">Tomorrow</h2>

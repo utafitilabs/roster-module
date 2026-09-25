@@ -179,9 +179,69 @@ use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
         self::assertNull($line->attr('style'), 'The server renders no position: it does not know what time it is where the reader is.');
         self::assertSame(
             new \DateTimeImmutable('today')->format('Y-m-d'),
-            $line->attr('data-roster--now-line-day-value'),
+            $crawler->filter('.r-day')->attr('data-roster--now-line-day-value'),
             'It names the day it belongs to, so the browser can refuse to draw it on another one.',
         );
+    }
+
+    /**
+     * THE LINE STAYS IN THE MIDDLE AND THE DAY MOVES UNDER IT — RULED 25
+     * sep. The hours are wider than the window and scroll inside it; the
+     * controller sits on the wall and holds the scroller, the axis the
+     * line is placed along, and the line itself.
+     */
+    public function testTheDayScrollsUnderALineTheControllerCentres(): void
+    {
+        $crawler = $this->open();
+
+        $wall = $crawler->filter('.r-day');
+        self::assertSame('roster--now-line', $wall->attr('data-controller'));
+
+        $scroller = $wall->filter('.r-dayscroll');
+        self::assertCount(1, $scroller);
+        self::assertSame('scroller', $scroller->attr('data-roster--now-line-target'));
+        self::assertStringContainsString('scroll->roster--now-line#scrolled', (string) $scroller->attr('data-action'), 'A scroll by hand is noticed, so the board is not pulled back from under the reader.');
+
+        $axis = $scroller->filter('.r-dayboard .r-daywrap > .r-nowlayer');
+        self::assertCount(1, $axis, 'The line runs along the hours, not across the labels.');
+        self::assertSame('axis', $axis->attr('data-roster--now-line-target'));
+        self::assertSame('line', $axis->filter('.r-now')->attr('data-roster--now-line-target'));
+
+        self::assertCount(1, $scroller->filter('.r-dayboard > .r-ruler'), 'The hour scale scrolls with the hours it names.');
+    }
+
+    /**
+     * THE CARD IS BOUNDED AND SCROLLS INSIDE ITSELF — RULED 25 sep, the
+     * sheet's own height rule, with the hour scale pinned. Thirty-two
+     * posts made a 3,416px page.
+     */
+    public function testTheDayBoardCardIsBoundedWithTheHoursPinned(): void
+    {
+        $crawler = $this->open();
+
+        $card = $crawler->filter('.c[data-controller="roster--bound"]')->reduce(static fn (\Symfony\Component\DomCrawler\Crawler $c): bool => $c->filter('.r-day')->count() > 0);
+        self::assertCount(1, $card);
+        self::assertSame('roster--bound', $card->attr('data-controller'));
+
+        $scroller = $card->filter('.r-dayscroll');
+        self::assertStringContainsString('rscroll', (string) $scroller->attr('class'));
+        self::assertSame('scroller', $scroller->attr('data-roster--bound-target'));
+    }
+
+    /** AND SO IS "HERE NOW, AGAINST THE WATCH", with its tab above the scroll. */
+    public function testTheHereNowCardIsBounded(): void
+    {
+        $crawler = $this->open();
+
+        $card = $crawler->filter('.c[data-controller="roster--bound"]')->reduce(static fn (\Symfony\Component\DomCrawler\Crawler $c): bool => $c->filter('.r-preslist')->count() > 0);
+        self::assertCount(1, $card);
+        self::assertSame('roster--bound', $card->attr('data-controller'));
+        self::assertStringStartsWith('Here now, against the watch', trim($card->filter('.tab')->text()));
+
+        $list = $card->filter('.r-preslist');
+        self::assertStringContainsString('rscroll', (string) $list->attr('class'));
+        self::assertSame('scroller', $list->attr('data-roster--bound-target'));
+        self::assertCount(0, $list->filter('.tab'), 'The head stays outside the scroll.');
     }
 
     /** A NIGHT WATCH IS TWO BLOCKS — the morning tail of last night's. */

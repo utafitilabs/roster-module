@@ -120,6 +120,26 @@ final class TodayAgendaTest extends WebTestCase
         return $crawler;
     }
 
+    /**
+     * THE DAY'S CARD IS BOUNDED AND SCROLLS INSIDE ITSELF — RULED 25 sep,
+     * the sheet's own height rule; the tab stays above the scroll.
+     */
+    public function testTheDaysCardIsBoundedAndScrollsInsideItself(): void
+    {
+        $crawler = $this->open();
+
+        $card = $crawler->filter('.c[data-controller="roster--bound"]');
+        self::assertCount(1, $card, 'The day is the one bounded card; tomorrow is not asked for.');
+        self::assertSame('roster--bound', $card->attr('data-controller'));
+        self::assertStringStartsWith('Today', trim($card->filter('.tab')->text()));
+
+        $scroller = $card->filter('.rscroll');
+        self::assertCount(1, $scroller);
+        self::assertSame('scroller', $scroller->attr('data-roster--bound-target'));
+        self::assertCount(1, $scroller->filter('.r-ag'), 'The agenda is what scrolls.');
+        self::assertCount(0, $scroller->filter('.tab'), 'The head stays outside the scroll.');
+    }
+
     /** THE FILTER ROW: three grouped dropdowns and the search, all closed. */
     public function testTheFilterRowIsThreeClosedDropdownsAndASearch(): void
     {

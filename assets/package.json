@@ -51,6 +51,12 @@
                 "name": "roster--fill",
                 "fetch": "eager",
                 "enabled": true
+            },
+            "bound": {
+                "main": "controllers/bound_controller.js",
+                "name": "roster--bound",
+                "fetch": "eager",
+                "enabled": true
             }
         },
         "importmap": {

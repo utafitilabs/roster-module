@@ -437,24 +437,48 @@
 
 /* ---- THE DAY BOARD -------------------------------------------------------
  * Twenty-four hours across, one post per row. Every block is positioned as a
- * PERCENTAGE of the day, so the row is a proportion of whatever width the
- * screen gives it and nothing depends on a pixel. */
-.r-day { margin-top: 8px; }
+ * PERCENTAGE of the day, so the row is a proportion of the hours' width and
+ * nothing depends on a pixel.
+ *
+ * THE LINE STAYS IN THE MIDDLE AND THE DAY MOVES UNDER IT — RULED 25 sep.
+ * The hours are wider than the window: twenty-four of them over a window of
+ * `--r-day-hours`, inside a scroller the now-line controller moves so that
+ * now sits at the centre of the window the post names leave. The post names
+ * are pinned at the left and the hour scale at the top, so a reader always
+ * knows which row and which hour. `--r-axis-at` is where the hours begin:
+ * the name column and its gutter. */
+.r-day { margin-top: 8px; --r-lbl: 150px; --r-axis-at: calc(var(--r-lbl) + 10px); --r-day-hours: 12; }
 
-.r-ruler { display: flex; gap: 10px; align-items: center; padding-bottom: 4px; }
-.r-ruler > span:first-child { flex: 0 0 150px; }
+.r-dayscroll { overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--ln2) transparent; }
+
+.r-dayboard { width: calc(var(--r-axis-at) + (100% - var(--r-axis-at)) * 24 / var(--r-day-hours)); }
+
+.r-ruler {
+    display: flex; align-items: center; padding-bottom: 4px;
+    position: sticky; top: 0; z-index: 3; background: var(--cv);
+}
+.r-ruler > span:first-child {
+    flex: 0 0 var(--r-axis-at); align-self: stretch;
+    position: sticky; left: 0; z-index: 1; background: var(--cv);
+}
+/* THE DESIGN'S SCALE: eight three-hour columns, each label at the start of
+   its hours, so 12 sits over noon and the line reads against it. */
 .r-ruler .hrs {
-    flex: 1 1 auto; display: flex; justify-content: space-between;
+    flex: 1 1 auto; display: grid; grid-template-columns: repeat(8, 1fr); text-align: left;
     font: 600 8px var(--font-mono); color: var(--dim);
     letter-spacing: .09em;
 }
 
 .r-daywrap { position: relative; display: flex; flex-direction: column; gap: 5px; }
 
-.r-dayrow { display: flex; gap: 10px; align-items: stretch; }
+.r-dayrow { display: flex; align-items: stretch; }
 
+/* The name column is opaque and pinned, and carries the gutter in its own
+   padding so no block shows between it and the hours. */
 .r-dayrow .lbl {
-    flex: 0 0 150px; font-size: 11.5px; font-weight: 600; color: var(--tx);
+    flex: 0 0 var(--r-axis-at); box-sizing: border-box; padding-right: 10px;
+    position: sticky; left: 0; z-index: 2; background: var(--cv);
+    font-size: 11.5px; font-weight: 600; color: var(--tx);
     overflow: hidden; text-overflow: ellipsis;
 }
 
@@ -490,17 +514,39 @@
     border: 1px dashed var(--ln2); font-weight: 500;
 }
 
+/* THE HOURS THE LINE RUNS ALONG — the tracks' own span, so a percentage of
+   the day is a percentage of this layer and nothing else. Under the pinned
+   names, so a board scrolled by hand never draws the line over them. */
+.r-nowlayer {
+    position: absolute; top: 0; bottom: 0; left: var(--r-axis-at); right: 0;
+    pointer-events: none; z-index: 1;
+}
+
 /* WHERE NOW IS — the one mark on the board that moves. */
 .r-now {
     position: absolute; top: 0; bottom: 0; width: 2px;
     background: var(--acc); pointer-events: none;
-    margin-left: 160px;
 }
 
 @media (max-width: 860px) {
-    .r-ruler > span:first-child,
-    .r-dayrow .lbl { flex-basis: 96px; }
-    .r-now { margin-left: 106px; }
+    .r-day { --r-lbl: 96px; }
+}
+
+/* ---- A BOUNDED CARD SCROLLS INSIDE ITSELF --------------------------------
+ * RULED 25 sep: the week sheet, the day board, "here now", the agenda's day
+ * and the roster under the live plate share ONE height rule and never grow
+ * with their data. The bound sits on the scroller and is measured by the
+ * card's controller (`--cardmax`, `bound_controller.js`); the declaration
+ * here is the no-script fallback, the sheet's old fallback at four fifths.
+ * A head inside the scroller is pinned: a table's column head here, the day
+ * board's hours and names in its own section above. */
+.rscroll {
+    overflow: auto; overscroll-behavior: contain;
+    max-height: var(--cardmax, calc(80vh - 240px));
+    scrollbar-width: thin; scrollbar-color: var(--ln2) transparent;
+}
+.rscroll > table.tbl > thead th {
+    position: sticky; top: 0; z-index: 1; background: var(--cv); box-shadow: 0 1px 0 var(--ln);
 }
 
 /* ---- THE CYCLE EDITOR ----------------------------------------------------
@@ -669,7 +715,7 @@
  * entire thing needs to be in the sheet header — I didn't even see it
  * exists".
  *
- * So the card is bounded to the viewport (never shorter than 480px), its HEAD
+ * So the card is bounded to the viewport, its HEAD
  * carries every control the sheet has — the window navigation, Today, the
  * station filter, the weeks chip and the fold pair — and its BODY is the only
  * thing that scrolls. The column head is sticky inside that scroller, so the
@@ -678,13 +724,13 @@
  * and pinning twelve of them would leave nothing to read.
  *
  * THE BOUND SITS ON THE SCROLLER, never on the card: a max-height on the card
- * would clip a head that has wrapped to three lines at 400px. `--sheetmax` is
- * measured by the card's own controller — what the screen leaves below the
- * card, less the card's own MEASURED chrome, taken at 1.3 and capped at one
- * viewport — and floored so the card never falls under 670px. The
- * declaration here is the no-script fallback, and its `min-height` has to
- * stay BELOW that floor or a CSS minimum beats the measured maximum and the
- * card overshoots (RULED 21 sep: "increase the height of The sheet by 30%").
+ * would clip a head that has wrapped to three lines at 400px. The bound is
+ * the one every bounded card shares — `.rscroll` and `--cardmax` above: what
+ * the screen leaves below the card, less its MEASURED chrome, taken at 1.3,
+ * capped at one viewport, and the card at four fifths of that, floored at
+ * 536px (RULED 21 sep "increase the height of The sheet by 30%", RULED 25
+ * sep 20 % less). The sheet's `min-height` has to stay BELOW that floor or a
+ * CSS minimum beats the measured maximum and the card overshoots.
  */
 .c.rband.sheetcard { display: flex; flex-direction: column; overflow: hidden; }
 .c.rband.sheetcard > .rb-body {
@@ -719,11 +765,7 @@
     .shead .mchip { font-size: 9.5px; padding: 0 9px; height: 26px; }
 }
 
-.psheetwrap {
-    overflow: auto; flex: 1 1 auto;
-    max-height: var(--sheetmax, calc(100vh - 300px)); min-height: 320px;
-    scrollbar-width: thin; scrollbar-color: var(--ln2) transparent;
-}
+.psheetwrap { flex: 1 1 auto; min-height: 256px; }
 .psheetwrap::-webkit-scrollbar { width: 10px; height: 10px; }
 .psheetwrap::-webkit-scrollbar-track { background: transparent; }
 .psheetwrap::-webkit-scrollbar-thumb {
