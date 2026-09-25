@@ -23,6 +23,11 @@ use Uhifadhi\Roster\Module\RosterModuleProvider;
 
 final class RosterModuleProviderTest extends TestCase
 {
+    public function testItSaysWhatItIsInOneSentence(): void
+    {
+        self::assertSame('Who is on duty, where, and who checked in.', new RosterModuleProvider('operations')->description());
+    }
+
     public function testDeclaresTheRosterModule(): void
     {
         $provider = new RosterModuleProvider('operations');

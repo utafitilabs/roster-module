@@ -62,6 +62,12 @@ final class RosterModuleProvider implements ModuleProviderInterface, OrgPagesInt
         return self::SLUG;
     }
 
+    /** The one sentence the catalogue prints under the name — what the module is, for a stranger. */
+    public function description(): string
+    {
+        return 'Who is on duty, where, and who checked in.';
+    }
+
     public function name(): string
     {
         return 'Roster';
