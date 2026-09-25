@@ -42,6 +42,7 @@ post is read from the area's check-ins and the pings that followed them.
 | Absence — person, from, to, kind, recorded by | **roster** |
 | The watch a station expects — shifts, silence window, catchment, pool | **roster**, contributed onto the area's station record |
 | Presence — who is here now, verified, late, offline | **read** from the area's presence seam |
+| Ping interval — how often a handset reports, what "twice the interval" counts from | **the area** — set on its Area settings, shown read-only on the Watches rules card |
 
 Keeping the three apart is what lets a ranger cover another station for a
 fortnight without the org chart quietly rewriting itself.
@@ -169,8 +170,8 @@ roster:
     # The values a new area setting, station watch or rotation STARTS at.
     # What any of them actually runs at afterwards is its own stored value,
     # edited on a screen — nothing here is read at display time.
+    # The ping interval is not here: it is the AREA's, set on its Area settings.
     defaults:
-        ping_interval_minutes: 30
         silence_window_minutes: 120
         offline_after_minutes: 1440
         catchment_metres: 1500

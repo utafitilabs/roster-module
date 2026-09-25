@@ -19,6 +19,7 @@ Each deliberate modelling choice, **why**, and **the trigger that reopens it**
 - [Two doors put a post on the books, and neither is the seeder](#two-doors-put-a-post-on-the-books-and-neither-is-the-seeder)
 - [A seeder reads the injected clock; a screen reads the wall](#a-seeder-reads-the-injected-clock-a-screen-reads-the-wall)
 - [The watch's catchment is dropped, not kept nullable](#the-watchs-catchment-is-dropped-not-kept-nullable)
+- [The ping interval is the area's, read and never kept](#the-ping-interval-is-the-areas-read-and-never-kept)
 - [What the design asks for that nothing can answer yet](#what-the-design-asks-for-that-nothing-can-answer-yet)
 
 ## The scaffold was reconciled, not preserved
@@ -70,9 +71,9 @@ would gain a second kind rather than change shape.
 
 ## Thresholds are starting values, not settings
 
-**Decision.** `roster.defaults.*` — ping interval, silence window, offline
-threshold, catchment radius, generation horizon — are read when something is
-CREATED and never at display time.
+**Decision.** `roster.defaults.*` — silence window, offline threshold,
+catchment radius, generation horizon — are read when something is CREATED and
+never at display time.
 
 **Why.** The ruling is explicit that a station's silence threshold is *the
 station's own*: a gate that never closes and a rim post reached once a fortnight
@@ -482,6 +483,31 @@ and `NOT NULL` would fail on the first installation with a watch in it.
 **Reopens when** a post needs more than one ring — a different distance per
 shift, say. That is a new column with a new meaning on the watch, not this one
 coming back.
+
+## The ping interval is the area's, read and never kept
+
+**Decision.** How often a handset reports is `AreaOfInterest::$pingIntervalMinutes`,
+edited on the area's Area settings. This module reads it through the area
+bundle's `PingInterval` — for "twice the interval" (`RosterSettingsService::lateAfterMinutes()`)
+and for the identity band — and stores no copy. The Watches rules card shows it
+as a read-only row with a door to the area's settings; no station overrules it,
+and neither the rules nor the Settings form post it.
+
+**Why.** The check-in, the pings and the presence derived from them are the
+area's, and the handset is told the area's number. A roster column holding the
+same fact is a value the phone never reads, so a change made there changes
+nothing in the field.
+
+**The column.** `roster_area_settings.ping_interval_minutes` is NOT NULL and
+stays mapped for one release, written once with the area's interval and read
+by nothing; it goes in the next release's `@destructive` migration, together
+with any `ping_every` rows in `roster_shift_rule` and
+`roster_station_rule_exception`, and the `roster.defaults.ping_interval_minutes`
+key, which is deprecated.
+
+**Reopens when** a station genuinely needs its own cadence — a post with no
+signal that should report less often. That is a per-station setting the area
+owns and the handset is told, not a roster rule.
 
 ## What the design asks for that nothing can answer yet
 

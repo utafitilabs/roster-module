@@ -11,6 +11,7 @@ hand is a release with a note under it.
 - [0.1.0 — `rotation`, the cycle editor](#010--rotation-the-cycle-editor)
 - [0.1.0 — `now-line`, the day board's line at "now"](#010--now-line-the-day-boards-line-at-now)
 - [`station_watch.catchment_metres` is dropped](#station_watchcatchment_metres-is-dropped)
+- [0.1.2 — the ping interval is the area's](#012--the-ping-interval-is-the-areas)
 
 ## The rule for anything this module ships to a host
 
@@ -134,3 +135,47 @@ is the property that mapped it.
 **The area's default is unaffected.** `roster.default_catchment_metres` and the
 Settings field above it are a different thing — the ring a post falls back on
 when it carries none of its own — and they stay exactly as they are.
+
+## 0.1.2 — the ping interval is the area's
+
+**Needs the core release that ships Area settings › Ping every.** Widen the
+installation's `uhifadhi/uhifadhi` constraint to it, then `composer update`,
+`cache:clear`, `doctrine:migrations:migrate` (no roster migration in this
+release) and `asset-map:compile`.
+
+**What changed.** How often a handset reports is set on the AREA — the Ping
+every field on its Area settings, `AreaOfInterest::$pingIntervalMinutes` — and
+this module reads it there, through the core's `PingInterval`. The Watches
+rules card shows it as a read-only row with a door to the area's settings;
+saving the rules, a station's exceptions or the Settings form never writes it.
+"Twice the interval" counts from the area's number
+(`RosterSettingsService::lateAfterMinutes()`).
+
+**Why.** The handset has always been told the area's number. The roster's own
+column was a second copy that nothing in the field read, so changing it
+changed nothing on the phones.
+
+**Carry the value across once.** An area whose roster rule said something other
+than 30 minutes should get that number on its Area settings, because the
+phones never saw the roster's copy. To see which areas differ:
+
+```sql
+SELECT a.name, s.ping_interval_minutes AS roster_copy, a.ping_interval_minutes AS the_areas
+FROM roster_area_settings s JOIN area_of_interest a ON a.id = s.area_id
+WHERE s.ping_interval_minutes IS DISTINCT FROM COALESCE(a.ping_interval_minutes, 30);
+```
+
+Set each one on the area's Area settings, or leave it: the phones already run
+at the area's value.
+
+**Deprecated here, removed in the next release.**
+
+| What | This release | Next release |
+|---|---|---|
+| `roster.defaults.ping_interval_minutes` | accepted, read by nothing, a deprecation notice where set | removed — delete the key from `config/packages/roster.yaml` |
+| `%roster.default_ping_interval_minutes%` | still set | removed |
+| `roster_area_settings.ping_interval_minutes` | written once on a new row, read by nothing | dropped by an `@destructive` migration |
+| `ping_every` rows in `roster_shift_rule` and `roster_station_rule_exception` | kept, read by nothing | deleted by the same migration |
+| `AreaRosterSettings::getPingIntervalMinutes()` / `setPingIntervalMinutes()` | deprecated, reading and writing the column nothing reads — read `PingInterval::for($area)` | removed with the column |
+| `AreaRosterSettings::lateAfterMinutes()` | removed — it counted from the roster's copy; read `RosterSettingsService::lateAfterMinutes($area)` | — |
+| `RosterSettingsService::save()` | takes no interval: `save($area, $offDayHasNoState, $leaveApprovalShown, $catchmentMetres, $lateThreshold, $vacancyAnnounce)` | — |
