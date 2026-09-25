@@ -242,6 +242,64 @@ final class WeekTabDesignTest extends WebTestCase
         self::assertCount(1, $crawler->filter('.psheetwrap > table.csheet > thead'));
     }
 
+    /**
+     * EVERY DAY OF A STATION'S HEAD ROW SAYS WHO IS PLANNED AGAINST WHAT IT
+     * NEEDS — RULED 25 sep. Two on of the three it needs is "2/3" in the
+     * short ink; a day nobody stands is the empty mark. The tokens sit on
+     * the band's head row, so they read the same folded or open.
+     */
+    public function testEachDayOfTheStationRowSaysPlannedAgainstNeeded(): void
+    {
+        $gate = $this->em->getRepository(Station::class)->findOneBy(['code' => 'ST-01']);
+        $ada = $this->em->getRepository(User::class)->findOneBy(['email' => 'ada@example.test']);
+        self::assertInstanceOf(Station::class, $gate);
+        self::assertInstanceOf(User::class, $ada);
+        $bea = new User()->setPassword('x')->setEmail('bea@example.test')->setFirstName('Bea')->setLastName('Example');
+        $this->em->persist($bea);
+        $this->em->flush();
+
+        $watches = static::getContainer()->get('test_public.'.StationWatchService::class);
+        self::assertInstanceOf(StationWatchService::class, $watches);
+        $watches->addToRoster($gate)->setNeedsPerShift(['day' => 3]);
+
+        $monday = new \DateTimeImmutable('today')->modify('monday this week');
+        $this->em->persist(new Duty($this->area, $gate, $ada, 'day', $monday));
+        $this->em->persist(new Duty($this->area, $gate, $bea, 'day', $monday));
+        $this->em->flush();
+
+        $tokens = $this->open()->filter('tr.stfold td.sepd .cvr');
+
+        self::assertCount(14, $tokens, 'One token under every day of the fortnight.');
+        self::assertSame('2/3', trim($tokens->eq(0)->text()));
+        self::assertSame('cvr short', $tokens->eq(0)->attr('class'), 'Fewer than it needs wears the short mark.');
+        self::assertSame('0/3', trim($tokens->eq(1)->text()));
+        self::assertSame('cvr none', $tokens->eq(1)->attr('class'), 'Nobody planned wears the empty mark.');
+    }
+
+    /**
+     * AND A STATION THAT NAMES NO NUMBER COUNTS AGAINST ITS OWN RANGERS —
+     * the staging sheet read a dash on every day of a station with four
+     * rangers planned every day.
+     */
+    public function testAStationWithNoNumberCountsAgainstItsStationedRangers(): void
+    {
+        $gate = $this->em->getRepository(Station::class)->findOneBy(['code' => 'ST-01']);
+        $ada = $this->em->getRepository(User::class)->findOneBy(['email' => 'ada@example.test']);
+        self::assertInstanceOf(Station::class, $gate);
+        self::assertInstanceOf(User::class, $ada);
+
+        $monday = new \DateTimeImmutable('today')->modify('monday this week');
+        $this->em->persist(new Duty($this->area, $gate, $ada, 'day', $monday));
+        $this->em->flush();
+
+        $tokens = $this->open()->filter('tr.stfold td.sepd .cvr');
+
+        self::assertSame('1/1', trim($tokens->eq(0)->text()));
+        self::assertSame('cvr met', $tokens->eq(0)->attr('class'));
+        self::assertSame('0/1', trim($tokens->eq(1)->text()));
+        self::assertSame('cvr none', $tokens->eq(1)->attr('class'));
+    }
+
     /** AND THE KEY UNDER IT NAMES EVERY MARK THE SHEET CAN DRAW. */
     public function testTheKeyNamesEveryMark(): void
     {

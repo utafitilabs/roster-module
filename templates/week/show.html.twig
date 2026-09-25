@@ -325,8 +325,9 @@
                                        BELONGS TO THE STATION, NOT TO A RANGER: what is
                                        short is this place on this day, against the number
                                        this place says it needs. A station that names no
-                                       number reads as a dash — nothing asked is not a
-                                       failure. #}
+                                       number counts its planned rangers against the rangers
+                                       stationed there, and is never short — nothing asked
+                                       is not a failure. #}
                                     {% for day in band.cover %}
                                         <td class="sepd{{ day.isToday ? ' today' : '' }}"><span class="cvr {{ day.state.className }}">{{ day.label }}</span></td>
                                     {% endfor %}

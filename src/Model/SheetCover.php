@@ -24,21 +24,35 @@ namespace Uhifadhi\Roster\Model;
  * {@see $on} is the sum of the covered part of each shift and never the
  * raw head count.
  *
- * A DAY NOTHING IS ASKED OF READS AS A DASH, not as a zero. Null and zero
- * are different facts — "this station names no number" is not "nobody
- * turned up".
+ * A STATION THAT NAMES NO NUMBER IS COUNTED AGAINST ITS OWN RANGERS —
+ * RULED 25 sep. The token says how many of the rangers stationed there
+ * stand a watch that day, out of how many are stationed there, and a day
+ * nobody stands wears the empty mark. It is never SHORT: nothing was
+ * asked, so {@see countsAsShort()} leaves it out of "station-days under
+ * the number".
+ *
+ * A DAY THERE IS NOTHING TO COUNT AGAINST READS AS A DASH, not as a zero:
+ * no number named and nobody stationed.
  */
 final readonly class SheetCover
 {
     public function __construct(
         public \DateTimeImmutable $day,
-        /** How many of the needed places are covered; null where nothing is asked. */
+        /** How many of the needed places are covered — or, where no number is named, how many watches stand there; null where there is nothing to count against. */
         public ?int $on,
-        /** How many the station says it needs across the shifts it runs; null where it says nothing. */
+        /** How many the station says it needs across the shifts it runs — or, where it names no number, how many are stationed there; null where there is nothing to count against. */
         public ?int $needed,
         public SheetCoverState $state,
         public bool $isToday = false,
+        /** True where the station names no number and {@see $needed} is the rangers stationed there. */
+        public bool $againstStationed = false,
     ) {
+    }
+
+    /** Whether this day is a station-day under the number the station names. */
+    public function countsAsShort(): bool
+    {
+        return !$this->againstStationed && $this->state->isUnder();
     }
 
     /** What the token prints — "4/4", or a dash where nothing is asked. */

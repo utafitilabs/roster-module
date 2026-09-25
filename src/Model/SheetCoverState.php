@@ -29,7 +29,7 @@ namespace Uhifadhi\Roster\Model;
  */
 enum SheetCoverState: string
 {
-    /** The station names no number for this day; nothing is asked, nothing is short. */
+    /** The station names no number and nobody is stationed there; there is nothing to count against. */
     case Nothing = 'nil';
 
     /** Every shift the station runs has the people it asked for. */
@@ -38,7 +38,7 @@ enum SheetCoverState: string
     /** Somebody is on, but fewer than the station needs on at least one shift. */
     case Short = 'short';
 
-    /** The station needs people and not one of them is on. */
+    /** Not one is on — against the number the station needs, or against the rangers stationed there. */
     case Nobody = 'none';
 
     /** The class the token wears — `.cvr` plus this. */

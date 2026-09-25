@@ -5,7 +5,18 @@ has to do for a release is in [docs/upgrading.md](docs/upgrading.md).
 
 ## Contents
 
+- [0.1.3](#013)
 - [0.1.2](#012)
+
+## 0.1.3
+
+Not released yet.
+
+ * the week sheet's cover token under every day of a station's head row
+   counts a station that names no number against the rangers stationed
+   there — "3/4" where it read a dash — and a day nobody stands there wears
+   the empty mark; such a day is never counted as short cover
+   (`SheetCover::$againstStationed`, `SheetCover::countsAsShort()`)
 
 ## 0.1.2
 

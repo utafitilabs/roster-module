@@ -56,7 +56,7 @@ final readonly class SheetBand
     {
         $short = 0;
         foreach ($this->cover as $day) {
-            if ($day->state->isUnder()) {
+            if ($day->countsAsShort()) {
                 ++$short;
             }
         }

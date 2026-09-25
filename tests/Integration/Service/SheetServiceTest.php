@@ -192,7 +192,7 @@ final class SheetServiceTest extends IntegrationTestCase
 
     /**
      * A STATION THAT NAMES NO NUMBER EXPECTS NOTHING OF ANYBODY. Null and
-     * zero are different facts: nothing asked reads as a dash, and a
+     * zero are different facts: nothing asked is never short, and a
      * fortnight of alarm ink at a station nobody has made a decision
      * about would be the sheet shouting at a reader who has done nothing
      * wrong.
@@ -202,10 +202,42 @@ final class SheetServiceTest extends IntegrationTestCase
         $band = $this->sheet()->read($this->area, $this->window())->bands[0];
 
         self::assertSame(0, $band->shortDays());
-        self::assertSame(SheetCoverState::Nothing, $band->cover[0]->state);
-        self::assertSame('—', $band->cover[0]->label());
-        self::assertNull($band->cover[0]->needed);
+        self::assertTrue($band->cover[0]->againstStationed, 'It is counted against its rangers, not against a number.');
+        self::assertFalse($band->cover[0]->countsAsShort());
         self::assertSame(SheetCellKind::Off, $band->rows[0]->cells[0]->kind);
+    }
+
+    /**
+     * RULED 25 sep: A STATION THAT NAMES NO NUMBER COUNTS ITS PLANNED
+     * RANGERS AGAINST THE RANGERS STATIONED THERE. A station with rangers
+     * on the watch every day read a dash on every day; the token now says
+     * how many of its own stood a watch, and a day nobody stands wears the
+     * empty mark — without counting as short, because nothing was asked.
+     */
+    public function testAStationThatNamesNoNumberCountsAgainstItsStationedRangers(): void
+    {
+        $this->em->persist(new Duty($this->area, $this->gate, $this->ada, 'day', $this->monday));
+        $this->em->flush();
+
+        $band = $this->sheet()->read($this->area, $this->window())->bands[0];
+
+        self::assertSame('1/2', $band->cover[0]->label(), 'One of the two stationed there is on the watch.');
+        self::assertSame(SheetCoverState::Met, $band->cover[0]->state, 'Nothing was asked, so one of two is not short.');
+        self::assertSame('0/2', $band->cover[1]->label());
+        self::assertSame(SheetCoverState::Nobody, $band->cover[1]->state, 'A day nobody stands is marked empty.');
+        self::assertSame(0, $band->shortDays(), 'And it is never counted as short against a number nobody named.');
+    }
+
+    /** A STATION WITH NOBODY STATIONED AND NO NUMBER STILL READS AS A DASH. */
+    public function testAStationWithNoNumberAndNobodyStationedReadsAsADash(): void
+    {
+        $this->aStation($this->area, 'escarpment roadside post', 'ST-12');
+        $this->em->flush();
+
+        $cover = $this->sheet()->read($this->area, $this->window())->bands[1]->cover[0];
+
+        self::assertSame(SheetCoverState::Nothing, $cover->state);
+        self::assertSame('—', $cover->label());
     }
 
     /**

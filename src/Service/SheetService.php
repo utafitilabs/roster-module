@@ -123,7 +123,7 @@ final readonly class SheetService
 
             $cover = [];
             foreach ($days as $day) {
-                $cover[] = $this->cover($day, $window, $needs, $onStation[$uuid][$day->format('Y-m-d')] ?? []);
+                $cover[] = $this->cover($day, $window, $needs, $onStation[$uuid][$day->format('Y-m-d')] ?? [], \count($people[$uuid] ?? []));
             }
 
             $bands[] = new SheetBand(
@@ -192,13 +192,19 @@ final readonly class SheetService
      * alarm ink it has earned.
      *
      * A SHIFT THE STATION NAMES NO NUMBER FOR IS NOT AN EXPECTATION, so
-     * people on it are neither counted nor missed — and a station that
-     * names no number at all reads as a dash.
+     * people on it are neither counted nor missed.
      *
-     * @param array<string, int> $needs how many this station needs, per shift key
-     * @param array<string, int> $on    how many are actually on, per shift key
+     * A STATION THAT NAMES NO NUMBER AT ALL IS COUNTED AGAINST THE RANGERS
+     * STATIONED THERE — RULED 25 sep, after a station with four rangers on
+     * the watch every day read a dash on every day. Every watch that
+     * stands there counts; a day nobody stands wears the empty mark and
+     * is never short. Nothing named and nobody stationed is a dash.
+     *
+     * @param array<string, int> $needs     how many this station needs, per shift key
+     * @param array<string, int> $on        how many are actually on, per shift key
+     * @param int                $stationed how many rangers are stationed there
      */
-    private function cover(\DateTimeImmutable $day, SheetWindow $window, array $needs, array $on): SheetCover
+    private function cover(\DateTimeImmutable $day, SheetWindow $window, array $needs, array $on, int $stationed): SheetCover
     {
         $isToday = $day == $window->today;
         $wanted = 0;
@@ -215,7 +221,20 @@ final readonly class SheetService
         }
 
         if (0 === $wanted) {
-            return new SheetCover($day, null, null, SheetCoverState::Nothing, $isToday);
+            if (0 === $stationed) {
+                return new SheetCover($day, null, null, SheetCoverState::Nothing, $isToday);
+            }
+
+            $planned = array_sum(array_map(static fn (int $count): int => max(0, $count), $on));
+
+            return new SheetCover(
+                $day,
+                $planned,
+                $stationed,
+                0 === $planned ? SheetCoverState::Nobody : SheetCoverState::Met,
+                $isToday,
+                againstStationed: true,
+            );
         }
 
         $state = match (true) {
