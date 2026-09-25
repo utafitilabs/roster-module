@@ -70,10 +70,12 @@
     </div>
 
     <h2 class="zone">Tomorrow</h2>
-    <div class="c">
+    <div class="c" data-controller="roster--bound">
         <span class="tab">Tomorrow<span class="src">&middot; <time datetime="{{ tomorrow.format('Y-m-d') }}" data-localtime-format="day">{{ tomorrow.format('D j M')|lower }}</time> &middot; {{ figures.onTheWatchTomorrow }} on the watch</span></span>
         <a class="more" href="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterController::WEEK_ROUTE'), {uuid: area.uuid}) }}">The fortnight &rarr;</a>
 
-        {{ include('@UhifadhiRoster/today/_agenda.html.twig', {posts: tomorrowPosts, reported: false, empty: 'Nothing is rostered for tomorrow', emptyWhy: 'the pattern has not been generated this far, or every post is off'}) }}
+        <div class="rscroll" data-roster--bound-target="scroller">
+            {{ include('@UhifadhiRoster/today/_agenda.html.twig', {posts: tomorrowPosts, reported: false, empty: 'Nothing is rostered for tomorrow', emptyWhy: 'the pattern has not been generated this far, or every post is off'}) }}
+        </div>
     </div>
 {% endblock %}

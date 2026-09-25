@@ -128,9 +128,11 @@ final class TodayAgendaTest extends WebTestCase
     {
         $crawler = $this->open();
 
-        $card = $crawler->filter('.c[data-controller="roster--bound"]');
-        self::assertCount(1, $card, 'The day is the one bounded card; tomorrow is not asked for.');
+        $cards = $crawler->filter('.c[data-controller="roster--bound"]');
+        self::assertCount(2, $cards, 'The day and tomorrow are both bounded cards.');
+        $card = $cards->first();
         self::assertSame('roster--bound', $card->attr('data-controller'));
+        self::assertCount(1, $cards->last()->filter('.rscroll[data-roster--bound-target="scroller"]'), 'Tomorrow scrolls inside its card too.');
         self::assertStringStartsWith('Today', trim($card->filter('.tab')->text()));
 
         $scroller = $card->filter('.rscroll');
