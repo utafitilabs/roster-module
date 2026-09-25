@@ -10,6 +10,8 @@ has to do for a release is in [docs/upgrading.md](docs/upgrading.md).
 
 ## 0.1.3
 
+ * the day board opens on the viewer's own today: a board the server drew for another day (a server on UTC, a viewer past midnight) is reopened asking for the viewer's date, so the now line is never hidden on a board that says yesterday
+
 Not released yet.
 
  * the week sheet's cover token under every day of a station's head row

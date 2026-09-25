@@ -54,6 +54,9 @@ export default class extends Controller {
     connect() {
         this.userScrolled = false;
         this.today = NowLine.localDate(new Date());
+        if (NowLine.opensOnTheViewersToday(this.dayValue, this.today, window.location)) {
+            return;
+        }
         this.left = this.hasScrollerTarget ? this.scrollerTarget.scrollLeft : 0;
         this.width = this.hasScrollerTarget ? this.scrollerTarget.clientWidth : 0;
 
@@ -188,6 +191,24 @@ export const NowLine = {
         return Math.min(Math.max(0, x - centre), Math.max(0, scrollWidth - viewportWidth));
     },
 
+    /**
+     * THE BOARD OPENS ON THE VIEWER'S TODAY. The server draws its own today,
+     * which near midnight is not the viewer's (a server on UTC, a viewer three
+     * hours east): the line would then be hidden on a board that says
+     * yesterday. When no day was asked for and the drawn day is not the
+     * viewer's, the page is reopened with the viewer's date asked for; a day
+     * the reader chose is left alone. Returns true when it navigated.
+     */
+    opensOnTheViewersToday(drawnDay, today, location) {
+        const url = new URL(location.href);
+        if (drawnDay === today || url.searchParams.has('from')) {
+            return false;
+        }
+        url.searchParams.set('from', today);
+        location.replace(url.toString());
+
+        return true;
+    },
     /** The viewer's own calendar date, which is not necessarily the server's. */
     localDate(at) {
         return [

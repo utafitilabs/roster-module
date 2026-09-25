@@ -153,6 +153,23 @@ final class NowLineSeamTest extends TestCase
      * viewer's day changes, and a resize, which changes the geometry the
      * reader chose in, re-centres.
      */
+    /**
+     * THE BOARD OPENS ON THE VIEWER'S TODAY: a server on UTC draws yesterday
+     * for a viewer past midnight, and a hidden line on the wrong day is what
+     * that looked like. No day asked for + a drawn day that is not the
+     * viewer's = the page reopens asking for the viewer's date; an asked-for
+     * day is never overridden.
+     */
+    public function testABoardDrawnForAnotherDayReopensOnTheViewersToday(): void
+    {
+        $controller = self::read(self::CONTROLLER);
+
+        self::assertStringContainsString('NowLine.opensOnTheViewersToday(this.dayValue, this.today, window.location)', $controller);
+        self::assertStringContainsString("if (drawnDay === today || url.searchParams.has('from')) {", $controller, 'a day the reader asked for is left alone');
+        self::assertStringContainsString("url.searchParams.set('from', today);", $controller, 'the board route reads the day from ?from=');
+        self::assertStringContainsString('location.replace(url.toString());', $controller, 'replaced, so Back does not return to the wrong day');
+    }
+
     public function testAScrollByHandIsLeftAloneUntilTheDayChanges(): void
     {
         $controller = self::read(self::CONTROLLER);
