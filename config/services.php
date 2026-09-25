@@ -121,11 +121,12 @@ return static function (ContainerConfigurator $container): void {
 
     // WHAT THE AREA RUNS ON. Created from the installation's starting values
     // on first ask, and never read from config again once the row exists.
+    // The ping interval is the AREA's, asked of the area bundle's own reader.
     $services->set('roster.settings', RosterSettingsService::class)
         ->args([
             service('doctrine.orm.entity_manager'),
             service(AreaRosterSettingsRepository::class),
-            param('roster.default_ping_interval_minutes'),
+            service('area.ping_interval'),
             param('roster.default_catchment_metres'),
         ]);
 
@@ -153,7 +154,7 @@ return static function (ContainerConfigurator $container): void {
         ]);
 
     /*
-     * THE FIVE RULES AND WHAT EACH STATION DOES DIFFERENTLY — and the one
+     * THE AREA'S RULES AND WHAT EACH STATION DOES DIFFERENTLY — and the one
      * writer of the three columns the live surfaces still read.
      */
     $services->set('roster.shift_rules', ShiftRuleService::class)

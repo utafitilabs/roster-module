@@ -31,6 +31,7 @@ use Twig\Environment;
 use Uhifadhi\Bundle\AreaBundle\Controller\StationConfigureController;
 use Uhifadhi\Bundle\AreaBundle\Entity\AreaOfInterest;
 use Uhifadhi\Bundle\AreaBundle\Entity\Station;
+use Uhifadhi\Bundle\AreaBundle\Enum\IntervalUnit;
 use Uhifadhi\Bundle\AreaBundle\Repository\PostingRepository;
 use Uhifadhi\Bundle\AreaBundle\Repository\StationRepository;
 use Uhifadhi\Bundle\AreaBundle\Service\CheckInStatusService;
@@ -144,7 +145,7 @@ final class RosterConfigureController
         private readonly RosterIdentityService $identity,
         private readonly RosterSettingsService $settings,
         private readonly ShiftVocabularyService $shifts,
-        // THE FIVE RULES AND WHAT ONE STATION DOES DIFFERENTLY — and the one
+        // THE AREA'S RULES AND WHAT ONE STATION DOES DIFFERENTLY — and the one
         // writer of the columns every live surface still reads.
         private readonly ShiftRuleService $rules,
         private readonly StationWatchService $watches,
@@ -308,8 +309,9 @@ final class RosterConfigureController
     }
 
     /**
-     * WATCHES — this area's own shift names, the five rules, and which of
-     * its stations runs what.
+     * WATCHES — this area's own shift names, the rules, and which of its
+     * stations runs what. Ping every is on the rules card as the area's
+     * value, read-only, with a door to the area's settings.
      *
      * THREE CARDS AND TWO FORMS, as drawn (layout A, ruled 21 sep): the
      * shifts and the rules stand side by side and are saved together
@@ -348,6 +350,9 @@ final class RosterConfigureController
             // arrays to look in would be a row carrying the enum's job.
             'ruleChoices' => $this->rules->choicesForArea($area),
             'ruleKinds' => RuleKind::cases(),
+            // THE AREA'S PING INTERVAL, said the way the area's settings say
+            // it. The row is read-only here and its door goes there.
+            'pingEvery' => IntervalUnit::say($this->settings->pingIntervalFor($area)),
             // ONE ROW PER STATION THE AREA REGISTERS, not per station on
             // these books: the table is where a station joins them, so a
             // station missing from it could never be added.
@@ -624,6 +629,10 @@ final class RosterConfigureController
 
             $own = [];
             foreach ($exceptions[(string) $station->getUuidString()] ?? [] as $exception) {
+                if ($exception->getKind()->isSetOnTheArea()) {
+                    continue;
+                }
+
                 $own[] = ['kind' => $exception->getKind(), 'value' => $exception->getValue()];
             }
 
@@ -730,6 +739,12 @@ final class RosterConfigureController
     {
         $values = [];
         foreach (RuleKind::cases() as $kind) {
+            // THE AREA'S OWN IS NOT READ FROM THIS FORM: the card draws it
+            // read-only, and a post naming it anyway changes nothing.
+            if ($kind->isSetOnTheArea()) {
+                continue;
+            }
+
             if ($kind->isChoice()) {
                 $picked = trim((string) $request->request->get('rule_choice_'.$kind->value, ''));
                 if ('' === $picked) {
@@ -771,7 +786,7 @@ final class RosterConfigureController
             $number = \is_scalar($numbers[$index] ?? null) ? trim((string) $numbers[$index]) : '';
             $unit = RuleUnit::tryFrom(\is_string($units[$index] ?? null) ? $units[$index] : '');
 
-            if (null === $kind || null === $unit || '' === $number || !is_numeric($number)) {
+            if (null === $kind || $kind->isSetOnTheArea() || null === $unit || '' === $number || !is_numeric($number)) {
                 continue;
             }
 
@@ -779,6 +794,11 @@ final class RosterConfigureController
         }
 
         foreach (RuleKind::cases() as $kind) {
+            // NOT A STATION'S TO SET, AND NOT THIS FORM'S TO CLEAR.
+            if ($kind->isSetOnTheArea()) {
+                continue;
+            }
+
             if (isset($sent[$kind->value])) {
                 $this->rules->setException($station, $kind, $sent[$kind->value]);
 
@@ -884,15 +904,14 @@ final class RosterConfigureController
         $current = $this->settings->forArea($area);
 
         /*
-         * ONLY WHAT THIS PAGE STILL OWNS. The ping interval, the default
-         * catchment and the late threshold became three of the five RULES
-         * on the Watches section, so they are passed through untouched
-         * here: a second editor for one fact is a fact that disagrees with
-         * itself the first time somebody uses the other one.
+         * ONLY WHAT THIS PAGE OWNS. The default catchment and the late
+         * threshold are rules on the Watches section and the ping interval
+         * is the area's, so they are passed through or not taken at all: a
+         * second editor for one fact is a fact that disagrees with itself
+         * the first time somebody uses the other one.
          */
         $this->settings->save(
             $area,
-            $current->getPingIntervalMinutes(),
             $request->request->getBoolean('off_day_has_no_state', $current->offDayHasNoState()),
             $request->request->getBoolean('leave_approval_shown', $current->isLeaveApprovalShown()),
             $current->getDefaultCatchmentMetres(),

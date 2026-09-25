@@ -21,7 +21,7 @@ use Uhifadhi\Roster\Enum\VacancyAnnounce;
 use Uhifadhi\Roster\Repository\AreaRosterSettingsRepository;
 
 /**
- * THE SIX ANSWERS THIS MODULE CANNOT GUESS ABOUT AN ORGANIZATION.
+ * THE FIVE ANSWERS THIS MODULE CANNOT GUESS ABOUT AN ORGANIZATION.
  *
  * Every one of them was an open verdict while the module was being designed.
  * They are settings now rather than questions, each with a default and a
@@ -54,12 +54,15 @@ class AreaRosterSettings
     private AreaOfInterest $area;
 
     /**
-     * POSITIONS PER HOUR, PER HANDSET.
+     * WRITTEN ONCE, READ BY NOTHING, DROPPED IN THE NEXT RELEASE.
      *
-     * It trades against the catchment: a wide catchment tolerates a slow
-     * interval, a tight one does not — at two kilometres and sixty minutes a
-     * ranger can leave and return unseen. Every minute taken off it costs
-     * battery in a place with no mains.
+     * The ping interval is the area's
+     * ({@see AreaOfInterest::getPingIntervalMinutes()}),
+     * and this module reads it there. The column stays mapped for one release
+     * because it is NOT NULL and a schema that disagreed with the mapping
+     * would be a diff on every installation; a new row is given the area's
+     * interval at the time. `@destructive` drop in the next release, per the
+     * module's two-release rule.
      */
     #[ORM\Column(name: 'ping_interval_minutes')]
     private int $pingIntervalMinutes;
@@ -101,10 +104,11 @@ class AreaRosterSettings
     #[ORM\Column(name: 'vacancy_announce', length: 32, enumType: VacancyAnnounce::class)]
     private VacancyAnnounce $vacancyAnnounce = VacancyAnnounce::AsSoonAsKnown;
 
-    public function __construct(AreaOfInterest $area, int $pingIntervalMinutes, int $defaultCatchmentMetres)
+    /** @param int $areaPingIntervalMinutes the area's interval, written into the column that is dropped in the next release */
+    public function __construct(AreaOfInterest $area, int $areaPingIntervalMinutes, int $defaultCatchmentMetres)
     {
         $this->area = $area;
-        $this->pingIntervalMinutes = $pingIntervalMinutes;
+        $this->pingIntervalMinutes = $areaPingIntervalMinutes;
         $this->defaultCatchmentMetres = $defaultCatchmentMetres;
     }
 
@@ -118,11 +122,20 @@ class AreaRosterSettings
         return $this->area;
     }
 
+    /**
+     * @deprecated since 0.1.2, removed with the column in the next release. The
+     *             interval is the area's: read `PingInterval::for($area)`.
+     */
     public function getPingIntervalMinutes(): int
     {
         return $this->pingIntervalMinutes;
     }
 
+    /**
+     * @deprecated since 0.1.2, removed with the column in the next release. The
+     *             interval is the area's, set on its Area settings; this writes
+     *             a column nothing reads.
+     */
     public function setPingIntervalMinutes(int $minutes): static
     {
         if ($minutes < 1) {
@@ -196,11 +209,5 @@ class AreaRosterSettings
         $this->vacancyAnnounce = $announce;
 
         return $this;
-    }
-
-    /** The fallback window in minutes for a post that sets none of its own. */
-    public function lateAfterMinutes(): int
-    {
-        return $this->lateThreshold->minutes($this->pingIntervalMinutes);
     }
 }

@@ -26,7 +26,7 @@ namespace Uhifadhi\Roster\Enum;
  */
 enum LateThreshold: string
 {
-    /** Twice whatever this area's ping interval is. The default, and relative on purpose. */
+    /** Twice the AREA's ping interval — the number its handsets are told. The default, and relative on purpose. */
     case TwiceTheInterval = 'twice_the_interval';
 
     case OneHour = 'one_hour';
@@ -42,7 +42,7 @@ enum LateThreshold: string
         };
     }
 
-    /** The window in minutes, given the area's ping interval. */
+    /** The window in minutes, given the area's ping interval ({@see \Uhifadhi\Roster\Service\RosterSettingsService::lateAfterMinutes()}). */
     public function minutes(int $pingIntervalMinutes): int
     {
         return match ($this) {

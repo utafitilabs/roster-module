@@ -20,8 +20,9 @@ use Uhifadhi\Roster\Entity\ShiftRule;
 use Uhifadhi\Roster\Enum\RuleKind;
 
 /**
- * THE FIVE RULES AN AREA SETS — the defaults every station follows unless
- * its own row says otherwise.
+ * THE RULES AN AREA SETS ON THE ROSTER — the defaults every station follows
+ * unless its own row says otherwise. Ping every is not among them: it is the
+ * area's own column, read through the area bundle's PingInterval.
  *
  * @extends ServiceEntityRepository<ShiftRule>
  */

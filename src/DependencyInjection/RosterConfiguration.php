@@ -87,10 +87,9 @@ final class RosterConfiguration
     ];
 
     /**
-     * HOW OFTEN A HANDSET PINGS ITS POSITION after the morning check-in, in
-     * minutes. An AREA SETTING in the product — this is the value a park that
-     * has never touched it runs at, and the number the Settings section shows
-     * as the default beside whatever the area chose.
+     * THE VALUE THE DEPRECATED `defaults.ping_interval_minutes` KEY DEFAULTS
+     * TO. Nothing reads it: the ping interval is the area's, set on its Area
+     * settings. The key and this constant go in the next release.
      */
     public const int DEFAULT_PING_INTERVAL_MINUTES = 30;
 
@@ -202,8 +201,18 @@ final class RosterConfiguration
                     ->info('The values a new area setting, station watch or rotation starts at. Every one of them is edited per area, per station or per rotation afterwards — nothing here is read at display time.')
                     ->addDefaultsIfNotSet()
                     ->children()
+                        /*
+                         * ACCEPTED AND INERT FOR ONE RELEASE. The interval is
+                         * the area's; an installation's own roster.yaml may
+                         * still set this, so it is deprecated rather than
+                         * removed, and deleted in the next release. Symfony
+                         * triggers the notice only where the key is set:
+                         * https://symfony.com/doc/current/components/config/definition.html#deprecating-the-option
+                         * vendor/symfony/config/Definition/ArrayNode.php finalizeValue().
+                         */
                         ->integerNode('ping_interval_minutes')
-                            ->info('How often a handset pings its position after the morning check-in.')
+                            ->info('Deprecated and read by nothing: the ping interval is the area\'s, set on its Area settings.')
+                            ->setDeprecated('uhifadhi/roster-module', '0.1.2', '"roster.defaults.ping_interval_minutes" is read by nothing: the ping interval is the area\'s, set on its Area settings. Remove the key; it goes in the next release.')
                             ->min(1)->defaultValue(self::DEFAULT_PING_INTERVAL_MINUTES)
                         ->end()
                         ->integerNode('silence_window_minutes')

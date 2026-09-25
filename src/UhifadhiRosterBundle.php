@@ -291,6 +291,9 @@ final class UhifadhiRosterBundle extends AbstractBundle
         // what a station or an area actually runs at is its own stored value.
         $defaults = $config['defaults'] ?? [];
         $defaults = \is_array($defaults) ? $defaults : [];
+        // DEPRECATED WITH ITS KEY, and set for one release so an installation
+        // that names %roster.default_ping_interval_minutes% still compiles;
+        // nothing in this module reads it.
         $builder->setParameter('roster.default_ping_interval_minutes', self::intOr($defaults['ping_interval_minutes'] ?? null, RosterConfiguration::DEFAULT_PING_INTERVAL_MINUTES));
         $builder->setParameter('roster.default_silence_window_minutes', self::intOr($defaults['silence_window_minutes'] ?? null, RosterConfiguration::DEFAULT_SILENCE_WINDOW_MINUTES));
         $builder->setParameter('roster.default_offline_after_minutes', self::intOr($defaults['offline_after_minutes'] ?? null, RosterConfiguration::DEFAULT_OFFLINE_AFTER_MINUTES));

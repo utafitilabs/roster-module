@@ -74,9 +74,9 @@ final class ShiftRuleServiceTest extends IntegrationTestCase
     {
         $values = $this->rules()->forArea($this->area);
 
-        self::assertCount(7, $values, 'Every measured rule answers, the filling pair included.');
+        self::assertCount(6, $values, 'Every measured rule the roster owns answers, the filling pair included.');
         self::assertSame('2 hours', $values[RuleKind::LateAfter->value]->label());
-        self::assertSame('30 minutes', $values[RuleKind::PingEvery->value]->label());
+        self::assertArrayNotHasKey(RuleKind::PingEvery->value, $values, 'Ping every is the area\'s, read from the area.');
         self::assertSame('1.5 km', $values[RuleKind::CheckInWithin->value]->label());
         self::assertSame('11 hours', $values[RuleKind::RestBetween->value]->label());
         self::assertSame('6 weeks', $values[RuleKind::FillAhead->value]->label());
@@ -178,7 +178,6 @@ final class ShiftRuleServiceTest extends IntegrationTestCase
         $values = [
             RuleKind::LateAfter->value => new RuleValue(90.0, RuleUnit::Minutes),
             RuleKind::OfflineAfter->value => new RuleValue(3.0, RuleUnit::Days),
-            RuleKind::PingEvery->value => new RuleValue(15.0, RuleUnit::Minutes),
             RuleKind::CheckInWithin->value => new RuleValue(800.0, RuleUnit::Metres),
             RuleKind::RaiseShortCover->value => new RuleValue(6.0, RuleUnit::Hours),
             RuleKind::RestBetween->value => new RuleValue(9.0, RuleUnit::Hours),
@@ -194,6 +193,10 @@ final class ShiftRuleServiceTest extends IntegrationTestCase
         ];
 
         foreach (RuleKind::cases() as $kind) {
+            if ($kind->isSetOnTheArea()) {
+                continue;
+            }
+
             if ($kind->isChoice()) {
                 $choice = $choices[$kind->value];
 
@@ -221,6 +224,35 @@ final class ShiftRuleServiceTest extends IntegrationTestCase
     }
 
     /**
+     * PING EVERY IS NOT A STATION'S TO OVERRULE. The handset reads one
+     * number, the area's, so a station's own would be a value nothing reads.
+     */
+    public function testAStationCannotBeGivenItsOwnPingInterval(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $this->rules()->setException($this->gate, RuleKind::PingEvery, new RuleValue(15.0, RuleUnit::Minutes));
+    }
+
+    /**
+     * AND SAVING THE AREA'S RULES WRITES NO PING INTERVAL, even when handed
+     * one: the area's own number stays what the area set.
+     */
+    public function testSavingTheRulesWritesNoPingInterval(): void
+    {
+        $this->area->setPingIntervalMinutes(45);
+        $this->em->flush();
+
+        $this->rules()->save($this->area, [
+            RuleKind::PingEvery->value => new RuleValue(5.0, RuleUnit::Minutes),
+            RuleKind::LateAfter->value => new RuleValue(3.0, RuleUnit::Hours),
+        ]);
+
+        self::assertSame(45, $this->area->getPingIntervalMinutes());
+        self::assertArrayNotHasKey(RuleKind::PingEvery->value, $this->rules()->forArea($this->area));
+    }
+
+    /**
      * AND A UNIT THAT MEASURES THE WRONG THING IS REFUSED. A catchment in
      * hours is not a tight catchment, it is a sentence nobody can act on.
      */
@@ -241,7 +273,6 @@ final class ShiftRuleServiceTest extends IntegrationTestCase
         $this->rules()->save($this->area, [
             RuleKind::LateAfter->value => new RuleValue(1.0, RuleUnit::Hours),
             RuleKind::OfflineAfter->value => new RuleValue(1.0, RuleUnit::Days),
-            RuleKind::PingEvery->value => new RuleValue(20.0, RuleUnit::Minutes),
             RuleKind::CheckInWithin->value => new RuleValue(2.0, RuleUnit::Kilometres),
         ]);
 

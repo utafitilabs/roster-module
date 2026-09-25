@@ -71,7 +71,7 @@ final readonly class RosterIdentityService
             rotationsPerTeam: $this->countScope($rotations, RotationScope::Team),
             namedShifts: \count($open),
             shiftLabels: implode(', ', array_map(static fn (Shift $shift): string => mb_strtolower($shift->getLabel()), $open)),
-            pingIntervalMinutes: $this->settings->forArea($area)->getPingIntervalMinutes(),
+            pingIntervalMinutes: $this->settings->pingIntervalFor($area),
             generatedThrough: $this->furthestGenerated($rotations),
         );
     }

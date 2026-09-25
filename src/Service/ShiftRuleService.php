@@ -33,8 +33,13 @@ use Uhifadhi\Roster\Repository\StationWatchRepository;
  *
  * RULED 20 sep, twice: "forcing predefined options is stupid" — a rule is a
  * number somebody typed and a unit they picked — and "rules configurable
- * like exceptions" — every one of the five, not just hours, may be given to
+ * like exceptions" — every one the roster sets, not just hours, may be given to
  * one station on that station's own row.
+ *
+ * PING EVERY IS NOT ONE OF THEM. It is the area's fact, read through the
+ * area's {@see \Uhifadhi\Bundle\AreaBundle\Service\PingInterval}; this
+ * service neither answers it, nor saves it, nor lets a station overrule it
+ * ({@see RuleKind::isSetOnTheArea()}).
  *
  * FOLLOWING THE AREA IS SAID BY SILENCE. There is no "same as the area"
  * value to store: a station with no exception row follows, and removing the
@@ -78,7 +83,7 @@ final readonly class ShiftRuleService
 
         $values = [];
         foreach (RuleKind::cases() as $kind) {
-            if ($kind->isChoice()) {
+            if ($kind->isChoice() || $kind->isSetOnTheArea()) {
                 continue;
             }
 
@@ -111,9 +116,9 @@ final readonly class ShiftRuleService
     }
 
     /**
-     * SAVE THE CARD, WHOLE. The five are one form with one Save, so they are
+     * SAVE THE CARD, WHOLE. The rules are one form with one Save, so they are
      * written as one act: a per-row save would let somebody leave the page
-     * having changed three of five and believing they changed five.
+     * having changed three and believing they changed them all.
      *
      * @param array<string, RuleValue|RuleChoiceInterface> $values keyed by {@see RuleKind::value}; a kind left out keeps what it had
      *
@@ -124,6 +129,11 @@ final readonly class ShiftRuleService
         $written = $this->rules->findByArea($area);
 
         foreach (RuleKind::cases() as $kind) {
+            // THE AREA'S OWN IS NOT WRITTEN HERE, whatever the caller sent.
+            if ($kind->isSetOnTheArea()) {
+                continue;
+            }
+
             $answer = $values[$kind->value] ?? null;
             if (!$answer instanceof RuleValue && !$answer instanceof RuleChoiceInterface) {
                 continue;
@@ -161,10 +171,14 @@ final readonly class ShiftRuleService
     /**
      * GIVE ONE STATION ITS OWN ANSWER TO ONE RULE.
      *
-     * @throws \InvalidArgumentException when the answer is not one this rule takes, or the pair it produces cannot stand
+     * @throws \InvalidArgumentException when the answer is not one this rule takes, the rule is the area's, or the pair it produces cannot stand
      */
     public function setException(Station $station, RuleKind $kind, RuleValue|RuleChoiceInterface $answer): StationRuleException
     {
+        if ($kind->isSetOnTheArea()) {
+            throw new \InvalidArgumentException(\sprintf('"%s" is the area\'s, one number for every handset in it; a station does not set its own.', $kind->label()));
+        }
+
         $row = $this->exceptions->findOneByStationAndKind($station, $kind);
 
         if (null === $row) {
@@ -277,7 +291,6 @@ final readonly class ShiftRuleService
 
         $settings = $this->settings->forArea($area);
         $rules = $this->forArea($area);
-        $settings->setPingIntervalMinutes($rules[RuleKind::PingEvery->value]->toMinutes());
         $settings->setDefaultCatchmentMetres($rules[RuleKind::CheckInWithin->value]->toMetres());
 
         $this->entityManager->flush();

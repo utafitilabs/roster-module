@@ -1487,6 +1487,12 @@ a.fg-stn:hover .loc, a.fg-zn:hover .loc, .fg-stn.on .loc, .fg-zn.on .loc { color
 .rl > .v .n { width: 4.4em; }
 .rl > .m { flex: 1 1 180px; min-width: 0; font-size: 12.5px; color: var(--fog); }
 .rl > .m b { color: var(--tx); }
+/* A RULE THE AREA OWNS, shown on the card and edited there: the value in the
+   control's own type without the control's frame, and one door in the
+   fragment. Values from designs/…/uhifadhi-web/roster.css. */
+.rl.ro > .v .wro { font: 600 13px var(--font-mono); color: var(--tx); padding: 4px 0; line-height: 1.5; font-variant-numeric: tabular-nums; }
+.rl.ro > .m a { color: var(--acc); text-decoration: none; font-weight: 700; }
+.rl.ro > .m a:hover { text-decoration: underline; }
 
 /* ---- THE ONE GROUP HEAD ON THE RULES CARD -------------------------------
    RULED 21 sep. The four rules a FILL obeys came across from the sheet's

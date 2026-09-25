@@ -24,13 +24,14 @@ use Uhifadhi\Roster\Model\RuleValue;
 use Uhifadhi\Roster\Repository\ShiftRuleRepository;
 
 /**
- * ONE OF THE FIVE RULES, AS THIS AREA SETS IT — the default every station
- * follows unless its own row says otherwise.
+ * ONE OF THE RULES, AS THIS AREA SETS IT — the default every station
+ * follows unless its own row says otherwise. Ping every is the area's own
+ * column and is never a row here.
  *
  * RULED 20 sep, twice over. "Forcing predefined options is stupid": the
  * value is a number somebody typed and a unit they picked, and both halves
  * are stored so the field comes back saying what was put in it. And
- * "rules configurable like exceptions": every one of the five is an area
+ * "rules configurable like exceptions": every one the roster sets is an area
  * default with a per-station exception available under it — both, always,
  * with nothing in the product assuming one way of working.
  *

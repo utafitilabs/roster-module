@@ -1,6 +1,8 @@
 {# ============================================================================
-   WATCHES — this area's own shift names, the five rules that decide late,
-   offline and a valid check-in, and which station runs what.
+   WATCHES — this area's own shift names, the rules that decide late,
+   offline and a valid check-in, and which station runs what. Ping every is
+   the area's: the rules card shows it read-only with a door to the area's
+   settings.
 
    PORTED FROM designs/…/modules/roster/configure-watches.html, which is
    variants-watches option A arranged per variants-watches-layout option A
@@ -31,6 +33,7 @@
    | .wfollow follow line             | chrome  | static                          | none               | done   |
    | Rules card head + caption        | chrome  | static                          | none               | done   |
    | .rl × 5 (k / v / m)              | control | ShiftRule, else the standard    | saved with the grid| done   |
+   | .rl.ro Ping every, read-only     | data    | the AREA's interval             | door: Area settings| done   |
    | .rl.chk "say it sooner"          | —       | —                               | —                  | CUT, ruled 21 sep |
    | Discard / Save the rules         | control | —                               | reload / one write | done   |
    | Stations card head + caption     | data    | station and run counts          | none               | done   |
@@ -165,7 +168,7 @@
             </div>
         </div>
 
-        {# ---- THE FIVE RULES --------------------------------------------
+        {# ---- THE RULES -------------------------------------------------
            A NUMBER AND A UNIT, never a menu of blessed answers. RAISE
            UNFILLED says when a gap is raised as needing a decision, and
            nothing more: a gap is on the sheet the moment it exists, always,
@@ -190,6 +193,17 @@
                     {% if kind.isFilling and not (loop.first or ruleKinds[loop.index0 - 1].isFilling) %}
                         <span class="rgrphd">Filling</span>
                     {% endif %}
+                    {# PING EVERY IS THE AREA'S. The handset is told the area's
+                       number and the live reading judges by it, so the row is
+                       the value and one door, and nothing here posts it. #}
+                    {% if kind.isSetOnTheArea %}
+                    <div class="rl ro">
+                        <span class="k">{{ kind.label }}</span>
+                        <span class="v"><span class="wro">{{ pingEvery }}</span></span>
+                        {# THE DOOR ONLY FOR SOMEBODY THE AREA'S SETTINGS WILL OPEN FOR. #}
+                        <span class="m">{{ kind.fragment }}{% if door('areas.configure', area) %} &middot; <a href="{{ path(constant('Uhifadhi\\Bundle\\ShellBundle\\Frame\\Controller\\ConfigureController::AREA_ROUTE'), {uuid: area.uuid, section: constant('Uhifadhi\\Contracts\\Shell\\ConfigurationSection::SETTINGS')}) }}">Area settings &rarr;</a>{% endif %}</span>
+                    </div>
+                    {% else %}
                     <div class="rl">
                         <span class="k">{{ kind.label }}</span>
                         <span class="v">
@@ -211,6 +225,7 @@
                         </span>
                         <span class="m">{{ kind.fragment }}</span>
                     </div>
+                    {% endif %}
                 {% endfor %}
 
                 {% if mayManage %}
@@ -340,19 +355,21 @@
        its own copy would be a second vocabulary going stale. #}
     <template data-roster-exception-template>
         <span class="ln">
-            {# THE MEASURED RULES ONLY. A station may overrule a chosen rule
+            {# THE MEASURED RULES THIS MODULE OWNS — Ping every is the area's,
+               one number for every handset, so no station is offered its own.
+               A station may overrule a chosen rule
                too — the service takes one — but this row is a number and a
                unit, and offering a kind it cannot express would be offering
                a control that silently saves nothing. The chosen pair get
                their own row when the design draws one. #}
             <select class="wval u" data-roster-field="kind" aria-label="Which rule">
-                {% for kind in ruleKinds|filter(k => not k.isChoice) %}
+                {% for kind in ruleKinds|filter(k => not k.isChoice and not k.isSetOnTheArea) %}
                     <option value="{{ kind.value }}">{{ kind.label }}</option>
                 {% endfor %}
             </select>
             <input class="wval n" value="1" data-roster-field="value" aria-label="How much">
             <select class="wval u" data-roster-field="unit" aria-label="In what">
-                {% for kind in ruleKinds|filter(k => not k.isChoice) %}
+                {% for kind in ruleKinds|filter(k => not k.isChoice and not k.isSetOnTheArea) %}
                     {% for unit in kind.units %}
                         <option value="{{ unit.value }}" data-for="{{ kind.value }}">{{ unit.label }}</option>
                     {% endfor %}

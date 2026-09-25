@@ -3,11 +3,12 @@
 
    PORTED FROM the design's configure.html as the design agent trimmed it
    (uhifadhi-web 8e422aa). TWO ROWS, and that is the whole page besides the
-   statuses card: the ping interval, the default catchment and the late and
-   vacancy thresholds all became RULES on the Watches section, and the shift
-   vocabulary is named and coloured there too. A fact with two editors is a
-   fact that disagrees with itself the first time somebody uses the other
-   one, so this page keeps only what neither card can hold.
+   statuses card. The default catchment and the late and vacancy thresholds
+   are RULES on the Watches section, the shift vocabulary is named and
+   coloured there too, and the ping interval is the AREA's, set on its Area
+   settings and shown read-only on the Watches rules card. A fact with two
+   editors is a fact that disagrees with itself the first time somebody uses
+   the other one, so this page keeps only what nothing else holds.
 
    COVERAGE MANIFEST — every element of the drawn page.
 
@@ -23,7 +24,8 @@
    | one .rstat per status         | data    | CheckInStatus            | none             | done   |
    | retired row, dimmed and kept  | state   | CheckInStatus            | none             | done   |
    | empty status list             | state   | the area offers none     | none             | done   |
-   | ping / catchment / thresholds | —       | —                        | —                | MOVED to Watches, ruled 20–21 sep |
+   | catchment / thresholds        | —       | —                        | —                | ON Watches, ruled 20–21 sep |
+   | ping interval                 | —       | —                        | —                | THE AREA'S: Area settings, shown read-only on Watches |
    | shift vocabulary row          | —       | —                        | —                | MOVED to Watches, ruled 21 sep |
    | .rstat re-order / edit / retire | —     | —                        | —                | NOT THIS MODULE'S: the area writes them |
 

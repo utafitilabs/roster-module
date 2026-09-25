@@ -19,9 +19,11 @@ use Uhifadhi\Roster\Model\RuleValue;
  * THE RULES AN AREA SETS, AND ANY STATION MAY OVERRULE.
  *
  * RULED 20 sep. Owner: "rules configurable like exceptions" — any rule,
- * not just hours. So the five are one list with one shape, an area default
+ * not just hours. So the rules are one list with one shape, an area default
  * each and a per-station exception under any of them, and nothing in the
- * product assumes one way of working.
+ * product assumes one way of working. The one exception is Ping every, the
+ * area's own number, which the card shows and does not set
+ * ({@see isSetOnTheArea()}).
  *
  * RAISE SHORT COVER IS ABOUT THE DASHBOARD AND NOT ABOUT THE SHEET (ruled
  * 21 sep, and the reason the checkbox beside it is gone). A station-day
@@ -69,6 +71,18 @@ enum RuleKind: string
     }
 
     /**
+     * A RULE THE AREA SETS AND THIS CARD ONLY SHOWS. How often a handset
+     * pings is the area's fact — the check-in, the pings and the presence
+     * read from them are the area's, and the handset is told the area's
+     * number — so its row is read-only with a door to the area's settings,
+     * no station overrules it, and this module stores no copy of it.
+     */
+    public function isSetOnTheArea(): bool
+    {
+        return self::PingEvery === $this;
+    }
+
+    /**
      * THE FOUR A FILL OBEYS. The card draws them under their own group
      * head, and the sheet's fill row states them; everything else on this
      * enum is about a watch that is already standing.
@@ -93,7 +107,7 @@ enum RuleKind: string
         return match ($this) {
             self::LateAfter => 'without a ping',
             self::OfflineAfter => 'the map stops claiming to know',
-            self::PingEvery => 'per handset',
+            self::PingEvery => 'set on the area · per handset',
             self::CheckInWithin => 'of the station',
             self::RaiseShortCover => 'before it starts · as needing a decision',
             self::RestBetween => 'one watch ending to the next starting',
@@ -185,7 +199,7 @@ enum RuleKind: string
 
     /**
      * WHAT THIS AREA RUNS AT BEFORE ANYBODY TOUCHES IT. Not a blessed
-     * option — a starting point, which every one of the five is free of
+     * option — a starting point, which every rule the roster sets is free of
      * the moment somebody types over it.
      */
     public function standard(): RuleValue

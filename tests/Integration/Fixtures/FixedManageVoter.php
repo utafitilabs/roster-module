@@ -73,6 +73,9 @@ final class FixedManageVoter extends Voter
         return \in_array($attribute, [
             RosterConfigureController::CONFIGURE,
             RosterController::RECORD,
+            // WHO MAY OPEN THE AREA'S OWN SETTINGS — the manager's, like the
+            // roster's two, so a reader is shown no door into them.
+            (string) Grant::of(AreaConcerns::AREAS, Verb::Configure),
             ...self::groundPairs(),
         ], true);
     }

@@ -187,11 +187,25 @@ final class RosterConfigurationTest extends TestCase
 
     public function testADeploymentOverridesOneStartingValueWithoutRestatingTheRest(): void
     {
+        $defaults = $this->process(['defaults' => ['silence_window_minutes' => 90]])['defaults'];
+
+        self::assertIsArray($defaults);
+        self::assertSame(90, $defaults['silence_window_minutes']);
+        self::assertSame(1440, $defaults['offline_after_minutes']);
+    }
+
+    /**
+     * THE PING INTERVAL IS THE AREA'S, so this key is accepted and inert for
+     * one release and says so when a deployment still sets it.
+     */
+    public function testSettingThePingIntervalHereIsDeprecated(): void
+    {
+        $this->expectUserDeprecationMessage('Since uhifadhi/roster-module 0.1.2: "roster.defaults.ping_interval_minutes" is read by nothing: the ping interval is the area\'s, set on its Area settings. Remove the key; it goes in the next release.');
+
         $defaults = $this->process(['defaults' => ['ping_interval_minutes' => 15]])['defaults'];
 
         self::assertIsArray($defaults);
         self::assertSame(15, $defaults['ping_interval_minutes']);
-        self::assertSame(120, $defaults['silence_window_minutes']);
     }
 
     /**
@@ -210,6 +224,7 @@ final class RosterConfigurationTest extends TestCase
 
     public function testAZeroPingIntervalIsRefused(): void
     {
+        $this->expectUserDeprecationMessage('Since uhifadhi/roster-module 0.1.2: "roster.defaults.ping_interval_minutes" is read by nothing: the ping interval is the area\'s, set on its Area settings. Remove the key; it goes in the next release.');
         $this->expectException(InvalidConfigurationException::class);
 
         $this->process(['defaults' => ['ping_interval_minutes' => 0]]);

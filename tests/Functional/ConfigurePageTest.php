@@ -202,7 +202,7 @@ final class ConfigurePageTest extends WebTestCase
         $this->watches()->addToRoster($this->gate);
         $this->em->flush();
         $this->rules()->setException($this->gate, RuleKind::LateAfter, new RuleValue(1.0, RuleUnit::Hours));
-        $this->rules()->setException($this->gate, RuleKind::PingEvery, new RuleValue(15.0, RuleUnit::Minutes));
+        $this->rules()->setException($this->gate, RuleKind::CheckInWithin, new RuleValue(800.0, RuleUnit::Metres));
 
         $this->signIn(FixedManageVoter::READER_EMAIL);
 
@@ -302,21 +302,19 @@ final class ConfigurePageTest extends WebTestCase
     }
 
     /**
-     * AND WHAT THIS PAGE NO LONGER OWNS, IT NO LONGER WRITES. The ping
-     * interval, the default catchment and the late threshold became three of
-     * the five RULES on the Watches section, so a post here naming them must
-     * change nothing — otherwise the two editors would take turns
-     * overwriting each other, which is the drift every ruling on this module
-     * has been about.
+     * AND WHAT THIS PAGE DOES NOT OWN, IT DOES NOT WRITE. The ping interval
+     * is the area's and the default catchment is a rule on the Watches
+     * card, so a post here naming either changes nothing.
      */
-    public function testTheSettingsPageCannotWriteWhatTheRulesOwn(): void
+    public function testTheSettingsPageCannotWriteWhatItDoesNotOwn(): void
     {
+        $this->area->setPingIntervalMinutes(45);
+        $this->em->flush();
+
         $this->signIn(FixedManageVoter::MANAGER_EMAIL);
         $crawler = $this->client->request('GET', $this->url('settings'));
         $token = $crawler->filter('input[name=_token]')->attr('value');
         self::assertIsString($token);
-
-        $before = $this->settings()->forArea($this->area)->getPingIntervalMinutes();
 
         $this->client->request('POST', $this->url('settings'), [
             '_token' => $token,
@@ -325,10 +323,10 @@ final class ConfigurePageTest extends WebTestCase
         ]);
 
         $this->em->clear();
-        $settings = $this->settings()->forArea($this->em->getRepository(AreaOfInterest::class)->findOneBy(['name' => 'demo reserve']) ?? throw new \LogicException('The fixture area vanished.'));
+        $area = $this->areaAgain();
 
-        self::assertSame($before, $settings->getPingIntervalMinutes(), 'The rules card is the one home for it.');
-        self::assertNotSame(900, $settings->getDefaultCatchmentMetres());
+        self::assertSame(45, $area->getPingIntervalMinutes(), 'The area is the one home for it.');
+        self::assertNotSame(900, $this->settings()->forArea($area)->getDefaultCatchmentMetres());
     }
 
     /** A reader who posts anyway is refused, token or no token. */
@@ -353,6 +351,80 @@ final class ConfigurePageTest extends WebTestCase
         $this->client->request('POST', $this->url('settings'), ['_token' => 'not-the-token', 'ping_interval_minutes' => '5']);
 
         self::assertResponseStatusCodeSame(403);
+    }
+
+    /**
+     * PING EVERY IS THE AREA'S, SHOWN HERE READ-ONLY. The row states the
+     * area's number, says whose it is in one fragment, and carries the door
+     * to the area's settings — no control, and nothing for a station to
+     * overrule.
+     */
+    public function testThePingRowShowsTheAreasValueReadOnlyWithADoor(): void
+    {
+        $this->area->setPingIntervalMinutes(45);
+        $this->em->flush();
+
+        $this->signIn(FixedManageVoter::MANAGER_EMAIL);
+        $crawler = $this->client->request('GET', $this->url('watches'));
+        self::assertResponseIsSuccessful();
+
+        self::assertCount(0, $crawler->filter('[name="rule_value_ping_every"]'), 'No control: the area owns it.');
+        self::assertCount(0, $crawler->filter('[name="rule_unit_ping_every"]'));
+
+        $row = $crawler->filter('.rl.ro');
+        self::assertCount(1, $row, 'One read-only row.');
+        self::assertSame('Ping every', trim($row->filter('.k')->text()));
+        self::assertSame('45 minutes', trim($row->filter('.v')->text()));
+        self::assertStringContainsString('set on the area', $row->filter('.m')->text());
+        self::assertSame(
+            '/areas/'.$this->area->getUuidString().'/configure/settings',
+            $row->filter('.m a')->attr('href'),
+            'The door goes to the area\'s settings section.',
+        );
+
+        self::assertCount(0, $crawler->filter('template option[value="ping_every"]'), 'A station is not offered its own.');
+    }
+
+    /** An area that sets none shows the default it runs at; a reader gets the fact without the door. */
+    public function testThePingRowShowsTheDefaultWhereTheAreaSetsNone(): void
+    {
+        $this->signIn(FixedManageVoter::READER_EMAIL);
+        $crawler = $this->client->request('GET', $this->url('watches'));
+
+        self::assertSame('30 minutes', trim($crawler->filter('.rl.ro .v')->text()));
+        self::assertCount(0, $crawler->filter('.rl.ro .m a'), 'No door into settings this viewer may not open.');
+    }
+
+    /**
+     * SAVING THE RULES LEAVES THE AREA'S INTERVAL ALONE, even when a post
+     * names one: the card no longer sends it, and the service would not
+     * write it if it did.
+     */
+    public function testSavingTheRulesLeavesTheAreasPingIntervalAlone(): void
+    {
+        $this->area->setPingIntervalMinutes(45);
+        $this->em->flush();
+
+        $this->signIn(FixedManageVoter::MANAGER_EMAIL);
+        $crawler = $this->client->request('GET', $this->url('watches'));
+        $token = $crawler->filter('input[name=_token]')->attr('value');
+        self::assertIsString($token);
+
+        $this->client->request('POST', '/areas/'.$this->area->getUuidString().'/modules/roster/rules', [
+            '_token' => $token,
+            'rule_value_ping_every' => '5',
+            'rule_unit_ping_every' => 'minutes',
+            'rule_value_late_after' => '3',
+            'rule_unit_late_after' => 'hours',
+        ]);
+
+        self::assertResponseRedirects();
+
+        $this->em->clear();
+        $area = $this->areaAgain();
+        self::assertSame(45, $area->getPingIntervalMinutes());
+        self::assertSame('3 hours', $this->rules()->forArea($area)[RuleKind::LateAfter->value]->label());
+        self::assertArrayNotHasKey(RuleKind::PingEvery->value, $this->rules()->forArea($area), 'The roster keeps no copy.');
     }
 
     /**
