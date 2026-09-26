@@ -33,19 +33,19 @@ use Uhifadhi\Roster\Widget\RosterWidgets;
  */
 final class RosterOrgWidgetsTest extends TestCase
 {
-    public function testItCarriesTheSixWidgetsTheDesignDeclares(): void
+    public function testItCarriesTheFiveWidgetsLeftOnceTheMapWasRuledOff(): void
     {
         $catalog = RosterOrgWidgets::declaration();
 
-        self::assertSame(['kpis', 'decisions', 'areas', 'map', 'load', 'gaps'], $catalog->ids());
+        self::assertSame(['kpis', 'decisions', 'areas', 'load', 'gaps'], $catalog->ids());
     }
 
     /**
-     * FOUR ON, TWO OFF. The two that are off are real questions whose answer
-     * is a chart or a second list, and a dashboard that opened with six
-     * cards would bury the four that answer "which area is the problem".
+     * THREE ON, TWO OFF. The two that are off are real questions whose answer
+     * is a chart or a second list. The map that made it four is the
+     * dashboard's since 2026-09-26: the roster keeps its lists.
      */
-    public function testItOpensOnTheFourThatAnswerWhichAreaIsTheProblem(): void
+    public function testItOpensOnTheThreeThatAnswerWhichAreaIsTheProblem(): void
     {
         $catalog = RosterOrgWidgets::declaration();
 
@@ -56,7 +56,7 @@ final class RosterOrgWidgetsTest extends TestCase
             }
         }
 
-        self::assertSame(['kpis', 'decisions', 'areas', 'map'], $on);
+        self::assertSame(['kpis', 'decisions', 'areas'], $on);
     }
 
     /** ONE ARRANGEMENT, and it is the one the surface ships on. */
@@ -68,9 +68,9 @@ final class RosterOrgWidgetsTest extends TestCase
         self::assertSame('a', $catalog->presets()[0]->id);
         self::assertSame(RosterOrgWidgets::DEFAULT_LABEL, $catalog->presets()[0]->label);
         self::assertSame(
-            ['kpis' => 12, 'decisions' => 12, 'areas' => 12, 'map' => 12],
+            ['kpis' => 12, 'decisions' => 12, 'areas' => 12],
             $catalog->presets()[0]->layout,
-            'The shipped arrangement is the four that are on, each full width.',
+            'The shipped arrangement is the three that are on, each full width.',
         );
     }
 

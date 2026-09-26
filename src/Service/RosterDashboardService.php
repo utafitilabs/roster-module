@@ -92,7 +92,6 @@ final readonly class RosterDashboardService
             load: $this->loadThisMonth($area, $day),
             checkIns: self::checkInsNewestFirst($posts),
             shiftLabels: $shiftLabels,
-            plate: $this->liveService->plate($area, $live),
             live: $this->liveService->figures($live, $posts),
         );
     }

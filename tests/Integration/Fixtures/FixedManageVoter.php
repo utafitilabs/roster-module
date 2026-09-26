@@ -39,6 +39,9 @@ final class FixedManageVoter extends Voter
     /** Holds both: may change the rotations, and may offer a watch. */
     public const string MANAGER_EMAIL = 'manager@example.test';
 
+    /** The area's control-room grant, lifting the rank rule for live positions. */
+    public const string CONTROL_ROOM = 'locations.read';
+
     /** Holds nothing: reads the configure page and saves nothing. */
     public const string READER_EMAIL = 'reader@example.test';
 
@@ -76,6 +79,11 @@ final class FixedManageVoter extends Voter
             // WHO MAY OPEN THE AREA'S OWN SETTINGS — the manager's, like the
             // roster's two, so a reader is shown no door into them.
             (string) Grant::of(AreaConcerns::AREAS, Verb::Configure),
+            // THE CONTROL ROOM: the manager sees every live position, so the
+            // Live pages have somebody to stream to whatever the rank rule
+            // says. Spelt as a string because a core older than the rule
+            // does not declare it, and there the grant changes nothing.
+            self::CONTROL_ROOM,
             ...self::groundPairs(),
         ], true);
     }

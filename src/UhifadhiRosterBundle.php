@@ -588,6 +588,10 @@ final class UhifadhiRosterBundle extends AbstractBundle
                 // an offer to and nothing to refuse one with.
                 service('security.token_storage')->nullOnInvalid(),
                 service('security.csrf.token_manager')->nullOnInvalid(),
+                // The Live tab's stream and its subscriber cookie: the area's
+                // own, under the area's own pair. Null keeps the page drawing
+                // once, as on an installation without the hub.
+                service('area.presence_stream')->nullOnInvalid(),
             ])
             ->public();
         $services->alias(RosterController::class, 'roster.controller.overview')->public();
@@ -676,6 +680,8 @@ final class UhifadhiRosterBundle extends AbstractBundle
                     service(WidgetService::class),
                     service(WidgetEndpoint::class),
                     service(\Uhifadhi\Bundle\ShellBundle\Service\Scopes::class),
+                    // The Live page's stream, the area's own.
+                    service('area.presence_stream')->nullOnInvalid(),
                 ])
                 ->public();
             $services->alias(RosterOrgController::class, 'roster.controller.org')->public();

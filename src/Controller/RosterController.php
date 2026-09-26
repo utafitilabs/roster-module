@@ -35,6 +35,7 @@ use Uhifadhi\Bundle\AreaBundle\Controller\StationsController;
 use Uhifadhi\Bundle\AreaBundle\Entity\AreaOfInterest;
 use Uhifadhi\Bundle\AreaBundle\Entity\Station;
 use Uhifadhi\Bundle\AreaBundle\Repository\StationRepository;
+use Uhifadhi\Bundle\AreaBundle\Service\PresenceStreamService;
 use Uhifadhi\Bundle\ShellBundle\Widget\Service\WidgetService;
 use Uhifadhi\Contracts\Access\Verb;
 use Uhifadhi\Contracts\Area\DayState;
@@ -223,6 +224,8 @@ final class RosterController
          */
         private readonly ?TokenStorageInterface $tokens = null,
         private readonly ?CsrfTokenManagerInterface $csrfTokenManager = null,
+        /** The area's live stream: the Live tab's marks keep moving, as the area overview's do. */
+        private readonly ?PresenceStreamService $streams = null,
     ) {
     }
 
@@ -1014,7 +1017,15 @@ final class RosterController
             $railAll[] = ['id' => $id, 'label' => RosterRailWidgets::NAMES[$id] ?? (string) $widget['label'], 'on' => (bool) $widget['on']];
         }
 
-        return new Response($this->twig->render('@UhifadhiRoster/live/show.html.twig', [
+        // THE MARKS KEEP MOVING. The area's own stream and cookie, under
+        // the area's own pair; with no hub the plate draws once.
+        $plate = $this->liveService->plate($area, $live, $this->liveService->figures($live, $whole)->withoutAFix, $whole, $centre);
+        $subscription = $this->streams?->forArea($request, $area);
+        if (null !== $subscription) {
+            $plate->liveStream($subscription->stream);
+        }
+
+        $response = new Response($this->twig->render('@UhifadhiRoster/live/show.html.twig', [
             'area' => $area,
             'band' => $this->identity->bandFor($area),
             'day' => $day,
@@ -1024,7 +1035,7 @@ final class RosterController
             // THE PEOPLE THE READ HAD NO FIX FOR are the plate's business
             // too: they are on no layer, and a plate silent about them
             // would be a plate claiming the park is fully seen.
-            'plate' => $this->liveService->plate($area, $live, $this->liveService->figures($live, $whole)->withoutAFix, $whole, $centre),
+            'plate' => $plate,
             'rail' => $people,
             'railLists' => $lists,
             'railCount' => \sprintf('%d in %d list%s', $counted, \count($lists), 1 === \count($lists) ? '' : 's'),
@@ -1044,6 +1055,11 @@ final class RosterController
             'shiftLabels' => $this->shiftLabels($area),
             'shiftCounts' => self::shiftCounts($whole),
         ]));
+        if (null !== $subscription) {
+            $response->headers->setCookie($subscription->cookie);
+        }
+
+        return $response;
     }
 
     /**

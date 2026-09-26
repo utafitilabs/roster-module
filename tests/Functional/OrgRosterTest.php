@@ -42,7 +42,9 @@ use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
 final class OrgRosterTest extends WebTestCase
 {
     use EveryAreaRunsTheRoster;
+
     use FreshDatabase;
+    use ReadsTheLiveStream;
 
     private KernelBrowser $client;
     private EntityManagerInterface $em;
@@ -184,6 +186,30 @@ final class OrgRosterTest extends WebTestCase
         $rows->each(static function (Crawler $row): void {
             self::assertCount(1, $row->filter('.orgarea'), 'A row at this scope says which area it is about.');
         });
+    }
+
+    /** THE ORGANIZATION'S LIVE PAGE STREAMS every area in scope, one topic each. */
+    public function testLiveStreamsEveryAreaInScope(): void
+    {
+        $this->open(RosterOrgController::LIVE_ROUTE);
+
+        self::assertStreamsTheAreas($this->client, array_map(static fn ($a): string => (string) $a->getUuidString(), $this->areas));
+    }
+
+    /**
+     * THE OVERVIEW DRAWS NO PLATE (ruled 2026-09-26). The organization's
+     * marks are the dashboard's to draw; the roster keeps its lists and a
+     * door to its Live page on the figures.
+     */
+    public function testTheOverviewDrawsNoPlateAndItsFiguresOpenTheLivePage(): void
+    {
+        $overview = $this->open(RosterOrgController::OVERVIEW_ROUTE);
+
+        self::assertCount(0, $overview->filter('.map-plate, .viewer'));
+        self::assertCount(0, $overview->filter('[data-w="map"]'));
+        $router = static::getContainer()->get('router');
+        self::assertInstanceOf(\Symfony\Component\Routing\RouterInterface::class, $router);
+        self::assertCount(1, $overview->filter('[data-w="kpis"] a.more[href="'.$router->generate(RosterOrgController::LIVE_ROUTE).'"]'));
     }
 
     /** AND LIVE DRAWS ONE PLATE, with the map sheet the page owes it. */

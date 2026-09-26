@@ -54,6 +54,7 @@
         "symfony/browser-kit": "^7.3 || ^8.0",
         "symfony/clock": "^7.3 || ^8.0",
         "symfony/css-selector": "^7.3 || ^8.0",
+        "symfony/mercure-bundle": "^0.5",
         "symfony/security-bundle": "^7.3 || ^8.0",
         "symfony/security-core": "^7.3 || ^8.0",
         "symfony/security-csrf": "^7.3 || ^8.0",

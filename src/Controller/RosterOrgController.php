@@ -13,10 +13,12 @@ declare(strict_types=1);
 
 namespace Uhifadhi\Roster\Controller;
 
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Twig\Environment;
+use Uhifadhi\Bundle\AreaBundle\Service\PresenceStreamService;
 use Uhifadhi\Bundle\ShellBundle\Service\Scopes;
 use Uhifadhi\Bundle\ShellBundle\Widget\Service\WidgetEndpoint;
 use Uhifadhi\Bundle\ShellBundle\Widget\Service\WidgetService;
@@ -58,6 +60,8 @@ final class RosterOrgController
         private readonly WidgetService $widgets,
         private readonly WidgetEndpoint $endpoint,
         private readonly Scopes $scopes,
+        /** The area's live stream, so the Live page's marks keep moving. */
+        private readonly ?PresenceStreamService $streams = null,
     ) {
     }
 
@@ -73,7 +77,6 @@ final class RosterOrgController
             // organization-level arrangement is one somebody chose once,
             // and there is no area for it to hang on.
             'widgets' => $this->widgets->resolve(RosterOrgWidgets::declaration(), $this->endpoint->user(), null),
-            'plate' => $this->org->plate($areas, $now),
         ]));
     }
 
@@ -91,14 +94,30 @@ final class RosterOrgController
 
     #[Route('/roster/live', name: self::LIVE_ROUTE, methods: ['GET'])]
     #[IsGranted('areas.read')]
-    public function live(): Response
+    public function live(Request $request): Response
     {
         [$scope, $areas, $day, $now] = $this->reading();
 
-        return new Response($this->twig->render('@UhifadhiRoster/org/live.html.twig', [
+        // THE MARKS KEEP MOVING: one area in scope follows that area's
+        // topic, the whole organization every area the viewer may read.
+        $plate = $this->org->plate($areas, $now);
+        $subscription = null;
+        if (null !== $plate && null !== $this->streams) {
+            $subscription = 1 === \count($areas) ? $this->streams->forArea($request, $areas[0]) : $this->streams->forOrganization($request);
+        }
+        if (null !== $subscription) {
+            $plate?->liveStream($subscription->stream);
+        }
+
+        $response = new Response($this->twig->render('@UhifadhiRoster/org/live.html.twig', [
             ...$this->common($scope, $areas, $day, $now),
-            'plate' => $this->org->plate($areas, $now),
+            'plate' => $plate,
         ]));
+        if (null !== $subscription) {
+            $response->headers->setCookie($subscription->cookie);
+        }
+
+        return $response;
     }
 
     /**

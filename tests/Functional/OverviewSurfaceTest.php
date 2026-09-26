@@ -118,8 +118,8 @@ final class OverviewSurfaceTest extends WebTestCase
     }
 
     /**
-     * THE SHIPPED COMPOSITION IS ON THE PAGE, and it is the design's four:
-     * the figures, what needs a decision, the posts, the plate.
+     * THE SHIPPED COMPOSITION IS ON THE PAGE: the figures, what needs a
+     * decision, the posts, and who is reporting right now.
      */
     public function testTheShippedCompositionRendersItsFourWidgets(): void
     {
@@ -131,7 +131,7 @@ final class OverviewSurfaceTest extends WebTestCase
             static fn (\Symfony\Component\DomCrawler\Crawler $cell): string => (string) $cell->attr('data-w'),
         );
 
-        self::assertSame(['kpis', 'decisions', 'stations', 'map'], $drawn);
+        self::assertSame(['kpis', 'decisions', 'stations', 'live'], $drawn);
     }
 
     /**
@@ -203,51 +203,25 @@ final class OverviewSurfaceTest extends WebTestCase
     }
 
     /**
-     * THE PLATE WIDGET DRAWS THE REAL MAP, on the dashboard exactly as on
-     * the Live tab — the preview IS the widget, so a picture of a map here
-     * and a map there would be two things that drift.
-     *
-     * AND IT IS BOUNDED. A card never grows with its data: the plate has a
-     * fixed height, like a list bounded to latest-N and a calendar cell to
-     * its pills. A map that grew with the park would own the dashboard.
+     * NO SECOND MAP (ruled 2026-09-26). The area's marks are the area
+     * overview's and the Live tab's to draw; this tab lists who is
+     * reporting and opens the Live tab for where they are.
      */
-    public function testThePlateWidgetDrawsTheMapBoundedWithItsDoor(): void
+    public function testTheOverviewDrawsNoPlateAndOpensTheLiveTab(): void
     {
         $crawler = $this->open();
 
-        $card = $crawler->filter('[data-w="map"]');
+        self::assertCount(0, $crawler->filter('.map-plate, .viewer'));
+        $card = $crawler->filter('[data-w="live"]');
         self::assertCount(1, $card);
-
-        self::assertGreaterThan(0, $card->filter('.map-plate, .viewer')->count(), 'The atlas plate itself, not a description of one.');
-        self::assertStringContainsString('--map-plate-height', $card->html(), 'Bounded: the plate is a fixed height.');
-        self::assertStringContainsString('The live plate', $card->text(), 'And the door into the tab that is only this.');
-
-        // THE WAITING COPY IS GONE, because the seam it waited on landed.
-        // A card that goes on stating a gap the product has closed is worse
-        // than one that never mentioned it.
-        self::assertStringNotContainsString('Waiting on', $card->text());
-    }
-
-    /**
-     * THE PAGE LINKS THE MAP SHEET, because it composes a widget that
-     * draws a plate and the plate's styles do not travel with it.
-     */
-    public function testTheComposedSurfaceLinksTheMapSheet(): void
-    {
-        $crawler = $this->open();
-
-        $sheets = $crawler->filter('link[rel="stylesheet"]')->each(
-            static fn (\Symfony\Component\DomCrawler\Crawler $link): string => (string) $link->attr('href'),
-        );
-
-        self::assertNotEmpty(array_filter($sheets, static fn (string $href): bool => str_contains($href, 'map')));
+        self::assertStringContainsString('The live plate', $card->text());
     }
 
     /** THE CATALOGUE AND THE PAGE AGREE ABOUT WHAT IS SHIPPED ON. */
     public function testTheCatalogueIsWhatThePageDraws(): void
     {
         self::assertSame(
-            ['kpis' => 12, 'decisions' => 12, 'stations' => 12, 'map' => 12],
+            ['kpis' => 12, 'decisions' => 12, 'stations' => 12, 'live' => 12],
             RosterWidgets::declaration()->defaultLayout(),
         );
     }

@@ -105,7 +105,10 @@ final class RosterWidgets implements WidgetSurfaceInterface
             new Widget('kpis', 'The day\'s check-ins', 'a', 12, [12, 9, 6], on: true, note: 'Check-ins in, verified at a post, flagged, missing, and the posts still reporting.'),
             new Widget('decisions', 'Needs a decision', 'b', 12, [12, 9], on: true, note: 'Every ranger and every watch that needs somebody to act: a missing check-in, a claim the device disagrees with, a hole.'),
             new Widget('stations', 'Stations & who is actually on', 'b', 12, [12, 9, 6], on: true, note: 'One banded row per post that runs a watch: who was rostered, who the pings put there, and the way into the area\'s record.'),
-            new Widget('map', 'Presence on the stations layer', 'b', 12, [12, 9, 6], on: true, note: 'The area\'s plate and its stations layer, with a ranger marker per live position and the age of each one\'s last ping. The layer and the legend group are what this module contributes.'),
+            // WHO IS REPORTING, NOT WHERE (ruled 2026-09-26): the area's marks
+            // are the area overview's and the Live tab's to draw, so the
+            // shipped composition carries this list and its door to the plate.
+            new Widget('live', 'Reporting right now', 'e', 12, [12, 6], on: true, note: 'Who is on a watch this minute, with the age of their last ping, and the way to the live plate.'),
             // ---- in the library, off the shipped composition ----
             new Widget('day', 'The day board', 'a', 12, [12, 9], on: false, note: 'Twenty-four hours across, one station per row, a block per watch and a line at now.'),
             new Widget('handover', 'Next shift change', 'a', 6, [12, 6], on: false, note: 'Who goes off at the shift change, who comes on, and what the outgoing watch has to hand over.'),
@@ -117,7 +120,6 @@ final class RosterWidgets implements WidgetSurfaceInterface
             new Widget('people', 'People on the roster', 'd', 12, [12, 9], on: false, note: 'Department, posting, today\'s shift and whether they are out on a patrol — the watches standing now first.'),
             new Widget('away', 'Away', 'd', 6, [12, 6], on: false, note: 'Leave, rest days and courses — who is not available, and until when.'),
             new Widget('load', 'Nights and hours', 'd', 6, [12, 6], on: false, note: 'Shifts and nights per person this month — who is carrying the rota.'),
-            new Widget('live', 'Reporting right now', 'e', 6, [12, 6], on: false, note: 'Who is on a watch this minute, with the age of their last ping.'),
             new Widget('checkins', 'The check-in feed', 'e', 12, [12, 9], on: false, note: 'Every check-in of the day newest first, with its status, its post and whether the pings bear it out.'),
         ];
     }
@@ -145,7 +147,7 @@ final class RosterWidgets implements WidgetSurfaceInterface
             'b' => [
                 'Station first',
                 'The area is its posts. One card per station that runs a watch — who is actually on it against who was rostered, and whether it is still talking to us — over the roster\'s own columns: what watch it expects, how wide its catchment is, how long its silence may run. The only direction in which an offline station cannot be missed; the weakest at "who is working too many nights".',
-                ['kpis' => 12, 'map' => 12, 'stations' => 6, 'offline' => 6, 'registry' => 12],
+                ['kpis' => 12, 'stations' => 6, 'offline' => 6, 'live' => 12, 'registry' => 12],
             ],
             'c' => [
                 'The week planner',

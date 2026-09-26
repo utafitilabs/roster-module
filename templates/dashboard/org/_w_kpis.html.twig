@@ -4,6 +4,7 @@
 <div class="grid kstrip">
     <div class="c kpi hot" data-kpi="checked-in">
         <span class="tab">Checked in</span>
+        <a class="more" href="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterOrgController::LIVE_ROUTE')) }}">Live &rarr;</a>
         <b class="disp">{{ figures.checkedIn }}<em>of {{ figures.expected }} due</em></b>
         <span class="sub">{{ areas|length }} area{{ areas|length == 1 ? '' : 's' }} counted</span>
     </div>

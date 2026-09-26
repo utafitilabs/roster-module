@@ -19,6 +19,7 @@ use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 use Doctrine\Bundle\MigrationsBundle\DoctrineMigrationsBundle;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
+use Symfony\Bundle\MercureBundle\MercureBundle;
 use Symfony\Bundle\SecurityBundle\SecurityBundle;
 use Symfony\Bundle\TwigBundle\TwigBundle;
 use Symfony\Component\Clock\MockClock;
@@ -76,6 +77,9 @@ final class TestKernel extends Kernel
      */
     public const string NOW = 'today 10:30';
 
+    /** The hub the Live pages stream from; never reached, nothing here publishes. */
+    public const string HUB_URL = 'http://localhost:3000/.well-known/mercure';
+
     public function registerBundles(): iterable
     {
         yield new FrameworkBundle();
@@ -110,6 +114,9 @@ final class TestKernel extends Kernel
         yield new ApiPlatformBundle();
         yield new AreaBundle();
         yield new UhifadhiRosterBundle();
+        // The hub a deployment configures, so the Live pages hand their plates
+        // a stream and set the subscriber cookie. Nothing here publishes.
+        yield new MercureBundle();
     }
 
     protected function configureContainer(ContainerConfigurator $container): void
@@ -188,6 +195,22 @@ final class TestKernel extends Kernel
 
         // UX Map draws nothing at all until a renderer is named.
         $container->extension('ux_map', ['renderer' => 'leaflet://default']);
+
+        /*
+         * THE HUB, AS A DEPLOYMENT CONFIGURES IT — the documented minimum.
+         *
+         * @see https://symfony.com/doc/current/mercure.html — "Configuration"
+         * @see vendor/symfony/mercure-bundle/src/DependencyInjection/MercureExtension.php
+         */
+        $container->extension('mercure', [
+            'hubs' => [
+                'default' => [
+                    'url' => self::HUB_URL,
+                    'public_url' => self::HUB_URL,
+                    'jwt' => ['secret' => 'test-mercure-jwt-secret-at-least-256-bits-long'],
+                ],
+            ],
+        ]);
 
         // THE INSTALLATION'S PERMISSION VOTER, played by a fixture: this
         // module declares the roster concern and grants nobody its verbs, so

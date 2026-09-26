@@ -50,6 +50,7 @@ use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
 {
     use EveryAreaRunsTheRoster;
     use FreshDatabase;
+    use ReadsTheLiveStream;
 
     private KernelBrowser $client;
     private EntityManagerInterface $em;
@@ -118,6 +119,18 @@ use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
         // yesterday's.
         $this->em->persist(new Duty($this->area, $gate, $ranger, 'night', new \DateTimeImmutable('yesterday')));
         $this->em->flush();
+    }
+
+    /**
+     * THE LIVE TAB STREAMS. It used to draw once, so its marks stood still
+     * until the page was reloaded; it now subscribes to the area's topic
+     * like the area overview does, with the cookie the hub checks.
+     */
+    public function testTheLiveTabStreamsTheAreasPositions(): void
+    {
+        $this->open();
+
+        self::assertStreamsTheAreas($this->client, [(string) $this->area->getUuidString()]);
     }
 
     private function open(): \Symfony\Component\DomCrawler\Crawler

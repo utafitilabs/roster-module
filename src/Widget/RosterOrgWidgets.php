@@ -68,13 +68,12 @@ final class RosterOrgWidgets implements WidgetSurfaceInterface
             [new WidgetGroup(
                 self::GROUP,
                 'Every area at once',
-                'The organization’s day: the four figures, what needs an answer in any area, one band per area, and every live position on one plate.',
+                'The organization’s day: the four figures, what needs an answer in any area, and one band per area. Where everybody is, is the dashboard’s and the Live page’s.',
             )],
             [
                 new Widget('kpis', 'The day’s check-ins, org-wide', self::GROUP, 12, [12], on: true, note: 'Four figures, every area counted: due, verified at a post, needing an answer, and the posts still reporting.'),
                 new Widget('decisions', 'Needs a decision, everywhere', self::GROUP, 12, [12, 9], on: true, note: 'Every ranger and every watch that needs somebody to act, in any area, loudest first. The area is named on the row.'),
                 new Widget('areas', 'One band per area', self::GROUP, 12, [12, 9], on: true, note: 'Rangers, posts reporting, check-ins in and questions open — one row per area, with the way into that area’s own roster.'),
-                new Widget('map', 'Every area, live', self::GROUP, 12, [12], on: true, note: 'All four boundaries on one plate with every live position on it. The full version is the Live tab.'),
                 new Widget('load', 'Who is carrying the nights', self::GROUP, 6, [12, 6], on: false, note: 'Nights stood per person over the last four weeks, org-wide — the question an area page cannot answer.'),
                 new Widget('gaps', 'Unfilled watches, next seven days', self::GROUP, 6, [12, 6], on: false, note: 'Every watch nobody is on in any area, soonest first.'),
             ],
@@ -83,7 +82,7 @@ final class RosterOrgWidgets implements WidgetSurfaceInterface
                     'a',
                     self::DEFAULT_LABEL,
                     self::DEFAULT_DESCRIPTION,
-                    ['kpis' => 12, 'decisions' => 12, 'areas' => 12, 'map' => 12],
+                    ['kpis' => 12, 'decisions' => 12, 'areas' => 12],
                 ),
             ],
             defaultPreset: 'a',
