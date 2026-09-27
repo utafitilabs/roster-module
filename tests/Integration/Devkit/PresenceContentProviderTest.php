@@ -43,11 +43,21 @@ use Uhifadhi\Roster\Tests\Integration\IntegrationTestCase;
  */
 final class PresenceContentProviderTest extends IntegrationTestCase
 {
+    /** A Wednesday on which the fixture's roster stands the day and office watches. */
+    private const string PINNED_DAY = '2026-09-23';
+
     private AreaOfInterest $area;
 
     protected function setUp(): void
     {
         parent::setUp();
+
+        // PIN THE DAY, not only the hour: the roster plan is drawn per date,
+        // and on some dates this park has one watch standing at half past
+        // ten, which never reaches the stale mark. It failed on 27 Sep.
+        $clock = self::getContainer()->get('clock');
+        self::assertInstanceOf(MockClock::class, $clock);
+        $clock->modify(self::PINNED_DAY.' 08:00');
 
         $this->aParkWithFourStations();
     }
@@ -138,6 +148,15 @@ final class PresenceContentProviderTest extends IntegrationTestCase
         return $clock;
     }
 
+    /** The pinned instant: every day this suite names is the clock's, never the wall's. */
+    private function now(): \DateTimeImmutable
+    {
+        $clock = self::getContainer()->get('clock');
+        self::assertInstanceOf(MockClock::class, $clock);
+
+        return $clock->now();
+    }
+
     private function positions(): LivePositionsInterface
     {
         $positions = self::getContainer()->get('test_public.'.LivePositionsInterface::class);
@@ -154,8 +173,8 @@ final class PresenceContentProviderTest extends IntegrationTestCase
     private function theMonthAsRead(): array
     {
         $days = [];
-        $day = new \DateTimeImmutable('first day of this month')->setTime(0, 0);
-        $today = new \DateTimeImmutable('today');
+        $day = $this->now()->modify('first day of this month')->setTime(0, 0);
+        $today = $this->now()->modify('today');
 
         while ($day <= $today) {
             foreach ($this->presence()->dayIn((string) $this->area->getUuidString(), $day->format('Y-m-d')) as $personDay) {
@@ -259,8 +278,8 @@ final class PresenceContentProviderTest extends IntegrationTestCase
     {
         $this->provider()->load();
 
-        $tomorrow = new \DateTimeImmutable('tomorrow');
-        $end = new \DateTimeImmutable('last day of this month')->setTime(0, 0);
+        $tomorrow = $this->now()->modify('tomorrow');
+        $end = $this->now()->modify('last day of this month')->setTime(0, 0);
 
         for ($day = $tomorrow; $day <= $end; $day = $day->modify('+1 day')) {
             self::assertSame([], $this->presence()->dayIn((string) $this->area->getUuidString(), $day->format('Y-m-d')), 'A watch reported before it was stood.');
@@ -301,7 +320,7 @@ final class PresenceContentProviderTest extends IntegrationTestCase
         $this->atMidMorning();
         $this->provider()->load();
 
-        $today = $this->presence()->dayIn((string) $this->area->getUuidString(), new \DateTimeImmutable('today')->format('Y-m-d'));
+        $today = $this->presence()->dayIn((string) $this->area->getUuidString(), $this->now()->modify('today')->format('Y-m-d'));
         self::assertNotSame([], $today, 'Somebody is on today.');
 
         $atPost = array_filter(
