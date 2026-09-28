@@ -1,0 +1,15 @@
+{# THE ROSTER'S BAND ON THE PERSON'S OWN POST (#19; design
+   variants-my-dashboard/station.html, the Watches card, "what the post
+   expects") — rows, and nothing around them: the card, the heading and the
+   summary are the area's chrome.
+
+   WHAT THE POST EXPECTS OF THE PERSON READING IT, and nothing else: its
+   watches with their windows and how many people each needs, how near a
+   check-in has to be, and how often a handset reports on watch. #}
+{% for shift in shifts %}
+    <div class="rln"><span>{{ shift.label|capitalize }}</span><span class="mono d">{{ shift.window ?? 'no window' }} &middot; {% if shift.people > 0 %}{{ shift.people }} {{ shift.people == 1 ? 'person' : 'people' }}{% else %}no number set{% endif %}</span></div>
+{% else %}
+    <div class="rln"><span>Watches</span><span class="mono d">this post declares none</span></div>
+{% endfor %}
+<div class="rln"><span>Check-in</span><span class="mono d">within {{ checkInWithin }} of the station</span></div>
+{% if pingEvery %}<div class="rln"><span>Pings</span><span class="mono d">every {{ pingEvery }} min on watch</span></div>{% endif %}

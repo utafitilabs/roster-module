@@ -276,6 +276,8 @@ final class TestKernel extends Kernel
             \Uhifadhi\Roster\Service\DayBoardService::class => 'roster.day_board',
             \Uhifadhi\Roster\Service\RosterCalendar::class => 'roster.calendar',
             \Uhifadhi\Roster\Service\RosteredPeople::class => 'roster.rostered_people',
+            // A person's own roster (#19), read by the dashboard card and the page.
+            \Uhifadhi\Roster\Service\MyRosterService::class => 'roster.my_roster',
             \Uhifadhi\Roster\Repository\SwapRepository::class => \Uhifadhi\Roster\Repository\SwapRepository::class,
             // The AREA's own derivation, so a test can assert this module
             // READS it rather than computing a second answer beside it.

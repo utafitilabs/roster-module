@@ -26,9 +26,13 @@ use Uhifadhi\Contracts\Area\StationSections;
 use Uhifadhi\Contracts\Area\StationSectionsInterface;
 use Uhifadhi\Contracts\Area\StationSurface;
 use Uhifadhi\Roster\Controller\RosterConfigureController;
+use Uhifadhi\Roster\Entity\Shift;
 use Uhifadhi\Roster\Entity\StationWatch;
+use Uhifadhi\Roster\Enum\RuleKind;
 use Uhifadhi\Roster\Module\RosterModuleProvider;
 use Uhifadhi\Roster\Service\PresenceReader;
+use Uhifadhi\Roster\Service\RosterSettingsService;
+use Uhifadhi\Roster\Service\ShiftRuleService;
 use Uhifadhi\Roster\Service\ShiftVocabularyService;
 use Uhifadhi\Roster\Service\StationWatchService;
 
@@ -64,6 +68,15 @@ use Uhifadhi\Roster\Service\StationWatchService;
  * chrome, written once by the bundle that owns the page; the templates named
  * here write rows and nothing around them.
  *
+ * AND A THIRD SURFACE, THE PERSON'S OWN (#19, ruled 28 Sep 2026): the post
+ * as somebody posted at it reads it on `/me/station`. There it says what the
+ * post EXPECTS of them — its watches, how many each needs, how near a
+ * check-in has to be, how often a handset reports — and nothing else: no
+ * presence of anybody else, no door into this module's configure page. It is
+ * named in its own branch, never left to fall into the configure one, because
+ * the configure block is a setting-up surface and a ranger is not setting a
+ * post up.
+ *
  * BATCHED, and it matters: the configure page draws a card per station, so a
  * contributor asked once per card would run a query per card per module per
  * page. It is handed the whole set and asks its questions once.
@@ -76,11 +89,16 @@ final readonly class RosterStationSections implements StationSectionsInterface
     /** The block on the post's card on the area's Stations configure page. */
     public const string ROSTER = 'roster';
 
+    /** What the post expects, on the person's own page (#19). */
+    public const string WATCHES = 'watches';
+
     public function __construct(
         private StationRepository $stations,
         private StationWatchService $watches,
         private ShiftVocabularyService $shifts,
         private PresenceReader $presence,
+        private ShiftRuleService $rules,
+        private RosterSettingsService $settings,
         private UrlGeneratorInterface $router,
         private ?CsrfTokenManagerInterface $csrfTokenManager = null,
         // A TOKEN IS A THING IN A SESSION, so it can only be issued inside
@@ -112,24 +130,22 @@ final readonly class RosterStationSections implements StationSectionsInterface
         foreach ($stations as $uuid => $station) {
             $watch = $this->watches->forStation($station);
 
-            if (null === $watch) {
-                // NOT ON THE BOOKS. The record says nothing at all; the
-                // configure card says so, and offers the one write that
-                // changes it.
-                if (StationSurface::Record === $request->surface) {
-                    continue;
-                }
+            // EVERY SURFACE BY NAME. A match with no default is what keeps a
+            // surface added later from falling silently into one of these:
+            // PHP refuses an unhandled case at the line that forgot it.
+            //
+            // NOT ON THE BOOKS: the record and the person's own page say
+            // nothing at all; the configure card says so, and offers the one
+            // write that changes it.
+            $section = match ($request->surface) {
+                StationSurface::Record => null === $watch ? null : $this->recordBand($station, $watch, $today),
+                StationSurface::Configure => null === $watch ? $this->offTheBooksBlock($station) : $this->configureBlock($station, $watch),
+                StationSurface::Mine => null === $watch ? null : $this->mineBand($station, $watch),
+            };
 
-                $byStation[$uuid] = [$this->offTheBooksBlock($station)];
-
-                continue;
+            if (null !== $section) {
+                $byStation[$uuid] = [$section];
             }
-
-            $byStation[$uuid] = [
-                StationSurface::Record === $request->surface
-                    ? $this->recordBand($station, $watch, $today)
-                    : $this->configureBlock($station, $watch),
-            ];
         }
 
         return new StationSections($byStation);
@@ -163,6 +179,52 @@ final readonly class RosterStationSections implements StationSectionsInterface
                     ['uuid' => (string) $area->getUuidString()],
                 )),
             ],
+        );
+    }
+
+    /**
+     * THE *WATCHES* BAND on the person's own page (#19; design
+     * variants-my-dashboard/station.html, SN·03): one row per watch the post
+     * runs — its window and how many people it needs — then how near a
+     * check-in has to be and how often a handset reports on watch.
+     *
+     * THE CHECK-IN ROW IS A DISTANCE because that is the rule this module
+     * keeps ({@see RuleKind::CheckInWithin}, "of the station"); the design's
+     * "within 30 min of the watch" is a time window no rule here states.
+     *
+     * NO ACTION: the person reading it may not edit a watch, and a door they
+     * would meet a 403 behind is not a door.
+     */
+    private function mineBand(Station $station, StationWatch $watch): StationSection
+    {
+        $windows = [];
+        foreach ($this->shiftsOf($station) as $shift) {
+            $windows[$shift->getKey()] = $shift;
+        }
+
+        $rows = [];
+        foreach ($watch->getExpects() as $key) {
+            $shift = $windows[$key] ?? null;
+            $rows[] = [
+                'label' => null === $shift ? $key : $shift->getLabel(),
+                'window' => null === $shift ? null : $shift->getStartsAt().'–'.$shift->getEndsAt(),
+                'people' => $watch->needsOn($key),
+            ];
+        }
+
+        $area = $station->getArea();
+
+        return new StationSection(
+            id: self::WATCHES,
+            label: 'Watches',
+            template: '@UhifadhiRoster/station/_mine.html.twig',
+            variables: [
+                'shifts' => $rows,
+                'checkInWithin' => $this->rules->effective($station, RuleKind::CheckInWithin)->label(),
+                'pingEvery' => null === $area ? null : $this->settings->pingIntervalFor($area),
+            ],
+            summary: 'What the post expects.',
+            actions: [],
         );
     }
 
@@ -272,17 +334,20 @@ final readonly class RosterStationSections implements StationSectionsInterface
      */
     private function labelsFor(Station $station): array
     {
-        $area = $station->getArea();
-        if (null === $area) {
-            return [];
-        }
-
         $labels = [];
-        foreach ($this->shifts->forArea($area) as $shift) {
+        foreach ($this->shiftsOf($station) as $shift) {
             $labels[$shift->getKey()] = $shift->getLabel();
         }
 
         return $labels;
+    }
+
+    /** @return list<Shift> the area's shift vocabulary; none for a post with no area */
+    private function shiftsOf(Station $station): array
+    {
+        $area = $station->getArea();
+
+        return null === $area ? [] : $this->shifts->forArea($area);
     }
 
     /**

@@ -1,0 +1,16 @@
+{# A SPAN OF DAYS AS THE DESIGN PRINTS ONE: `12 Oct`, `12–16 Oct`, or
+   `30 Dec – 2 Jan` across a month. Both ends inclusive, as an absence is. #}
+{% macro span(from, to) -%}
+    {%- if from|date('Y-m-d', false) == to|date('Y-m-d', false) -%}
+        {{ from|date('j M', false) }}
+    {%- elseif from|date('Y-m', false) == to|date('Y-m', false) -%}
+        {{ from|date('j', false) }}&ndash;{{ to|date('j M', false) }}
+    {%- else -%}
+        {{ from|date('j M', false) }} &ndash; {{ to|date('j M', false) }}
+    {%- endif -%}
+{%- endmacro %}
+
+{# One mark on one day: the pill it wears and what it says. #}
+{% macro marks(marks) -%}
+    {%- for mark in marks %}<i class="md-sh {{ mark.kind }}">{{ mark.label }}</i>{% endfor -%}
+{%- endmacro %}

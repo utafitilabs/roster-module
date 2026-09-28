@@ -46,6 +46,12 @@ final class FixedManageVoter extends Voter
     public const string READER_EMAIL = 'reader@example.test';
 
     /**
+     * HOLDS NOTHING AT ALL, not even the ground's reads: somebody who may not
+     * read the areas, whom `/` gives their own dashboard (#19).
+     */
+    public const string PERSON_EMAIL = 'person@example.test';
+
+    /**
      * THE GROUND'S OWN PAIRS, none of them this module's to declare and none
      * of them ever checked by it. They are granted here because this module
      * CONTRIBUTES to the area's and the organization's own screens and
@@ -92,6 +98,10 @@ final class FixedManageVoter extends Voter
     {
         $user = $token->getUser();
         if (!$user instanceof User) {
+            return false;
+        }
+
+        if (self::PERSON_EMAIL === $user->getEmail()) {
             return false;
         }
 

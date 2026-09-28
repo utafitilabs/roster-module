@@ -28,6 +28,7 @@ use Uhifadhi\Bundle\AreaBundle\Service\CheckInService;
 use Uhifadhi\Bundle\AreaBundle\Service\CheckInStatusService;
 use Uhifadhi\Bundle\AreaBundle\Service\PostingService;
 use Uhifadhi\Bundle\AreaBundle\Service\ZoneSetService;
+use Uhifadhi\Bundle\ShellBundle\Contract\StylesheetSourceInterface;
 use Uhifadhi\Bundle\ShellBundle\Widget\Registry\WidgetSurfaceInterface;
 use Uhifadhi\Bundle\ShellBundle\Widget\Service\WidgetEndpoint;
 use Uhifadhi\Bundle\ShellBundle\Widget\Service\WidgetService;
@@ -36,18 +37,21 @@ use Uhifadhi\Bundle\TeamBundle\Repository\UserRepository;
 use Uhifadhi\Contracts\Access\ConcernSourceInterface;
 use Uhifadhi\Contracts\Area\LivePositionsInterface;
 use Uhifadhi\Contracts\Area\StationSectionsInterface;
+use Uhifadhi\Contracts\Me\MyCardProviderInterface;
 use Uhifadhi\Contracts\Roster\WatchProviderInterface;
 use Uhifadhi\Contracts\Shell\ConfigurationSectionsInterface;
 use Uhifadhi\Contracts\Shell\ModuleTabsInterface;
 use Uhifadhi\Roster\Access\RosterConcerns;
 use Uhifadhi\Roster\Controller\RosterConfigureController;
 use Uhifadhi\Roster\Controller\RosterController;
+use Uhifadhi\Roster\Controller\RosterMeController;
 use Uhifadhi\Roster\Controller\RosterOrgController;
 use Uhifadhi\Roster\Controller\RosterPatternsController;
 use Uhifadhi\Roster\Controller\RosterWidgetsController;
 use Uhifadhi\Roster\DependencyInjection\RosterConfiguration;
 use Uhifadhi\Roster\Devkit\PresenceContentProvider;
 use Uhifadhi\Roster\Devkit\RosterContentProvider;
+use Uhifadhi\Roster\Me\RosterMyCards;
 use Uhifadhi\Roster\Module\RosterModuleProvider;
 use Uhifadhi\Roster\Module\RosterWatches;
 use Uhifadhi\Roster\Org\RosterOrgOverview;
@@ -68,6 +72,7 @@ use Uhifadhi\Roster\Service\RosterWidgetUrls;
 use Uhifadhi\Roster\Shell\RosterConfigurationSections;
 use Uhifadhi\Roster\Shell\RosterModuleTabs;
 use Uhifadhi\Roster\Shell\RosterStationSections;
+use Uhifadhi\Roster\Shell\RosterStylesheets;
 use Uhifadhi\Roster\Widget\RosterOrgWidgets;
 use Uhifadhi\Roster\Widget\RosterRailWidgets;
 use Uhifadhi\Roster\Widget\RosterWidgets;
@@ -97,6 +102,14 @@ final class UhifadhiRosterBundle extends AbstractBundle
      * rendering this module's presence card on its overview.
      */
     public const string STYLESHEET = 'bundles/uhifadhiroster/roster.css';
+
+    /**
+     * THE SHEET A PERSON'S OWN ROSTER IS DRAWN IN (#19) — the week strip and
+     * shift pills on the dashboard card, and the week table on My roster. The
+     * card is drawn inside the core's dashboard, so this one is published
+     * into every head ({@see RosterStylesheets}).
+     */
+    public const string ME_STYLESHEET = 'bundles/uhifadhiroster/me.css';
 
     /**
      * The AssetMapper namespace for the bundle's Stimulus controllers. It MUST
@@ -338,6 +351,10 @@ final class UhifadhiRosterBundle extends AbstractBundle
                 service('roster.station_watches'),
                 service('roster.shift_vocabulary'),
                 service('roster.presence'),
+                // What the person's own post expects of them (#19): the
+                // check-in distance and the area's ping interval.
+                service('roster.shift_rules'),
+                service('roster.settings'),
                 service('router'),
                 /*
                  * THE DOOR ON AN OFF-THE-BOOKS POST'S CARD writes, so it
@@ -660,6 +677,41 @@ final class UhifadhiRosterBundle extends AbstractBundle
                 ])
                 ->public();
             $services->alias(RosterPatternsController::class, 'roster.controller.patterns')->public();
+
+            /*
+             * A PERSON'S OWN ROSTER (#19, ruled 28 Sep 2026): the door and the
+             * two cards on their dashboard, the My roster page behind them,
+             * and the sheet the cards are drawn in.
+             *
+             * SECURITY-GATED because each one is about the person signed in:
+             * without a firewall there is nobody to be, and the core's own
+             * dashboard and `/me` pages are registered on the same condition.
+             *
+             * TAGGED BY HAND, like every contribution here: a reusable bundle
+             * is not autoconfigured, and an untagged provider is a card that
+             * silently never appears.
+             *
+             * THE CLOCK IS OPTIONAL: an installation without one reads the
+             * wall clock, which is what the clock would have said.
+             *
+             * @see https://symfony.com/doc/current/bundles/best_practices.html#services
+             */
+            $services->set('roster.controller.me', RosterMeController::class)
+                ->args([
+                    service('twig'),
+                    service('security.token_storage'),
+                    service('roster.my_roster'),
+                    service('clock')->nullOnInvalid(),
+                ])
+                ->public();
+            $services->alias(RosterMeController::class, 'roster.controller.me')->public();
+
+            $services->set('roster.my_cards', RosterMyCards::class)
+                ->args([service('twig'), service('roster.my_roster'), service('router')])
+                ->tag(MyCardProviderInterface::TAG);
+
+            $services->set('roster.shell.stylesheets', RosterStylesheets::class)
+                ->tag(StylesheetSourceInterface::TAG);
 
             /*
              * THE WIDGET LIBRARY — the configure page's first section.

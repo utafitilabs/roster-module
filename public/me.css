@@ -1,0 +1,32 @@
+/*
+ * A PERSON'S OWN ROSTER (#19; design variants-my-dashboard, approved 28 Sep
+ * 2026): the week strip on the dashboard's My roster card, the shift pills,
+ * and the week table on the My roster page.
+ *
+ * A SHEET OF ITS OWN, AND IN EVERY HEAD. The card is drawn inside the core's
+ * dashboard, a page that has never heard of this module and links none of
+ * its sheets, so it is published through the shell's head contract
+ * (RosterStylesheets) — and kept apart from roster.css so that what reaches
+ * every page is these few rules and not the whole module's vocabulary.
+ *
+ * THE DESIGN'S RULES, SPENDING THE HOUSE'S TOKENS: its colour fallbacks and
+ * its font stack are the shell's to state, so they are not restated here.
+ */
+
+.md-wk { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin: 12px 0 10px; }
+.md-wk > div { border: 1px solid var(--ln); border-radius: 9px; padding: 7px 6px; text-align: center; }
+/* Today, the day the person reads the card on. */
+.md-wk > div.me { border-color: color-mix(in srgb, var(--acc) 55%, transparent); }
+.md-wk > div > span { display: block; font: 600 9.5px var(--font-mono); color: var(--fog); letter-spacing: .06em; margin-bottom: 5px; }
+
+/* One mark on one day: a watch (day, night), a stood-down day, or away. */
+.md-sh { display: inline-block; font: 700 9.5px var(--font-mono); letter-spacing: .05em; padding: 3px 7px; border-radius: 6px; text-transform: uppercase; }
+.md-sh.day { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn); }
+.md-sh.night { background: color-mix(in srgb, var(--cat-5) 18%, transparent); color: var(--cat-5); }
+.md-sh.off { color: var(--dim); border: 1px dashed var(--ln); }
+.md-sh.leave { background: color-mix(in srgb, var(--fail) 12%, transparent); color: var(--fail); }
+
+/* The week at the post: a person down, the days across, my row lit. */
+.md-rt td, .md-rt th { text-align: center; }
+.md-rt td:first-child, .md-rt th:first-child { text-align: left; }
+.md-rt tr.me td { background: color-mix(in srgb, var(--acc) 7%, transparent); }

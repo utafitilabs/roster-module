@@ -211,4 +211,87 @@ final class RosterStationSectionsTest extends IntegrationTestCase
         self::assertArrayHasKey((string) $this->onTheBooks->getUuidString(), $answer->byStation);
         self::assertArrayHasKey((string) $this->offTheBooks->getUuidString(), $answer->byStation);
     }
+
+    /**
+     * THE PERSON'S OWN POST (#19): `/me/station` carries the post's WATCHES —
+     * what it expects of the people on it, day and night, how near a
+     * check-in has to be and how often a handset reports — and nothing a
+     * ranger may not read: no presence of anybody else, no door into the
+     * roster's configure page.
+     */
+    public function testThePersonsOwnPostGetsWhatItExpects(): void
+    {
+        $this->onTheBooksNeeds(['day' => 2, 'night' => 1]);
+
+        $answer = $this->sections()->sectionsFor($this->request(StationSurface::Mine, $this->onTheBooks));
+        $sections = $answer->forStation((string) $this->onTheBooks->getUuidString());
+
+        self::assertCount(1, $sections);
+        self::assertSame(RosterStationSections::WATCHES, $sections[0]->id);
+        self::assertSame('Watches', $sections[0]->label);
+        self::assertSame('@UhifadhiRoster/station/_mine.html.twig', $sections[0]->template);
+        self::assertSame([], $sections[0]->actions, 'A person reading their own post is handed no door into the roster.');
+        self::assertArrayNotHasKey('presence', $sections[0]->variables, 'Who else is on watch is not what this section says.');
+    }
+
+    /** And never the configure block: the third surface is not a second configure card. */
+    public function testThePersonsOwnPostIsNeverAnsweredWithTheConfigureBlock(): void
+    {
+        $answer = $this->sections()->sectionsFor($this->request(StationSurface::Mine, $this->onTheBooks, $this->offTheBooks));
+
+        foreach ($answer->byStation as $sections) {
+            foreach ($sections as $section) {
+                self::assertNotSame(RosterStationSections::ROSTER, $section->id);
+            }
+        }
+    }
+
+    /** A post this module does not keep is silence on the person's page too — never the door to put it on the books. */
+    public function testAPostOffTheBooksSaysNothingOnThePersonsOwnPage(): void
+    {
+        $answer = $this->sections()->sectionsFor($this->request(StationSurface::Mine, $this->offTheBooks));
+
+        self::assertArrayNotHasKey((string) $this->offTheBooks->getUuidString(), $answer->byStation);
+    }
+
+    /**
+     * THE ROWS, as the design's SN·03 prints them: one per watch the post
+     * runs with its window and how many people it needs, then the check-in
+     * and the pings.
+     */
+    public function testTheWatchesRowsSayWhatThePostExpects(): void
+    {
+        $this->onTheBooksNeeds(['day' => 2, 'night' => 1]);
+        $this->area->setPingIntervalMinutes(5);
+        $this->em->flush();
+
+        $section = $this->sections()->sectionsFor($this->request(StationSurface::Mine, $this->onTheBooks))
+            ->forStation((string) $this->onTheBooks->getUuidString())[0];
+        $twig = static::getContainer()->get('twig');
+        self::assertInstanceOf(\Twig\Environment::class, $twig);
+        $html = $twig->render($section->template, $section->variables);
+        $rows = new \Symfony\Component\DomCrawler\Crawler($html)->filter('.rln')->each(
+            static fn (\Symfony\Component\DomCrawler\Crawler $row): string => implode(' ', $row->filter('span')->each(
+                static fn (\Symfony\Component\DomCrawler\Crawler $span): string => trim((string) preg_replace('/\s+/', ' ', $span->text())),
+            )),
+        );
+
+        self::assertSame([
+            'Day 06:00–18:00 · 2 people',
+            'Night 18:00–06:00 · 1 person',
+            'Check-in within 1.5 km of the station',
+            'Pings every 5 min on watch',
+        ], $rows);
+    }
+
+    /** @param array<string, int> $needs */
+    private function onTheBooksNeeds(array $needs): void
+    {
+        $watches = $this->service(StationWatchService::class);
+        self::assertInstanceOf(StationWatchService::class, $watches);
+        $watch = $watches->forStation($this->onTheBooks);
+        self::assertNotNull($watch);
+        $watch->setNeedsPerShift($needs);
+        $this->em->flush();
+    }
 }

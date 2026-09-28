@@ -169,6 +169,42 @@ final class DutyRepository extends ServiceEntityRepository
     }
 
     /**
+     * SEVERAL PEOPLE'S STANDING WATCHES IN ONE AREA, between two days — the
+     * week at a post, read once for everybody posted there rather than once a
+     * person (#19, the person's own roster).
+     *
+     * @param list<string> $personUuids
+     *
+     * @return list<Duty>
+     */
+    public function findStandingForPeopleBetween(AreaOfInterest $area, array $personUuids, \DateTimeImmutable $from, \DateTimeImmutable $through): array
+    {
+        if ([] === $personUuids) {
+            return [];
+        }
+
+        /** @var list<Duty> $duties */
+        $duties = $this->createQueryBuilder('d')
+            ->join('d.person', 'p')
+            ->andWhere('d.area = :area')
+            ->andWhere('p.uuid IN (:people)')
+            ->andWhere('d.onDay BETWEEN :from AND :through')
+            ->andWhere('d.state != :cancelled')
+            ->setParameter('area', $area)
+            ->setParameter('people', $personUuids)
+            ->setParameter('from', $from->setTime(0, 0))
+            ->setParameter('through', $through->setTime(0, 0))
+            ->setParameter('cancelled', DutyState::Cancelled)
+            ->orderBy('d.onDay', 'ASC')
+            ->addOrderBy('d.shiftKey', 'ASC')
+            ->addOrderBy('d.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        return $duties;
+    }
+
+    /**
      * HAS THIS SHIFT EVER BEEN STOOD IN THIS AREA?
      *
      * Asked with a limit rather than a COUNT, because the only caller wants a

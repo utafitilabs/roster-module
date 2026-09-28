@@ -31,6 +31,7 @@ use Uhifadhi\Roster\Repository\StationWatchRepository;
 use Uhifadhi\Roster\Repository\SwapRepository;
 use Uhifadhi\Roster\Service\CyclePlanner;
 use Uhifadhi\Roster\Service\DayBoardService;
+use Uhifadhi\Roster\Service\MyRosterService;
 use Uhifadhi\Roster\Service\PatternService;
 use Uhifadhi\Roster\Service\PresenceReader;
 use Uhifadhi\Roster\Service\RosterCalendar;
@@ -366,5 +367,20 @@ return static function (ContainerConfigurator $container): void {
             service(StationRuleExceptionRepository::class),
             service('roster.shift_vocabulary'),
             service('roster.settings'),
+        ]);
+
+    // A PERSON'S OWN ROSTER (#19): the week at the post they are posted at,
+    // read once for the dashboard's card and the My roster page alike. The
+    // registry is asked whether the post's area runs this module at all — a
+    // parked module has no roster to show anybody.
+    $services->set('roster.my_roster', MyRosterService::class)
+        ->args([
+            service('Uhifadhi\Bundle\AreaBundle\Repository\PostingRepository'),
+            service(DutyRepository::class),
+            service(AbsenceRepository::class),
+            service(SwapRepository::class),
+            service(ShiftRepository::class),
+            service(StationWatchRepository::class),
+            service('registry.area_modules'),
         ]);
 };

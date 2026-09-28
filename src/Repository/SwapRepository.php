@@ -87,6 +87,37 @@ final class SwapRepository extends ServiceEntityRepository
         return $swaps;
     }
 
+    /**
+     * EVERY OFFER ONE PERSON IS PARTY TO over a window of days, in whatever
+     * state it is in — the watch was theirs, they were asked, or they asked
+     * (#19, the Swaps card on a person's own roster). Scoped by the duty's
+     * day, like the week grid's, because a person reads a swap as the watch
+     * it is about.
+     *
+     * @return list<Swap>
+     */
+    public function findInvolving(string $personUuid, \DateTimeImmutable $from, \DateTimeImmutable $through, int $limit): array
+    {
+        /** @var list<Swap> $swaps */
+        $swaps = $this->createQueryBuilder('s')
+            ->join('s.duty', 'd')
+            ->join('d.person', 'holder')
+            ->join('s.offeredTo', 'asked')
+            ->leftJoin('s.offeredBy', 'asker')
+            ->andWhere('holder.uuid = :person OR asked.uuid = :person OR asker.uuid = :person')
+            ->andWhere('d.onDay BETWEEN :from AND :through')
+            ->setParameter('person', $personUuid)
+            ->setParameter('from', $from->setTime(0, 0))
+            ->setParameter('through', $through->setTime(0, 0))
+            ->orderBy('d.onDay', 'ASC')
+            ->addOrderBy('s.id', 'ASC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+
+        return $swaps;
+    }
+
     /** Whatever offer is out on this watch, or null. */
     public function findOpenForDuty(Duty $duty): ?Swap
     {

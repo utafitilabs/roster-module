@@ -1,0 +1,20 @@
+{# MY LEAVE (#19; design variants-my-dashboard/a.html, the My leave card) — my absences
+   this year, each with its days, and how many days of the year they cover.
+
+   NO ALLOWANCE, NO APPROVAL AND NO WAY TO ASK. The roster records an
+   absence because the hole it makes is the roster's to show; what somebody
+   is entitled to, whether it was approved and how to ask belong to Team,
+   which owns the person's employment. So the design's "Days left" row, its
+   approval chip and its "Ask for leave" door are not drawn, and the foot
+   says why rather than printing a number nobody keeps. #}
+{% import '@UhifadhiRoster/me/_dates.html.twig' as dates %}
+<div class="c" data-me="leave"><span class="tab">My leave<span class="src">&middot; {{ leave.year }}</span></span>
+    {% for absence in leave.absences %}
+        {% set days = absence.startsOn.diff(absence.endsOn).days + 1 %}
+        <div class="rln"><span>{{ absence.kind.label }}</span><span class="mono d">{{ dates.span(absence.startsOn, absence.endsOn) }} &middot; {{ days }} day{{ days == 1 ? '' : 's' }}</span></div>
+    {% else %}
+        <div class="rln"><span class="d">No absence this year.</span><span class="mono d"></span></div>
+    {% endfor %}
+    {% if leave.absences is not empty %}<div class="rln"><span>Days away</span><span class="mono d">{{ leave.daysAway }} this year</span></div>{% endif %}
+    <div class="sxfoot"><span>no leave allowance is kept on the roster</span></div>
+</div>

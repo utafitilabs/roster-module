@@ -45,12 +45,24 @@ use Uhifadhi\Roster\Access\RosterConcerns;
  */
 final class EveryRouteNamesItsPairTest extends TestCase
 {
+    /**
+     * THE ROUTES THAT ARE DELIBERATELY OPEN to anybody signed in, by path,
+     * each with the reason — the same list the core's own route test keeps
+     * for its `/me` pages. Listed rather than skipped, so an open page is a
+     * fact on this page and not an absence nobody notices.
+     *
+     * @var array<string, string>
+     */
+    private const array OPEN = [
+        '/me/roster' => "a person's own roster shows only the post they are posted at (#19)",
+    ];
+
     public function testEveryRouteThisModuleShipsNamesThePairItEnforces(): void
     {
         $ungated = [];
 
-        foreach (self::routes() as [$file, $name, $pairs]) {
-            if ([] === $pairs) {
+        foreach (self::routes() as [$file, $name, $pairs, $path]) {
+            if ([] === $pairs && !isset(self::OPEN[$path])) {
                 $ungated[] = $file.' -> '.$name;
             }
         }
@@ -115,6 +127,27 @@ final class EveryRouteNamesItsPairTest extends TestCase
         ));
     }
 
+    /** An open route that is no longer shipped is a reason about nothing; it leaves the list with the route. */
+    public function testEveryOpenRouteIsOneThisModuleShips(): void
+    {
+        $shipped = array_map(static fn (array $route): string => $route[3], self::routes());
+
+        self::assertSame([], array_values(array_diff(array_keys(self::OPEN), $shipped)));
+    }
+
+    /** And an open route gates nothing: a route with a pair is not open, and does not belong on the list. */
+    public function testNoOpenRouteNamesAPair(): void
+    {
+        $both = [];
+        foreach (self::routes() as [$file, $name, $pairs, $path]) {
+            if ([] !== $pairs && isset(self::OPEN[$path])) {
+                $both[] = $file.' -> '.$name;
+            }
+        }
+
+        self::assertSame([], $both);
+    }
+
     /**
      * A ROUTE'S GATE IS ITS ATTRIBUTE, so no action asks the checker itself.
      *
@@ -148,13 +181,13 @@ final class EveryRouteNamesItsPairTest extends TestCase
     }
 
     /**
-     * Every route this module ships, as [file, route name, pairs gated].
+     * Every route this module ships, as [file, route name, pairs gated, path].
      *
      * A class-level `#[Route(defaults: …)]` carries no path and is not a
      * route; it is skipped by the same test the core's uses — a chunk with
      * no quoted path in it.
      *
-     * @return list<array{string, string, list<string>}>
+     * @return list<array{string, string, list<string>, string}>
      */
     private static function routes(): array
     {
@@ -178,7 +211,7 @@ final class EveryRouteNamesItsPairTest extends TestCase
 
                 preg_match_all("/#\[IsGranted\(\s*'([^']+)'/", $head, $gates);
 
-                $routes[] = [basename($path), trim($name[1] ?? $route[1]), $gates[1]];
+                $routes[] = [basename($path), trim($name[1] ?? $route[1]), $gates[1], $route[1]];
             }
         }
 

@@ -14,6 +14,22 @@ has to do for a release is in [docs/upgrading.md](docs/upgrading.md).
 
 Not released yet.
 
+ * a person's own roster (#19, the dashboard for everyone): on the dashboard
+   `/` draws for somebody who may not read the areas, the door "My roster ·
+   the week at …", the My roster card — this week Monday to Sunday with one
+   pill a day (day, night, off, leave), the next watch, and who stands mine
+   with me today, the head first — and the My leave card, this year's
+   absences and the days they cover (`RosterMyCards`, tagged
+   `uhifadhi.me.cards`); the My roster page at `/me/roster` (`roster_me`),
+   open to anybody signed in because it shows only the post they are posted
+   at: the week table of everybody posted there with my row marked, a count
+   row against what the post expects, my next shifts, my swaps and who is
+   away (`MyRosterService`); the Watches band on `/me/station` — each watch's
+   window and people, the check-in distance and the area's ping interval
+   (`StationSurface::Mine`). The cards are drawn in a small sheet of their
+   own, `bundles/uhifadhiroster/me.css`, which the head carries on every
+   page (`RosterStylesheets`); an installation compiles its assets as for
+   any update
  * the week sheet's cover token under every day of a station's head row
    counts a station that names no number against the rangers stationed
    there — "3/4" where it read a dash — and a day nobody stands there wears

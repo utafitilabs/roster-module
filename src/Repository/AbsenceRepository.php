@@ -54,4 +54,37 @@ final class AbsenceRepository extends ServiceEntityRepository
 
         return $absences;
     }
+
+    /**
+     * THESE PEOPLE'S ABSENCES THAT TOUCH A WINDOW, in whichever area they
+     * were recorded — an absence is about the person, and a fortnight away
+     * recorded against another park is still a fortnight away (#19: a
+     * person's own leave, and who is away from their post this week).
+     *
+     * @param list<string> $personUuids
+     *
+     * @return list<Absence>
+     */
+    public function findForPeopleBetween(array $personUuids, \DateTimeImmutable $from, \DateTimeImmutable $through): array
+    {
+        if ([] === $personUuids) {
+            return [];
+        }
+
+        /** @var list<Absence> $absences */
+        $absences = $this->createQueryBuilder('a')
+            ->join('a.person', 'p')
+            ->andWhere('p.uuid IN (:people)')
+            ->andWhere('a.startsOn <= :through')
+            ->andWhere('a.endsOn >= :from')
+            ->setParameter('people', $personUuids)
+            ->setParameter('from', $from->setTime(0, 0))
+            ->setParameter('through', $through->setTime(0, 0))
+            ->orderBy('a.startsOn', 'ASC')
+            ->addOrderBy('a.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        return $absences;
+    }
 }

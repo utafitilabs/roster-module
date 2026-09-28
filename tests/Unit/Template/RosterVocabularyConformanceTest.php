@@ -37,7 +37,9 @@ final class RosterVocabularyConformanceTest extends VocabularyConformanceTestCas
 
     protected static function ownStylesheets(): array
     {
-        return ['roster.css'];
+        // AND THE SHEET A PERSON'S OWN ROSTER IS DRAWN IN (#19), which the
+        // head carries onto the core's dashboard for the card.
+        return ['roster.css', 'me.css'];
     }
 
     /**

@@ -1,0 +1,12 @@
+{# MY ROSTER (#19; design variants-my-dashboard/a.html, the My roster card) — this week at
+   the post I am posted at, Monday to Sunday with today marked; my next
+   watch; and who stands my watch with me today, the head first. #}
+{% import '@UhifadhiRoster/me/_dates.html.twig' as dates %}
+<div class="c" data-me="roster"><span class="tab">My roster<span class="src">&middot; {{ roster.station.name }} &middot; week {{ roster.week }}</span></span>
+    <div class="md-wk">
+        {%- for day in roster.days %}<div class="{{ day|date('Y-m-d', false) == today|date('Y-m-d', false) ? 'me' }}"><span>{{ day|date('D', false)|upper }}</span>{{ dates.marks(roster.mine[loop.index0]) }}</div>{% endfor -%}
+    </div>
+    <div class="rln"><span>Next</span><span class="mono d">{% if roster.next %}{{ roster.next.startsAt|date('D j M', false)|lower }} &middot; {{ roster.next.mark.label }}{% if roster.next.mark.window %} {{ roster.next.mark.window }}{% endif %}{% else %}nothing rostered in the next four weeks{% endif %}</span></div>
+    <div class="rln"><span>On with me today</span><span class="mono d">{% if roster.onWithMe is null %}I am off today{% elseif roster.onWithMe is empty %}nobody else on my watch{% else %}{{ roster.onWithMe|join(' · ') }}{% endif %}</span></div>
+    <div class="sxfoot"><span class="sp"></span><a class="tgl" href="{{ door }}">My roster &rarr;</a></div>
+</div>

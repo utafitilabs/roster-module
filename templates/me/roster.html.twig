@@ -1,0 +1,90 @@
+{# MY ROSTER (#19; design variants-my-dashboard/roster.html, approved 28 Sep
+   2026): the week at the post I am posted at — its facts, everybody posted
+   there day by day with my row marked, how many are on each watch against
+   what the post expects — then my next shifts, my swaps and who is away.
+
+   IT SHOWS THE POST I AM POSTED AT AND NOTHING WIDER, which is why the page
+   names no permission.
+
+   NO DOORS TO FLOWS THIS MODULE DOES NOT OFFER A PERSON: the design's "Ask
+   for a swap" is a duty officer's write here (the Week tab's, under the
+   roster's record grant), so it is not drawn for somebody who would meet a
+   403 behind it. #}
+{% extends '@Shell/page.html.twig' %}
+{% import '@UhifadhiRoster/me/_dates.html.twig' as dates %}
+
+{% block title %}My roster{% endblock %}
+{% block stylesheets %}{{ parent() }}{{ include('@Area/_stylesheets.html.twig') }}{% endblock %}
+{% block shell_page_tabs %}{% endblock %}
+{% block shell_breadcrumbs %}{% set home = roster_url('organization_dashboard') %}{% if home %}<a href="{{ home }}">{{ shell_brand().name|lower }}</a>{% else %}{{ shell_brand().name|lower }}{% endif %} / my roster{% endblock %}
+{% block shell_page_title %}My roster{% if roster %} <span class="chip acc">{{ roster.station.name }}</span>{% endif %}{% endblock %}
+{% block shell_page_subtitle %}{% if roster %}The week at the post I am posted at: my shifts and everybody else&rsquo;s, who leads, who is away.{% endif %}{% endblock %}
+
+{% block shell_page %}
+{% if roster is null %}
+    <div class="c" data-me="week"><span class="tab">My roster</span><div class="rln"><span>You are posted at no station that keeps a roster.</span><span class="mono d">the office posts you from your record</span></div></div>
+{% else %}
+    {% set station = roster_url('me_station') %}
+    <div class="factband" style="margin-bottom:18px">
+        <span class="f"><span class="k">Station</span><span class="v">{{ roster.station.name }}</span></span>
+        <span class="f"><span class="k">Head</span><span class="v">{% if roster.head %}{{ roster.head.name }}{% if roster.head.role %}<em>{{ roster.head.role }}</em>{% endif %}{% else %}nobody leads it yet{% endif %}</span></span>
+        {% if roster.watches is not empty %}<span class="f"><span class="k">Watches</span><span class="v">{{ roster.watches|first }}{% if roster.watches|length > 1 %}<em>{{ roster.watches|slice(1)|join(' · ') }}</em>{% endif %}</span></span>{% endif %}
+        <span class="f"><span class="k">Posted here</span><span class="v">{{ roster.rows|length }}</span></span>
+        {% set hours = roster.myMinutes // 60 %}{% set minutes = roster.myMinutes % 60 %}
+        <span class="f"><span class="k">My week</span><span class="v">{{ roster.myShifts }} shift{{ roster.myShifts == 1 ? '' : 's' }}<em>{{ hours }} h{% if minutes %} {{ '%02d'|format(minutes) }}{% endif %}</em></span></span>
+        <span class="sp"></span>
+        {% if station %}<a class="more" href="{{ station }}">My station &rarr;</a>{% endif %}
+    </div>
+
+    <div class="c" data-me="week"><span class="tab">The week at {{ roster.station.name }}<span class="src">&middot; {{ dates.span(roster.days|first, roster.days|last) }} &middot; everybody posted here</span></span>
+        <table class="tbl md-rt" style="margin-top:10px">
+            <thead><tr><th>Person</th>{% for day in roster.days %}<th>{{ day|date('D j', false)|upper }}</th>{% endfor %}</tr></thead>
+            <tbody>
+            {% for row in roster.rows %}
+                <tr class="{{ row.me ? 'me' }}"><td><b>{{ row.name }}</b>{% if row.me %} <span class="chip acc">me</span>{% endif %}{% set about = [row.role, row.head ? 'head' : null]|filter(v => v is not null) %}{% if about is not empty %}<br><span class="mono d">{{ about|join(' · ') }}</span>{% endif %}</td>
+                    {%- for marks in row.days %}<td>{{ dates.marks(marks) }}</td>{% endfor -%}
+                </tr>
+            {% endfor %}
+            <tr><td class="mono d">on duty{% for label in roster.countedShifts %} &middot; {{ label }}{% endfor %}</td>
+                {%- for count in roster.counts %}<td class="mono d">{{ count.onDuty }}{% for n in count.byShift %} &middot; {{ n }}{% endfor %}</td>{% endfor -%}
+            </tr>
+            </tbody>
+        </table>
+        {% if roster.expects is not empty %}
+            <div class="sxfoot"><span>the post expects {% for key, people in roster.expects %}{{ roster.countedShifts[key] }} {{ people }}{{ not loop.last ? ' · ' }}{% endfor %}</span></div>
+        {% endif %}
+    </div>
+
+    <div style="height:18px"></div>
+    <div class="md-g c3">
+        <div class="md-col">
+            <div class="c" data-me="next"><span class="tab">My next shifts<span class="src">&middot; the coming week</span></span>
+                {% for shift in roster.coming %}
+                    <div class="rln"><span>{{ shift.startsAt|date('D j M', false) }}</span><span class="mono d">{{ dates.marks([shift.mark]) }}{% if shift.mark.window %} {{ shift.mark.window }}{% endif %}</span></div>
+                {% else %}
+                    <div class="rln"><span class="d">Nothing rostered in the coming week.</span><span class="mono d"></span></div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="md-col">
+            <div class="c" data-me="swaps"><span class="tab">Swaps<span class="src">&middot; mine</span></span>
+                {% for swap in roster.swaps %}
+                    {% set tone = {offered: 'warn', accepted: 'ok', declined: 'fail', withdrawn: 'idle'}[swap.state.value] %}
+                    <div class="rln"><span>{{ swap.day|date('D j M', false) }} {{ swap.shiftLabel }} &harr; {{ swap.other }}</span><span class="mono d"><span class="chip {{ tone }}">{{ swap.waitingFor ? 'waiting for ' ~ swap.waitingFor : swap.state.label }}</span></span></div>
+                {% else %}
+                    <div class="rln"><span class="d">No swaps.</span><span class="mono d"></span></div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="md-col">
+            <div class="c" data-me="away"><span class="tab">Away from the post<span class="src">&middot; this week</span></span>
+                {% for absence in roster.away %}
+                    <div class="rln"><span>{{ absence.me ? 'Me' : absence.name }}</span><span class="mono d">{{ absence.kind }} &middot; {{ dates.span(absence.from, absence.to) }}</span></div>
+                {% else %}
+                    <div class="rln"><span class="d">Nobody is away this week.</span><span class="mono d"></span></div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
