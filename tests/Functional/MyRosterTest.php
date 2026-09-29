@@ -110,7 +110,7 @@ final class MyRosterTest extends WebTestCase
 
     public function testMyRosterCardIsMyWeekAtThePost(): void
     {
-        $card = $this->client->request('GET', '/')->filter('.md-left [data-me="roster"]');
+        $card = $this->client->request('GET', '/')->filter('[data-slot="left"] [data-me="roster"]');
 
         self::assertCount(1, $card);
         self::assertStringStartsWith('My roster', $card->filter('.tab')->text());
@@ -124,14 +124,14 @@ final class MyRosterTest extends WebTestCase
 
     public function testTheRosterCardComesFirstOnTheLeft(): void
     {
-        $left = $this->client->request('GET', '/')->filter('.md-left > .c');
+        $left = $this->client->request('GET', '/')->filter('[data-slot="left"] > .c');
 
         self::assertSame('roster', $left->first()->attr('data-me'));
     }
 
     public function testMyLeaveCardListsThisYearsAbsencesAndSaysThereIsNoAllowance(): void
     {
-        $card = $this->client->request('GET', '/')->filter('.md-row [data-me="leave"]');
+        $card = $this->client->request('GET', '/')->filter('[data-slot="row"] [data-me="leave"]');
 
         self::assertCount(1, $card);
         self::assertStringStartsWith('My leave', $card->filter('.tab')->text());
