@@ -89,12 +89,14 @@ installation writes no doctrine block and no asset path for it.
 
 ## Installation
 
+Commands run through the Symfony CLI — `symfony console …` — which hands the project the addresses of the services the skeleton's `compose.yaml` starts. Served some other way, run `php bin/console …` with those addresses written into `.env.local`.
+
 ```console
 composer require uhifadhi/roster-module
-php bin/console cache:clear --no-warmup
-php bin/console doctrine:migrations:migrate
-php bin/console registry:sync
-php bin/console cache:warmup
+symfony console cache:clear --no-warmup
+symfony console doctrine:migrations:migrate
+symfony console registry:sync
+symfony console cache:warmup
 ```
 
 Those are the installation's four commands after the require, the same four after every change to it. `doctrine:migrations:diff` must then report no changes: this module ships its own versions. `registry:sync` enters the module in the catalogue, gives every area its row and prints what it added, kept and retired; in development AssetMapper serves the module's assets from source while the production image compiles them.
