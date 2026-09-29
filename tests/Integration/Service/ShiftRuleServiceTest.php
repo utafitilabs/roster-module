@@ -300,7 +300,7 @@ final class ShiftRuleServiceTest extends IntegrationTestCase
 
     private function reloadedArea(): AreaOfInterest
     {
-        $area = $this->em->getRepository(AreaOfInterest::class)->findOneBy(['name' => 'demo reserve']);
+        $area = $this->em->getRepository(AreaOfInterest::class)->findOneBy(['name' => 'seed reserve']);
         self::assertInstanceOf(AreaOfInterest::class, $area);
 
         return $area;

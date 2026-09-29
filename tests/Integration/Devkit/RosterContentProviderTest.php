@@ -40,19 +40,19 @@ use Uhifadhi\Roster\Service\StationWatchService;
 use Uhifadhi\Roster\Tests\Integration\IntegrationTestCase;
 
 /**
- * THE DEMO PLAN — what `fixtures:demo` puts on the roster so that every tab
+ * THE SEED PLAN — what `fixtures:seed` puts on the roster so that every tab
  * reads like a working park rather than a set of empty frames.
  *
  * IT IS BUILT ON THE AREA'S OWN CONTENT, not on a parallel world of its
  * own: the posts are the ones the area seeded, and the people ringed at
- * each are the people POSTED there. A demo that invented its own stations
- * would be a demo of a product that does not exist, and the first thing it
+ * each are the people POSTED there. A seed that invented its own stations
+ * would be a seed of a product that does not exist, and the first thing it
  * would hide is the seam it is supposed to exercise.
  *
  * EVERYTHING FALLS IN THE CURRENT MONTH, because that is the window every
  * tab opens on. Content seeded into a fixed calendar month reads rich on
- * the day it was written and empty forever after — the one bug a demo
- * cannot afford, since nobody looks at a demo twice.
+ * the day it was written and empty forever after — the one bug a seed
+ * cannot afford, since nobody looks at a seed twice.
  */
 final class RosterContentProviderTest extends IntegrationTestCase
 {
@@ -68,7 +68,7 @@ final class RosterContentProviderTest extends IntegrationTestCase
         $this->area = $this->anArea();
 
         // Four posts and six people, posted around them the way the area's
-        // own seeder does it: the demo hangs on whatever it finds.
+        // own seeder does it: the seed hangs on whatever it finds.
         $postings = $this->service(PostingService::class);
         self::assertInstanceOf(PostingService::class, $postings);
 
@@ -177,7 +177,7 @@ final class RosterContentProviderTest extends IntegrationTestCase
      * THE POSTS ARE THE AREA'S, and they come onto the roster with what each
      * asks for — including one that asks for NOTHING, because a post on the
      * books with no watch is a state the board has to draw and an all-alike
-     * demo never produces it.
+     * seed never produces it.
      */
     public function testItPutsTheAreasOwnPostsOnTheRosterWithDifferentDemands(): void
     {
@@ -199,7 +199,7 @@ final class RosterContentProviderTest extends IntegrationTestCase
 
     /**
      * THE RING AT A POST IS THE PEOPLE POSTED THERE. Reading the pool from
-     * the area's postings is the whole point of the seam: a demo that picked
+     * the area's postings is the whole point of the seam: a seed that picked
      * people at random would show a roster nobody at that post appears on.
      */
     public function testEveryRingDrawsFromThePeoplePostedAtThatPost(): void
@@ -237,7 +237,7 @@ final class RosterContentProviderTest extends IntegrationTestCase
     }
 
     /**
-     * THE WHOLE OF THE CURRENT MONTH IS ROSTERED, both ends of it — a demo
+     * THE WHOLE OF THE CURRENT MONTH IS ROSTERED, both ends of it — a seed
      * that generated from today forward leaves the first half of every
      * calendar and every fortnight grid empty.
      */
@@ -267,7 +267,7 @@ final class RosterContentProviderTest extends IntegrationTestCase
      * is real and worth naming — a person may be POSTED at several posts,
      * every post's ring draws from the people posted there, and two rings
      * that share a person will both put them on the same morning. The
-     * demo therefore hands each post its own people where the area has
+     * seed therefore hands each post its own people where the area has
      * enough of them to go round.
      */
     public function testNobodyIsRosteredAtTwoPostsOnTheSameDay(): void
@@ -295,8 +295,8 @@ final class RosterContentProviderTest extends IntegrationTestCase
      *
      * BEHIND: the Week tab opens on fourteen days from the Monday of this
      * week, so in the first days of a month it reaches back into the last
-     * one; a demo bounded at the first drew those days as holes. And the
-     * presence demo can only report from watches that have already
+     * one; a seed bounded at the first drew those days as holes. And the
+     * presence seed can only report from watches that have already
      * happened. Ruled 20 sep: roster from the earlier of the two.
      *
      * AHEAD: the plan reaches as far as the area's fill-ahead rule says a
@@ -304,7 +304,7 @@ final class RosterContentProviderTest extends IntegrationTestCase
      * month, whichever is further. The month alone left the second week of
      * the sheet's own fortnight empty from the third week of every month,
      * and a Week tab whose right half is a wall of short cover is not a
-     * demo of a roster, it is a demo of a park that stopped planning.
+     * seed of a roster, it is a seed of a park that stopped planning.
      */
     public function testItRostersNothingOutsideTheWindowBehindOrTheHorizonAhead(): void
     {
@@ -343,7 +343,7 @@ final class RosterContentProviderTest extends IntegrationTestCase
 
     /**
      * A SECOND SEED EXTENDS WHAT STANDS. A park seeded last month has rings
-     * whose duties stop where that run's horizon did; running the demo
+     * whose duties stop where that run's horizon did; running the seed
      * again carries every standing ring on from there to today's horizon,
      * and touches nothing a ring has already drawn — its duties, hand
      * marks and trades stay exactly where the first run put them.
@@ -356,7 +356,7 @@ final class RosterContentProviderTest extends IntegrationTestCase
         $cut = $this->windowStart()->modify('+13 days');
         $kept = \count($duties->findByAreaBetween($this->area, $this->windowStart(), $cut));
 
-        // The first run stopped at the fortnight's end, as an older demo did.
+        // The first run stopped at the fortnight's end, as an older seed did.
         foreach ($duties->findByAreaBetween($this->area, $cut->modify('+1 day'), $this->fillHorizon()) as $duty) {
             $this->em->remove($duty);
         }
@@ -377,7 +377,7 @@ final class RosterContentProviderTest extends IntegrationTestCase
     /**
      * SOMEBODY POSTED AFTER THE RING WAS MADE JOINS IT on the next seed,
      * at the end of the ring — a stationed ranger with no watch for a
-     * month is not what a demo should show.
+     * month is not what a seed should show.
      */
     public function testSomebodyPostedLaterJoinsTheStandingRing(): void
     {
@@ -408,7 +408,7 @@ final class RosterContentProviderTest extends IntegrationTestCase
      * AND THERE IS ALWAYS SOMETHING BEHIND TODAY TO REPORT ON. This is the
      * property the window exists for: whatever date the suite runs on,
      * including the 1st, the plan reaches back far enough that the presence
-     * demo has worked watches to hand its readings to.
+     * seed has worked watches to hand its readings to.
      */
     public function testThereIsAlwaysAPastToReportOn(): void
     {
@@ -444,7 +444,7 @@ final class RosterContentProviderTest extends IntegrationTestCase
     }
 
     /**
-     * A SECOND RUN CHANGES NOTHING. `fixtures:demo` is run again and again
+     * A SECOND RUN CHANGES NOTHING. `fixtures:seed` is run again and again
      * on a working database, and a seeder that doubled its content every
      * time would make the second run a different product from the first.
      */
@@ -483,7 +483,7 @@ final class RosterContentProviderTest extends IntegrationTestCase
      * by opening the page: the "have I been here before" mark was the
      * shift vocabulary, and the module SEEDS THAT LAZILY the first time
      * any page reads it. So every area anybody had ever opened counted as
-     * already done, and the demo silently skipped it — on the one area
+     * already done, and the seed silently skipped it — on the one area
      * the roster was actually switched on for. The mark is now a post on
      * the roster, which nothing creates by accident.
      */
@@ -524,7 +524,7 @@ final class RosterContentProviderTest extends IntegrationTestCase
 
         $this->provider()->load();
 
-        // Untouched: still the one shift somebody chose, not the demo's.
+        // Untouched: still the one shift somebody chose, not the seed's.
         self::assertSame(['radio'], $byHand->getExpects());
         self::assertSame(45, $byHand->getSilenceWindowMinutes());
 
@@ -534,7 +534,7 @@ final class RosterContentProviderTest extends IntegrationTestCase
         self::assertNotEmpty($this->repository(DutyRepository::class)->findByAreaBetween($this->area, $this->monthStart(), $this->monthEnd()));
     }
 
-    /** AN AREA WITH NO POSTS IS LEFT ALONE, rather than seeded into nothing. */
+    /** AN AREA WITH NO POSTS IS LEFT ALONE, rather tha seeded into nothing. */
     public function testAnAreaWithNoPostsIsLeftAlone(): void
     {
         $bare = $this->anArea('bare reserve');
@@ -555,7 +555,7 @@ final class RosterContentProviderTest extends IntegrationTestCase
      * post an administrator had set up sat on every tab with nothing on
      * it — and so did the whole of an area whose single post was set up
      * that way. What a person configured is still theirs: the ring
-     * answers THE WATCH'S OWN demands, never the demo's list.
+     * answers THE WATCH'S OWN demands, never the seed's list.
      */
     public function testAPostConfiguredByHandStillGetsARingAnsweringItsOwnDemands(): void
     {
@@ -569,7 +569,7 @@ final class RosterContentProviderTest extends IntegrationTestCase
         $this->provider()->load();
 
         $rotation = $this->repository(RotationRepository::class)->findOneForStation($posts[0]);
-        self::assertNotNull($rotation, 'A post on the books with nobody on it is not a demo.');
+        self::assertNotNull($rotation, 'A post on the books with nobody on it is not a seed.');
 
         $shifts = [];
         foreach ($this->repository(DutyRepository::class)->findByStationBetween($posts[0], $this->monthStart(), $this->monthEnd()) as $duty) {
@@ -585,7 +585,7 @@ final class RosterContentProviderTest extends IntegrationTestCase
      *
      * A ring is drawn from the people posted at its post, so an area whose
      * posts carry no postings has nothing to draw and every tab on it
-     * reads nought. The demo therefore posts the real people the
+     * reads nought. The seed therefore posts the real people the
      * installation has — through {@see PostingService}, the area's own
      * service, so the station page, the identity band and the ring all
      * say the same thing. It only does so where the area has NO standing
@@ -602,7 +602,7 @@ final class RosterContentProviderTest extends IntegrationTestCase
         // AND RANGERS WHO STAND NOWHERE YET. One posting a person is one
         // AREA too, so a second area is staffed by the people the first
         // one did not take — an installation whose whole roll is already
-        // posted has nobody to open a new reserve with, and the demo says
+        // posted has nobody to open a new reserve with, and the seed says
         // so rather than double-posting somebody.
         foreach (range(1, 4) as $n) {
             $this->aPerson(\sprintf('spare%d@example.test', $n), 'Spare'.$n);
@@ -624,7 +624,7 @@ final class RosterContentProviderTest extends IntegrationTestCase
 
     /**
      * ONE UNSTAFFED POST INSIDE A STAFFED AREA IS LEFT UNSTAFFED. The area's
-     * own demo leaves a post with nobody at it on purpose; filling it in
+     * own seed leaves a post with nobody at it on purpose; filling it in
      * would delete the state.
      */
     public function testAPostNobodyIsPostedAtInsideAStaffedAreaIsLeftAlone(): void
@@ -739,7 +739,7 @@ final class RosterContentProviderTest extends IntegrationTestCase
      * have, and the one the identity band counts as "per team".
      *
      * ITS PEOPLE ARE A DEPARTMENT'S, not a post's postings: that is the
-     * whole difference between the two scopes, and a demo with only
+     * whole difference between the two scopes, and a seed with only
      * per-post rings draws the band's team figure as nought and never
      * renders the scope at all.
      *
@@ -806,7 +806,7 @@ final class RosterContentProviderTest extends IntegrationTestCase
     /**
      * AN AREA THAT CANNOT SPARE THE PEOPLE CARRIES NO SQUAD. Taking two
      * people out of a park that has three leaves its posts with one, and
-     * a demo that emptied the gates to show off a second scope would be
+     * a seed that emptied the gates to show off a second scope would be
      * trading the page somebody opens for the one they do not.
      */
     public function testAnAreaTooSmallToSpareThePeopleCarriesNoSquad(): void
@@ -856,13 +856,13 @@ final class RosterContentProviderTest extends IntegrationTestCase
     }
 
     /**
-     * THE DEMO SEEDS UNDER THE RULE: ONE STANDING POSTING A PERSON.
+     * THE SEED SEEDS UNDER THE RULE: ONE STANDING POSTING A PERSON.
      *
      * A POSTING IS WHERE SOMEBODY WORKS, AND THEY WORK IN ONE PLACE
      * (ruled; the area refuses the second). Two standing postings make a
      * roll that cannot be read, a head count that double-counts, and a
      * handset that cannot say which post its check-in is against — so a
-     * demo that produced one would be demonstrating a state the product
+     * seed that produced one would be demonstrating a state the product
      * does not allow.
      *
      * THIS IS ASSERTED OVER EVERY POSTING IN THE INSTALLATION and not only
@@ -870,7 +870,7 @@ final class RosterContentProviderTest extends IntegrationTestCase
      * this breaks is a second area staffed with the first one's rangers,
      * which no per-area check would ever see.
      */
-    public function testTheDemoLeavesEverybodyStandingAtOnePostAtMost(): void
+    public function testTheSeedLeavesEverybodyStandingAtOnePostAtMost(): void
     {
         $quiet = $this->anArea('quiet reserve');
         foreach (range(1, 3) as $n) {
@@ -882,7 +882,7 @@ final class RosterContentProviderTest extends IntegrationTestCase
         $this->em->flush();
 
         $this->provider()->load();
-        // TWICE, because a second run is where a demo repeats itself: the
+        // TWICE, because a second run is where a seed repeats itself: the
         // first pass is the one everybody writes and the second is the one
         // that posts somebody who is already standing.
         $this->provider()->load();
@@ -904,6 +904,6 @@ final class RosterContentProviderTest extends IntegrationTestCase
             $where[$name] = $station;
         }
 
-        self::assertNotEmpty($where, 'And the demo did staff the park.');
+        self::assertNotEmpty($where, 'And the seed did staff the park.');
     }
 }

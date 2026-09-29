@@ -16,7 +16,7 @@ namespace Uhifadhi\Roster\Tests\Unit\Devkit;
 use PHPUnit\Framework\TestCase;
 
 /**
- * NO DEMO SEEDER READS THE WALL CLOCK.
+ * NO SEED SEEDER READS THE WALL CLOCK.
  *
  * THIS IS THE REGRESSION HALF OF A BUG THAT LANDED THREE TIMES. Once in the
  * core's presence service, once in a test that asked a live plate for "now"
@@ -29,7 +29,7 @@ use PHPUnit\Framework\TestCase;
  * WHY THE SEEDERS AND NOT EVERYTHING. A controller reading "today" is
  * reading the day a person is looking at the screen, and there is no other
  * clock for it to read. A SEEDER is different in kind: it is only ever run
- * against a clock somebody chose — a suite's pinned instant, or a demo being
+ * against a clock somebody chose — a suite's pinned instant, or a seed being
  * built for a particular day — and its whole output is a function of that
  * instant. Two seeders that disagree about what day it is produce a park
  * whose duties are on Monday and whose check-ins are on Tuesday, and every
@@ -81,7 +81,7 @@ final class SeedersReadTheInjectedClockTest extends TestCase
         self::assertSame(
             [],
             $offenders,
-            "A demo seeder read the wall clock. Take \\Psr\\Clock\\ClockInterface as a constructor argument and derive the instant from it — the seeders have to agree about what day it is:\n  ".implode("\n  ", $offenders),
+            "A seeder read the wall clock. Take \\Psr\\Clock\\ClockInterface as a constructor argument and derive the instant from it — the seeders have to agree about what day it is:\n  ".implode("\n  ", $offenders),
         );
     }
 

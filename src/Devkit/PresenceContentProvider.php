@@ -35,19 +35,19 @@ use Uhifadhi\Roster\Service\RotaService;
  * is the AREA's, ruled, and a seeder that wrote "verified" into a column
  * would be computing it — the one thing this module may not do. Worse, it
  * would go on agreeing with itself long after the real derivation had
- * moved, so the demo would be the last place a change in the rules showed
+ * moved, so the seed would be the last place a change in the rules showed
  * up. So this claims and pings exactly as a phone does, through
  * {@see CheckInService}, and every reading on every page is then derived
  * from those rows by the area at the moment somebody asks.
  *
- * IT REPORTS ONLY FROM THE PAST. A check-in dated next week is not demo
+ * IT REPORTS ONLY FROM THE PAST. A check-in dated next week is not seed
  * content; it is a board stating a plan as a fact. Today is the far end,
  * and today's late watches are deliberately left open, because a live
  * plate with nothing in flight on it is not a live plate.
  *
  * IT PRODUCES THE READINGS THE SCREENS DRAW — at post, out on an escort,
  * unfit, a special assignment, a claim the positions do not bear out, a
- * watch nobody closed, and days holding more than one watch. A demo where
+ * watch nobody closed, and days holding more than one watch. A seed where
  * everybody is quietly at post exercises one branch of Today and ships
  * the others broken.
  *
@@ -59,7 +59,7 @@ use Uhifadhi\Roster\Service\RotaService;
  * for it, no form field, and the area's own `describe()` deliberately
  * enumerates its facts without it. Until the core grows a writer, every
  * at-post claim in every installation reads "unverified — the post has no
- * ring", and so does this demo. Seeding round it by writing the column
+ * ring", and so does this seed. Seeding round it by writing the column
  * from here would hide a live bug behind a pretty screenshot.
  */
 final readonly class PresenceContentProvider implements ContentProviderInterface
@@ -67,7 +67,7 @@ final readonly class PresenceContentProvider implements ContentProviderInterface
     /** How far a "wandered off" fix is placed from the post, in metres. */
     private const int STRAY_METRES = 7_400;
 
-    /** Metres per degree of latitude — near enough anywhere for a demo. */
+    /** Metres per degree of latitude — near enough anywhere for a seed. */
     private const float METRES_PER_DEGREE = 111_320.0;
 
     public function __construct(
@@ -77,7 +77,7 @@ final readonly class PresenceContentProvider implements ContentProviderInterface
         private ?CheckInService $checkIns,
         private CheckInStatusService $statuses,
         /**
-         * THE INSTANT THIS DEMO IS BUILT AT.
+         * THE INSTANT THIS SEED IS BUILT AT.
          *
          * A SEEDER THAT READS THE WALL CLOCK IS A SEEDER NOBODY CAN TEST.
          * What it writes depends on the time of day — which watches have
@@ -103,7 +103,7 @@ final readonly class PresenceContentProvider implements ContentProviderInterface
 
     public function description(): string
     {
-        return 'Check-ins and positions against the demo duties, so the board, Today and the live plate read like a worked month.';
+        return 'Check-ins and positions against the seed duties, so the board, Today and the live plate read like a worked month.';
     }
 
     /** There is nothing to report from until somebody has been rostered. */
@@ -118,7 +118,7 @@ final readonly class PresenceContentProvider implements ContentProviderInterface
             // NO FIELD API, NO REPORTED PRESENCE. The area registers the
             // handset's door only where ApiPlatform and Security both are;
             // without it nothing in the installation can record a check-in,
-            // so a demo that manufactured some would be showing rows no
+            // so a seed that manufactured some would be showing rows no
             // running system could ever produce.
             return;
         }
@@ -173,7 +173,7 @@ final readonly class PresenceContentProvider implements ContentProviderInterface
      * every seed, so a month that happened to contain no nineteenth watch
      * shipped a park with a whole reading missing. It surfaced in CI on a
      * date nobody had run before, which is precisely how it would have
-     * surfaced at a demo.
+     * surfaced at a seed.
      *
      * THE ORDER IS THE CALENDAR'S, not the query's. The list is sorted by
      * day, then post, then shift, then person, so the same month hands the
@@ -189,7 +189,7 @@ final readonly class PresenceContentProvider implements ContentProviderInterface
      * @param list<Duty>                 $duties
      * @param array<string, ShiftWindow> $windows
      *
-     * @return array<string, DemoWatchScript> by duty uuid
+     * @return array<string, SeedWatchScript> by duty uuid
      */
     private static function script(array $duties, array $windows, \DateTimeImmutable $today): array
     {
@@ -220,12 +220,12 @@ final readonly class PresenceContentProvider implements ContentProviderInterface
         }
 
         $scripts = [
-            DemoWatchScript::reporting(CheckInStatusKind::AtPost),
-            DemoWatchScript::reporting(CheckInStatusKind::WorkingElsewhere),
-            DemoWatchScript::reporting(CheckInStatusKind::NotWorking),
-            DemoWatchScript::reporting(CheckInStatusKind::Special),
-            DemoWatchScript::neverClosed(),
-            DemoWatchScript::unreported(),
+            SeedWatchScript::reporting(CheckInStatusKind::AtPost),
+            SeedWatchScript::reporting(CheckInStatusKind::WorkingElsewhere),
+            SeedWatchScript::reporting(CheckInStatusKind::NotWorking),
+            SeedWatchScript::reporting(CheckInStatusKind::Special),
+            SeedWatchScript::neverClosed(),
+            SeedWatchScript::unreported(),
         ];
 
         $assigned = [];
@@ -245,7 +245,7 @@ final readonly class PresenceContentProvider implements ContentProviderInterface
         }
 
         if (null !== $daytime) {
-            $assigned[(string) $past[$daytime]->getUuid()] = DemoWatchScript::twoWatches();
+            $assigned[(string) $past[$daytime]->getUuid()] = SeedWatchScript::twoWatches();
         }
 
         return $assigned;
@@ -263,12 +263,12 @@ final readonly class PresenceContentProvider implements ContentProviderInterface
      *
      * A WATCH THAT HAS NOT STARTED IS LEFT ALONE. "Due later" is its own
      * reading and the clock owns it — scripting a claim onto a watch that
-     * begins at six tonight would be the demo reporting the future.
+     * begins at six tonight would be the seed reporting the future.
      *
      * @param list<Duty>                 $duties
      * @param array<string, ShiftWindow> $windows
      *
-     * @return array<string, DemoWatchScript> by duty uuid
+     * @return array<string, SeedWatchScript> by duty uuid
      */
     private static function scriptToday(array $duties, array $windows, \DateTimeImmutable $now): array
     {
@@ -309,13 +309,13 @@ final readonly class PresenceContentProvider implements ContentProviderInterface
         // claim the positions do not bear out, because those are the two a
         // duty officer acts on; the rarer reasons come after them.
         $scripts = [
-            DemoWatchScript::reporting(CheckInStatusKind::AtPost),
-            DemoWatchScript::goneQuiet(),
-            DemoWatchScript::awayFromThePost(),
-            DemoWatchScript::reporting(CheckInStatusKind::Special),
-            DemoWatchScript::reporting(CheckInStatusKind::WorkingElsewhere),
-            DemoWatchScript::reporting(CheckInStatusKind::NotWorking),
-            DemoWatchScript::unreported(),
+            SeedWatchScript::reporting(CheckInStatusKind::AtPost),
+            SeedWatchScript::goneQuiet(),
+            SeedWatchScript::awayFromThePost(),
+            SeedWatchScript::reporting(CheckInStatusKind::Special),
+            SeedWatchScript::reporting(CheckInStatusKind::WorkingElsewhere),
+            SeedWatchScript::reporting(CheckInStatusKind::NotWorking),
+            SeedWatchScript::unreported(),
         ];
 
         $assigned = [];
@@ -336,15 +336,15 @@ final readonly class PresenceContentProvider implements ContentProviderInterface
      *
      * @param array<string, CheckInStatus> $statuses
      */
-    private function workTheWatch(AreaOfInterest $area, Duty $duty, ShiftWindow $window, array $statuses, \DateTimeImmutable $now, ?DemoWatchScript $script = null): void
+    private function workTheWatch(AreaOfInterest $area, Duty $duty, ShiftWindow $window, array $statuses, \DateTimeImmutable $now, ?SeedWatchScript $script = null): void
     {
         /*
          * THE DRAW IS KEYED ON WHAT THE WATCH IS, NEVER ON ITS ROW.
          *
-         * `DemoDraw` promises variety that is "stable across runs, machines
+         * `SeedDraw` promises variety that is "stable across runs, machines
          * and PHP versions" — and it keeps that promise only if the thing
          * it hashes is stable. A duty's uuid is minted fresh every time the
-         * seeder runs, so keying on it made the demo different on every
+         * seeder runs, so keying on it made the seed different on every
          * seed: a screenshot did not reproduce, and two assertions about
          * the day rode on a coin toss. It cost three CI investigations, the
          * last of which was green on one matrix leg and red on the other
@@ -352,10 +352,10 @@ final readonly class PresenceContentProvider implements ContentProviderInterface
          *
          * The station, the shift and the day ARE the watch — "the day watch
          * at ST-01 on the 19th" is the same watch whoever seeds it and
-         * whenever — so the same park now produces the same demo, which is
+         * whenever — so the same park now produces the same seed, which is
          * the whole point of the class.
          */
-        $draw = DemoDraw::of(
+        $draw = SeedDraw::of(
             'watch',
             $duty->getStation()->getCode() ?? (string) $duty->getStation()->getName(),
             $duty->getShiftKey(),
@@ -365,7 +365,7 @@ final readonly class PresenceContentProvider implements ContentProviderInterface
         $isToday = $day->format('Y-m-d') === $now->format('Y-m-d');
 
         // A FEW WATCHES ARE SIMPLY NOT REPORTED, and that is the "no
-        // check-in" a board draws against somebody who was due. A demo
+        // check-in" a board draws against somebody who was due. A seed
         // where every rostered person checked in never shows it — and one
         // that left it to a frequency could go a whole month without it,
         // which is why one watch is TOLD to be unreported.
@@ -379,7 +379,7 @@ final readonly class PresenceContentProvider implements ContentProviderInterface
         // A WATCH THAT HAS NOT STARTED IS NOT REPORTED, because it cannot
         // have been. The seeder used to write a claim for every rostered
         // watch on the day whatever the hour, so a park read at four in
-        // the morning had check-ins stamped six — the demo reporting the
+        // the morning had check-ins stamped six — the seed reporting the
         // future, and every figure counting them. "Due later" is the
         // reading before a watch begins, and it is written by writing
         // nothing.
@@ -409,7 +409,7 @@ final readonly class PresenceContentProvider implements ContentProviderInterface
         $this->claim(
             $area,
             $duty,
-            \sprintf('demo-%s-1', $duty->getUuid()),
+            \sprintf('seed-%s-1', $duty->getUuid()),
             $statuses,
             $kind,
             $startedAt,
@@ -421,7 +421,7 @@ final readonly class PresenceContentProvider implements ContentProviderInterface
 
         // A DAY HOLDS ANY NUMBER OF WATCHES (ruled). About one day in five
         // is a morning at the post and an afternoon somewhere else, which
-        // is the case a demo of single intervals never produces and every
+        // is the case a seed of single intervals never produces and every
         // surface now has to draw as two rows and a total.
         if (!$stillOut && (null !== $script ? $script->second : $draw->then('second')->oneIn(5))) {
             $secondDraw = $draw->then('second-watch');
@@ -434,7 +434,7 @@ final readonly class PresenceContentProvider implements ContentProviderInterface
                 $this->claim(
                     $area,
                     $duty,
-                    \sprintf('demo-%s-2', $duty->getUuid()),
+                    \sprintf('seed-%s-2', $duty->getUuid()),
                     $statuses,
                     $secondDraw->oneOf([CheckInStatusKind::WorkingElsewhere, CheckInStatusKind::AtPost, CheckInStatusKind::Special]),
                     $resumedAt,
@@ -464,9 +464,9 @@ final readonly class PresenceContentProvider implements ContentProviderInterface
         CheckInStatusKind $kind,
         \DateTimeImmutable $startedAt,
         ?\DateTimeImmutable $endedAt,
-        DemoDraw $draw,
+        SeedDraw $draw,
         \DateTimeImmutable $now,
-        ?DemoWatchScript $script = null,
+        ?SeedWatchScript $script = null,
     ): void {
         $status = $statuses[$kind->value] ?? null;
         if (null === $status) {
@@ -478,7 +478,7 @@ final readonly class PresenceContentProvider implements ContentProviderInterface
             'localDate' => $duty->getOnDay()->format('Y-m-d'),
             'status' => $status->getKey(),
             'occurredAt' => $startedAt->format(\DATE_ATOM),
-            'deviceId' => \sprintf('demo-handset-%02d', $draw->between(1, 24)),
+            'deviceId' => \sprintf('seed-handset-%02d', $draw->between(1, 24)),
             'appVersion' => '1.4.0',
         ];
 
@@ -549,7 +549,7 @@ final readonly class PresenceContentProvider implements ContentProviderInterface
         \DateTimeImmutable $startedAt,
         ?\DateTimeImmutable $endedAt,
         bool $stray,
-        DemoDraw $draw,
+        SeedDraw $draw,
         \DateTimeImmutable $now,
         bool $quiet = false,
     ): void {
@@ -641,7 +641,7 @@ final readonly class PresenceContentProvider implements ContentProviderInterface
      */
     private function door(): CheckInService
     {
-        return $this->checkIns ?? throw new \LogicException('The demo presence seeder reached the handset API after establishing there was none.');
+        return $this->checkIns ?? throw new \LogicException('The seed presence seeder reached the handset API after establishing there was none.');
     }
 
     /**

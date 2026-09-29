@@ -90,7 +90,7 @@ final class TheRingBecomesAPatternTest extends MigrationsTestCase
     {
         $this->connection->executeStatement(<<<'SQL'
             INSERT INTO area_of_interest (id, name, source, uuid, geom)
-            VALUES (901, 'demo reserve', 'test fixture', gen_random_uuid(),
+            VALUES (901, 'seed reserve', 'test fixture', gen_random_uuid(),
                     ST_GeomFromGeoJSON('{"type":"MultiPolygon","coordinates":[[[[12.2,-5.8],[12.5,-5.8],[12.5,-5.5],[12.2,-5.5],[12.2,-5.8]]]]}'))
             SQL);
 

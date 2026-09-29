@@ -27,7 +27,7 @@ use Uhifadhi\Roster\Tests\Integration\IntegrationTestCase;
 
 /**
  * THE PROOF BEHIND THE PLAN — the check-ins and the positions that make
- * the demo's rostered days read like days somebody actually worked.
+ * the seed's rostered days read like days somebody actually worked.
  *
  * IT WRITES THROUGH THE AREA'S OWN HANDSET API and derives nothing. The
  * roster is forbidden to compute presence, and a seeder that wrote a
@@ -36,7 +36,7 @@ use Uhifadhi\Roster\Tests\Integration\IntegrationTestCase;
  * it. So this provider CLAIMS and PINGS the way a phone does, and every
  * reading in these assertions comes back out of the area's own service.
  *
- * WHAT IT HAS TO PRODUCE is the set of states the screens draw. A demo
+ * WHAT IT HAS TO PRODUCE is the set of states the screens draw. A seed
  * where everybody is quietly at post exercises one branch of Today, one
  * colour on the board and none of the flags, and would have shipped every
  * one of those broken.
@@ -65,7 +65,7 @@ final class PresenceContentProviderTest extends IntegrationTestCase
     /**
      * THE PARK THIS SUITE SEEDS INTO, built the way an installation builds
      * one — and built by a method rather than inline because one test
-     * builds it TWICE, on two empty databases, to prove the demo comes out
+     * builds it TWICE, on two empty databases, to prove the seed comes out
      * the same both times.
      */
     private function aParkWithFourStations(): void
@@ -199,7 +199,7 @@ final class PresenceContentProviderTest extends IntegrationTestCase
     {
         $this->provider()->load();
 
-        self::assertNotEmpty($this->theMonthAsRead(), 'A month of watches with nobody reporting is an empty demo.');
+        self::assertNotEmpty($this->theMonthAsRead(), 'A month of watches with nobody reporting is an empty seed.');
     }
 
     /**
@@ -241,7 +241,7 @@ final class PresenceContentProviderTest extends IntegrationTestCase
 
     /**
      * A DAY WITH TWO WATCHES ON IT — the ruling's own case, and the one a
-     * demo of single intervals would never produce. A morning at the gate
+     * seed of single intervals would never produce. A morning at the gate
      * and an afternoon on an escort are one person's day.
      */
     public function testSomebodysDayHoldsTwoWatches(): void
@@ -271,7 +271,7 @@ final class PresenceContentProviderTest extends IntegrationTestCase
 
     /**
      * NOTHING IS REPORTED FROM THE FUTURE. A check-in dated next week is
-     * not demo content, it is a bug that would make the board read a plan
+     * not seed content, it is a bug that would make the board read a plan
      * as a fact.
      */
     public function testNothingIsReportedFromTheFuture(): void
@@ -337,8 +337,8 @@ final class PresenceContentProviderTest extends IntegrationTestCase
      * where they are.
      *
      * IT CANNOT BE LEFT TO A FREQUENCY. A plate whose every mark is fresh
-     * never shows the state a duty officer acts on, and a demo that got
-     * one only on the days the draw felt like it is a demo that is wrong
+     * never shows the state a duty officer acts on, and a seed that got
+     * one only on the days the draw felt like it is a seed that is wrong
      * on the morning somebody looks.
      */
     public function testOneHandsetOnTodaysWatchHasGoneQuiet(): void
@@ -363,7 +363,7 @@ final class PresenceContentProviderTest extends IntegrationTestCase
      * "DUE LATER" IS ITS OWN READING AND THE CLOCK OWNS IT. At four in the
      * morning the day watch has not started and the night one began
      * yesterday: scripting a claim onto a watch that starts at six would
-     * be the demo reporting the future, and a board drawn at that hour
+     * be the seed reporting the future, and a board drawn at that hour
      * should show people due rather than people present.
      *
      * THIS IS THE CASE THAT BROKE CI. The same code seeded one thing in
@@ -383,7 +383,7 @@ final class PresenceContentProviderTest extends IntegrationTestCase
         // NOTHING WAS CLAIMED ON TODAY. Every watch on this day starts at
         // six or later, so at four in the morning the seeder has written
         // no check-in against any of them: "due later" is the reading, and
-        // the demo says it by writing nothing at all.
+        // the seed says it by writing nothing at all.
         //
         // THE FACT IS THE COUNT AND NOT A STATE. A night watch that began
         // YESTERDAY and is still running is legitimately part of today's
@@ -423,7 +423,7 @@ final class PresenceContentProviderTest extends IntegrationTestCase
 
     /**
      * THE DAY THE WATCH BEHIND A MARK BELONGS TO. The seeder's own client
-     * reference carries the duty it claimed against — `demo-<uuid>-1` —
+     * reference carries the duty it claimed against — `seed-<uuid>-1` —
      * which is the only handle a live mark offers back to the roster.
      */
     private function watchDayOf(?string $clientRef): \DateTimeImmutable
@@ -460,9 +460,9 @@ final class PresenceContentProviderTest extends IntegrationTestCase
     }
 
     /**
-     * THE SAME PARK SEEDS THE SAME DEMO, TWICE, ON TWO EMPTY DATABASES.
+     * THE SAME PARK SEEDS THE SAME SEED, TWICE, ON TWO EMPTY DATABASES.
      *
-     * THIS IS THE PROMISE `DemoDraw` MAKES IN ITS OWN DOCBLOCK — "stable
+     * THIS IS THE PROMISE `SeedDraw` MAKES IN ITS OWN DOCBLOCK — "stable
      * across runs, machines and PHP versions" — and it was not kept. The
      * draw was keyed on the duty's UUID, minted fresh on every seed, so the
      * variety it produced was different every time: a screenshot did not
@@ -472,17 +472,17 @@ final class PresenceContentProviderTest extends IntegrationTestCase
      * for no reason but the draw.
      *
      * A STATION, A SHIFT AND A DAY ARE WHAT A WATCH IS. Keying on those
-     * makes the demo a function of the park, which is the only version of
+     * makes the seed a function of the park, which is the only version of
      * "stable" worth having — and it is what this test measures, rather
      * than measuring that one figure came out the way it did today.
      */
-    public function testTheSameParkSeedsTheSameDemoTwice(): void
+    public function testTheSameParkSeedsTheSameSeedTwice(): void
     {
         $this->atMidMorning();
         $this->provider()->load();
         $first = $this->everyClaim();
 
-        self::assertNotSame([], $first, 'A demo that seeded nothing would pass this test for the wrong reason.');
+        self::assertNotSame([], $first, 'A seed that seeded nothing would pass this test for the wrong reason.');
 
         // A SECOND INSTALLATION OF THE SAME PARK — empty database, same
         // fixture, same hour. The identity map goes with the tables: the
@@ -494,7 +494,7 @@ final class PresenceContentProviderTest extends IntegrationTestCase
         $this->atMidMorning();
         $this->provider()->load();
 
-        self::assertSame($first, $this->everyClaim(), 'The same park seeded a different demo.');
+        self::assertSame($first, $this->everyClaim(), 'The same park seeded a different seed.');
     }
 
     /**

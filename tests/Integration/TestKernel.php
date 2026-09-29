@@ -67,7 +67,7 @@ final class TestKernel extends Kernel
     /**
      * THE HOUR THIS SUITE RUNS AT, whenever it actually runs.
      *
-     * THE DAY IS TODAY AND THE HOUR IS NOT. The demo rosters the current
+     * THE DAY IS TODAY AND THE HOUR IS NOT. The seed rosters the current
      * fortnight, so a fixed DATE would seed a month the suite then looks
      * for in the wrong place; what broke CI was the TIME OF DAY — which
      * watches have begun, which are still running, how old a ping is. So
@@ -108,7 +108,7 @@ final class TestKernel extends Kernel
         // there, and the check-ins presence is read from.
         // THE FIELD API'S OWN CONDITION. The area registers the handset's
         // check-in door only where ApiPlatform and Security both are, and
-        // the demo presence seeder writes through that door — so a kernel
+        // the seed presence seeder writes through that door — so a kernel
         // without this would exercise the seeder's absent-API branch and
         // assert nothing about the one that runs in an installation.
         yield new ApiPlatformBundle();
@@ -282,7 +282,7 @@ final class TestKernel extends Kernel
             // The AREA's own derivation, so a test can assert this module
             // READS it rather than computing a second answer beside it.
             \Uhifadhi\Contracts\Area\PresenceProviderInterface::class => 'area.presence',
-            // And the live read, so a demo-content test can assert what the
+            // And the live read, so a seed-content test can assert what the
             // plate will actually draw this minute.
             \Uhifadhi\Contracts\Area\LivePositionsInterface::class => \Uhifadhi\Contracts\Area\LivePositionsInterface::class,
             \Uhifadhi\Bundle\AreaBundle\Service\CheckInStatusService::class => 'area.checkin_statuses',
@@ -293,14 +293,14 @@ final class TestKernel extends Kernel
             // The post's own catchment — the ring a claim is measured
             // against, and the verb this module writes it through.
             \Uhifadhi\Bundle\AreaBundle\Service\StationService::class => 'area.stations',
-            // The area's postings, so a demo-content test can staff its
+            // The area's postings, so a seed-content test can staff its
             // posts the way an installation does rather than by hand.
             \Uhifadhi\Bundle\AreaBundle\Service\PostingService::class => 'area.postings',
             // AND THE POSTINGS THEMSELVES, so a fixture that MOVES somebody
             // can find the posting to end first: one person stands at one
             // post, so a move is two acts and not one.
             \Uhifadhi\Bundle\AreaBundle\Repository\PostingRepository::class => \Uhifadhi\Bundle\AreaBundle\Repository\PostingRepository::class,
-            // The two demo-content providers. They are tagged for devkit,
+            // The two seed-content providers. They are tagged for devkit,
             // which is not installed here, so a test reaches them by id.
             // The sheet's own two, so the reading and the filling can be
             // exercised without going through a controller.

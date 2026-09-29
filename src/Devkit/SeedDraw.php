@@ -14,9 +14,9 @@ declare(strict_types=1);
 namespace Uhifadhi\Roster\Devkit;
 
 /**
- * THE DEMO'S VARIETY, DRAWN THE SAME WAY EVERY TIME.
+ * THE SEED'S VARIETY, DRAWN THE SAME WAY EVERY TIME.
  *
- * A demo needs a roster that looks lived in — this post manned round the
+ * A seed needs a roster that looks lived in — this post manned round the
  * clock and that one only by day, this watch quietly worked and that one
  * claimed from seven kilometres away. Picking those with `rand()` would
  * make every run a different product: a screenshot would not reproduce, a
@@ -34,7 +34,7 @@ namespace Uhifadhi\Roster\Devkit;
  * built on `crc32`, which is specified; a hash that varied by platform
  * would seed one park on a laptop and a different one in CI.
  */
-final readonly class DemoDraw
+final readonly class SeedDraw
 {
     private function __construct(private int $seed)
     {
@@ -57,7 +57,7 @@ final readonly class DemoDraw
     }
 
     /**
-     * TRUE ROUGHLY ONE TIME IN $inEvery — the shape most of the demo's
+     * TRUE ROUGHLY ONE TIME IN $inEvery — the shape most of the seed's
      * variety takes: "about one watch in nine is claimed from outside the
      * ring". Written as a frequency rather than a percentage because that
      * is how the cases were described, and a reader can count them.
