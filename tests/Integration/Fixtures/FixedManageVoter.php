@@ -69,6 +69,7 @@ final class FixedManageVoter extends Voter
     {
         return [
             (string) Grant::of(AreaConcerns::AREAS, Verb::Read),
+            (string) Grant::of(AreaConcerns::DASHBOARD, Verb::Read),
             (string) Grant::of(AreaConcerns::ZONES, Verb::Read),
             (string) Grant::of(AreaConcerns::STATIONS, Verb::Read),
             (string) Grant::of(AreaConcerns::STATIONS, Verb::Configure),
