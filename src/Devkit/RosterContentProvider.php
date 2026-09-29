@@ -47,13 +47,13 @@ use Uhifadhi\Roster\Service\StationWatchService;
 use Uhifadhi\Roster\Service\SwapService;
 
 /**
- * THE DEMO ROSTER — the plan: what each post asks for, who is in its ring,
+ * THE SEED ROSTER — the plan: what each post asks for, who is in its ring,
  * who that puts on watch every day of THIS month, who is away, and which
  * two people are trying to trade.
  *
  * IT HANGS ON THE AREA'S OWN CONTENT AND INVENTS NONE OF IT. The posts are
  * the ones the area seeded and the ring at each is THE PEOPLE POSTED
- * THERE, read through the area's postings. That is not tidiness: a demo
+ * THERE, read through the area's postings. That is not tidiness: a seed
  * that picked its own people would put somebody on the night watch at a
  * post whose own page never lists them, and the first thing it would hide
  * is the seam between the two modules — which is the thing most worth
@@ -69,7 +69,7 @@ use Uhifadhi\Roster\Service\SwapService;
  * IT SEEDS THE STATES THE SCREENS HAVE TO DRAW, on purpose — a post that
  * asks for nothing, a post manned round the clock, a ring too small for
  * what its post asks, somebody away, and a trade in each of the four
- * states a trade can be in. A demo where every post is alike exercises one
+ * states a trade can be in. A seed where every post is alike exercises one
  * branch of every page and ships the rest broken.
  *
  * IT ASKS FOR EACH THING SEPARATELY, NEVER FOR THE AREA AS A WHOLE. What
@@ -83,7 +83,7 @@ final readonly class RosterContentProvider implements ContentProviderInterface
      * WHAT EACH POST ASKS FOR, walked round the area's posts in order. The
      * empty one is deliberate and is the point of the list: a post on the
      * books that asks for no watch is a real state, and it is the one an
-     * all-alike demo never produces.
+     * all-alike seed never produces.
      *
      * @var list<list<string>>
      */
@@ -114,7 +114,7 @@ final readonly class RosterContentProvider implements ContentProviderInterface
     ];
 
     /**
-     * HOW FAR AHEAD A DEMO RING IS PUBLISHED. Long enough that the month
+     * HOW FAR AHEAD A SEED RING IS PUBLISHED. Long enough that the month
      * after this one is not blank the moment somebody steps forward a
      * page, short enough to stay a plausible planning horizon rather than
      * a year of guesses.
@@ -122,7 +122,7 @@ final readonly class RosterContentProvider implements ContentProviderInterface
     private const int HORIZON_DAYS = 45;
 
     /**
-     * HOW MANY PEOPLE THE DEMO POSTS AT A POST it had to staff itself. Enough
+     * HOW MANY PEOPLE THE SEED POSTS AT A POST it had to staff itself. Enough
      * that a two-on-one-off ring has somebody for every position in it, few
      * enough that a post still reads as a post rather than a parade.
      */
@@ -136,7 +136,7 @@ final readonly class RosterContentProvider implements ContentProviderInterface
     private const int TRADES_READ = 50;
 
     /**
-     * HOW MANY PEOPLE A DEMO SQUAD CARRIES. Two is the smallest number
+     * HOW MANY PEOPLE A SEED SQUAD CARRIES. Two is the smallest number
      * that is a squad rather than a person, and the fewest to take out of
      * a park's gates to show the scope.
      */
@@ -308,7 +308,7 @@ final readonly class RosterContentProvider implements ContentProviderInterface
     /**
      * THE SHIFTS A PARK RUNS, asked for rather than written out here. The
      * module's own vocabulary service seeds an area that has never had one,
-     * and a demo that listed the four shifts itself would be a second copy
+     * and a seed that listed the four shifts itself would be a second copy
      * of a default that already has an owner — and would go on seeding the
      * old four the day somebody changed them.
      */
@@ -322,14 +322,14 @@ final readonly class RosterContentProvider implements ContentProviderInterface
      *
      * A ring draws from the people posted at its post, so an area whose
      * posts carry no postings has nobody to draw and every tab on it reads
-     * nought — which is the state the one area a demo is usually switched
-     * on for arrives in, because the core's own demo staffs the two parks
+     * nought — which is the state the one area a seed is usually switched
+     * on for arrives in, because the core's own seed staffs the two parks
      * it invented and no others.
      *
      * IT ASKS THE AREA RATHER THAN WRITING THE AREA'S TABLE. A posting is
      * the area's fact, so it is made through {@see PostingService} — the
      * same rule the check-ins follow — and the station page, the identity
-     * band and the ring then all say the same thing. A demo that rang
+     * band and the ring then all say the same thing. A seed that rang
      * people the area does not post would show a roster the post's own
      * page contradicts.
      *
@@ -348,12 +348,12 @@ final readonly class RosterContentProvider implements ContentProviderInterface
 
         // AND ONLY THE PEOPLE WHO STAND NOWHERE YET.
         //
-        // ONE POSTING A PERSON IS ONE AREA TOO. A demo installation with a
+        // ONE POSTING A PERSON IS ONE AREA TOO. A seed installation with a
         // second area cannot staff it with the rangers already standing in
         // the first — the area refuses them, rightly, because a person
         // works in one place. So the roll this method draws from is the
         // people nobody has posted, and an installation whose rangers are
-        // all spoken for gets an area the demo leaves unstaffed rather
+        // all spoken for gets an area the seed leaves unstaffed rather
         // than an exception.
         $spokenFor = [];
         foreach ($this->postings->findAllStanding() as $standing) {
@@ -377,14 +377,14 @@ final readonly class RosterContentProvider implements ContentProviderInterface
         // EACH PERSON ONCE, AND THEN THE PEOPLE RUN OUT.
         //
         // SOMEBODY STANDS AT ONE POST AT A TIME (ruled, and the area
-        // refuses the second). So the number of postings a demo can make is
+        // refuses the second). So the number of postings a seed can make is
         // the HEADCOUNT and not the number of posts: a cursor that wrapped
         // round would come back to somebody who already stands somewhere,
         // and the area would refuse them — rightly, because there is no
         // second person there to post.
         //
         // A PARK WITH TWELVE POSTS AND SIX RANGERS HAS UNSTAFFED POSTS, and
-        // the demo says so rather than inventing staff. That is the same
+        // the seed says so rather than inventing staff. That is the same
         // state this method already protects above: one post nobody stands
         // at is something the board has to draw.
         $next = 0;
@@ -405,7 +405,7 @@ final readonly class RosterContentProvider implements ContentProviderInterface
      * position: a park's watches are stood by its rangers, and an account
      * with no position is as likely to be an administrator as a ranger.
      * Where nobody holds one, everybody is a candidate — an installation
-     * that has not filled in its positions still deserves a demo.
+     * that has not filled in its positions still deserves a seed.
      *
      * @return list<User>
      */
@@ -450,7 +450,7 @@ final readonly class RosterContentProvider implements ContentProviderInterface
             );
         }
 
-        // WHAT THE POST ASKS IS THE WATCH'S OWN ANSWER, never the demo's
+        // WHAT THE POST ASKS IS THE WATCH'S OWN ANSWER, never the seed's
         // list — the second half of the per-thing correction. A post
         // somebody had configured was read as "been here, leave it" and
         // returned before anybody had been rung, so an area whose single
@@ -474,7 +474,7 @@ final readonly class RosterContentProvider implements ContentProviderInterface
             // one post is two people on one watch. But somebody posted
             // here SINCE it was made joins it, at the end of the ring:
             // a ranger the sheet lists at a station with no watch in a
-            // month is not a demo of a roster, it is a demo of a ranger
+            // month is not a seed of a roster, it is a seed of a ranger
             // nobody rostered. Their days are drawn as the ring is
             // carried on to the horizon, never over what already stands.
             $this->joinTheStandingRing($standing, $post, $ringed);
@@ -490,7 +490,7 @@ final readonly class RosterContentProvider implements ContentProviderInterface
             }
         }
 
-        // ONE PERSON, ONE POST — in the demo, where nothing forces it.
+        // ONE PERSON, ONE POST — in the seed, where nothing forces it.
         //
         // A ranger is often POSTED at more than one post, and each post's
         // ring draws from the people posted there, so two rings sharing a
@@ -498,7 +498,7 @@ final readonly class RosterContentProvider implements ContentProviderInterface
         // one ranger "watch 1 of 2" at two posts and twenty-four hours on
         // duty in a twenty-four hour day. Nothing in the product forbids
         // it — two independent per-post rings genuinely can double-book
-        // somebody, which is worth knowing — but a DEMO that shows it is
+        // somebody, which is worth knowing — but a SEED that shows it is
         // showing a roster no park would publish. So a post takes the
         // people nobody has ringed yet.
         $pool = array_values(array_filter(
@@ -580,14 +580,14 @@ final readonly class RosterContentProvider implements ContentProviderInterface
 
     /**
      * ONE SQUAD, CARRYING A RING OF ITS OWN — the second scope a rotation
-     * can have, and without one in the demo the identity band draws its
+     * can have, and without one in the seed the identity band draws its
      * "per team" figure as nought and {@see RotationScope::Team} renders
      * nowhere at all.
      *
      * A SQUAD IS A DEPARTMENT'S PEOPLE, NOT A POST'S. That is the entire
      * difference between the two scopes: a post rings whoever the area
      * posts there, a squad carries whoever the organization put in a
-     * department, and it takes them wherever it is sent. Drawing the demo's
+     * department, and it takes them wherever it is sent. Drawing the seed's
      * squad from postings would produce a per-post ring wearing the other
      * scope's name.
      *
@@ -598,7 +598,7 @@ final readonly class RosterContentProvider implements ContentProviderInterface
      * the case the board exists to draw.
      *
      * AN AREA THAT CANNOT SPARE THE PEOPLE CARRIES NONE. Two people out of
-     * a park that has three leaves its gates with one, and a demo that
+     * a park that has three leaves its gates with one, and a seed that
      * emptied the page somebody opens to show off a scope on the page they
      * do not is a bad trade.
      *
@@ -693,7 +693,7 @@ final readonly class RosterContentProvider implements ContentProviderInterface
     /**
      * THE FIRST DEPARTMENT THAT CAN FIELD A SQUAD, and the people it
      * fields — the area's own departments before the ones it inherits,
-     * because a park's own squad is the likelier answer and a demo should
+     * because a park's own squad is the likelier answer and a seed should
      * show the likelier answer.
      *
      * A DEPARTMENT'S PEOPLE ARE THE PEOPLE PLACED IN IT. Team owns that
@@ -954,15 +954,15 @@ final readonly class RosterContentProvider implements ContentProviderInterface
     }
 
     /**
-     * WHERE THE DEMO'S PLAN BEGINS — the earlier of the month's first day
+     * WHERE THE SEED'S PLAN BEGINS — the earlier of the month's first day
      * and the FORTNIGHT the Week tab opens on.
      *
      * TWO REASONS, AND BOTH ARE ABOUT A DAY NOBODY TESTS ON. The planner's
      * window is fourteen days from the Monday of this week, so for the
-     * first days of a month it reaches back into the last one: a demo that
+     * first days of a month it reaches back into the last one: a seed that
      * started at the first would draw those days as holes it had simply
      * never generated, which reads as a park that forgot to staff itself.
-     * And the presence demo can only report from watches that have already
+     * And the presence seed can only report from watches that have already
      * happened — on the 1st, a month-bounded plan has none, so a park
      * seeded that morning had no worked history at all and no state to
      * draw.
@@ -980,11 +980,11 @@ final readonly class RosterContentProvider implements ContentProviderInterface
     }
 
     /**
-     * WHERE THE DEMO'S PLAN ENDS — the later of the month's last day and
+     * WHERE THE SEED'S PLAN ENDS — the later of the month's last day and
      * the area's fill-ahead reach, six weeks from today by default. The
      * month alone left the second week of the sheet's own fortnight empty
      * from the third week of every month: a Week tab whose right half is
-     * a wall of short cover is not a demo of a roster.
+     * a wall of short cover is not a seed of a roster.
      */
     private function fillHorizon(): \DateTimeImmutable
     {

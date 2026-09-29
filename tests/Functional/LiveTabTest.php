@@ -67,7 +67,7 @@ use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
 
         self::freshDatabase($this->em);
 
-        $this->area = new AreaOfInterest()->setSource('test fixture')->setName('demo reserve')->setGeom(
+        $this->area = new AreaOfInterest()->setSource('test fixture')->setName('seed reserve')->setGeom(
             '{"type":"MultiPolygon","coordinates":[[[[12.2,-5.8],[12.5,-5.8],[12.5,-5.5],[12.2,-5.5],[12.2,-5.8]]]]}',
         );
         $this->em->persist($this->area);
@@ -111,7 +111,7 @@ use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
         $this->ranger = $ranger;
         $this->em->persist(new RotationPoolMember($rotation, $ranger, 0));
         // Due today and nothing reported: the "no check-in" row the decisions
-        // card exists for, and the one figure an empty demo never produces.
+        // card exists for, and the one figure an empty seed never produces.
         $this->em->persist(new Duty($this->area, $gate, $ranger, 'day', new \DateTimeImmutable('today')));
         // AND A NIGHT WATCH THAT BEGAN YESTERDAY, which is the case the
         // wall exists to draw: it is still standing at 05:00 this morning,

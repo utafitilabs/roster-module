@@ -16,15 +16,15 @@ namespace Uhifadhi\Roster\Devkit;
 use Uhifadhi\Bundle\AreaBundle\Enum\CheckInStatusKind;
 
 /**
- * WHAT ONE WATCH IS TOLD TO BE, where the demo is not leaving it to chance.
+ * WHAT ONE WATCH IS TOLD TO BE, where the seed is not leaving it to chance.
  *
- * A DEMO THAT DRAWS ITS STATES CANNOT PROMISE THEM. The first cut asked a
+ * A SEED THAT DRAWS ITS STATES CANNOT PROMISE THEM. The first cut asked a
  * stable hash "about one watch in nineteen is a special assignment", which
  * is a frequency and not a guarantee: the hash is seeded by each duty's
  * UUID, the UUIDs are new on every seed, and a month that happened to
  * contain no nineteenth watch shipped a park with a whole reading missing.
  * It failed in CI on a date nobody had run before, which is exactly how it
- * would have failed at a demo.
+ * would have failed at a seed.
  *
  * SO THE READINGS THE SCREENS DRAW ARE ASSIGNED, one to a real watch, before
  * the draw gets a say. What is left over is still drawn — variety is the
@@ -32,7 +32,7 @@ use Uhifadhi\Bundle\AreaBundle\Enum\CheckInStatusKind;
  * be able to render is now a fact about the seeder rather than a hope about
  * its distribution.
  */
-final readonly class DemoWatchScript
+final readonly class SeedWatchScript
 {
     private function __construct(
         /** What the claim says, or null where the watch is not reported at all. */
@@ -44,7 +44,7 @@ final readonly class DemoWatchScript
         /**
          * WHETHER THIS WATCH IS STANDING AWAY FROM ITS POST. The AREA
          * derives "at post, unverified" from the distance between the fix
-         * and the post, so a demo cannot claim that state — it can only
+         * and the post, so a seed cannot claim that state — it can only
          * stand somebody far enough away and let the area say so.
          */
         public bool $away = false,

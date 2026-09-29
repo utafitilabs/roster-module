@@ -402,7 +402,7 @@ the page header's "New rotation".
 **Why.** This is recorded because its absence was a shipped defect, not a
 gap in a plan. Every piece of the duty flow had a green test and the flow
 could not start: the only caller of `addToRoster()` in the whole module was
-the demo seeder, and rotations were built by hand in fixtures. A capability
+the seeder, and rotations were built by hand in fixtures. A capability
 with no door is a capability an installation does not have, and a suite that
 seeds the state a door would have written cannot see it — which is why
 `TheDutyFlowStartsTest` starts from an area with nothing and presses the
@@ -428,7 +428,7 @@ directory rather than to `src/`.
 **Why the seeders are different in kind.** A controller reading "today" is
 reading the day a person is looking at the screen, and there is no other clock
 for it to read. A seeder is only ever run against a clock somebody CHOSE — a
-suite's pinned instant, or a demo being built for a particular day — and its
+suite's pinned instant, or a seed being built for a particular day — and its
 whole output is a function of that instant. Two seeders that disagree about
 what day it is produce a park whose duties are on Monday and whose check-ins
 are on Tuesday, and every figure derived from the pair is wrong in a way no

@@ -28,7 +28,7 @@ use Uhifadhi\Roster\Tests\Integration\IntegrationTestCase;
  *
  * IT IS THE HALF THE MODULE WAS MISSING. A post could be given a watch and
  * still generate nothing for ever, because nothing in the product said what
- * ring it ran; the demo seeder built rotations by hand and no screen did.
+ * ring it ran; the seeder built rotations by hand and no screen did.
  */
 final class RotationEditorDeclaresTest extends IntegrationTestCase
 {

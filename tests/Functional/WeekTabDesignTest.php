@@ -58,7 +58,7 @@ final class WeekTabDesignTest extends WebTestCase
 
         self::freshDatabase($this->em);
 
-        $this->area = new AreaOfInterest()->setSource('test fixture')->setName('demo reserve')->setGeom(
+        $this->area = new AreaOfInterest()->setSource('test fixture')->setName('seed reserve')->setGeom(
             '{"type":"MultiPolygon","coordinates":[[[[12.2,-5.8],[12.5,-5.8],[12.5,-5.5],[12.2,-5.5],[12.2,-5.8]]]]}',
         );
         $this->em->persist($this->area);

@@ -48,7 +48,7 @@ abstract class IntegrationTestCase extends KernelTestCase
      * A SYNTHETIC AREA at nobody's coordinates. Never a client's name, never a
      * real park's boundary.
      */
-    protected function anArea(string $name = 'demo reserve'): AreaOfInterest
+    protected function anArea(string $name = 'seed reserve'): AreaOfInterest
     {
         $area = new AreaOfInterest()->setSource('test fixture')->setName($name)->setGeom(
             '{"type":"MultiPolygon","coordinates":[[[[12.2,-5.8],[12.5,-5.8],[12.5,-5.5],[12.2,-5.5],[12.2,-5.8]]]]}',

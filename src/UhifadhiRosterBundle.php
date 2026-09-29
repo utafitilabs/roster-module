@@ -490,7 +490,7 @@ final class UhifadhiRosterBundle extends AbstractBundle
             ->tag(WidgetSurfaceInterface::TAG);
 
         /*
-         * THE DEMO CONTENT, WHICH EXISTS ONLY WHERE DEVKIT DOES.
+         * THE SEED CONTENT, WHICH EXISTS ONLY WHERE DEVKIT DOES.
          *
          * THE TAG IS A LITERAL STRING, deliberately and per the contract:
          * naming devkit's own constant would load a class that is not
@@ -500,7 +500,7 @@ final class UhifadhiRosterBundle extends AbstractBundle
          *
          * THE SERVICES THEMSELVES ARE INERT HERE. They are ordinary tagged
          * services in every build; nothing collects them unless devkit — a
-         * require-dev package — is present to run `fixtures:demo`. So this
+         * require-dev package — is present to run `fixtures:seed`. So this
          * costs a production container two definitions nobody calls.
          *
          * TWO PROVIDERS, NOT ONE, because they are two slices: the PLAN (who
@@ -547,7 +547,7 @@ final class UhifadhiRosterBundle extends AbstractBundle
                 service(CheckInStatusService::class),
                 // THE INSTANT, as a collaborator. What this seeder writes
                 // depends on the time of day, so a wall clock inside it is
-                // a demo nobody can test twice and get the same answer.
+                // a seed nobody can test twice and get the same answer.
                 service('clock'),
             ])
             ->tag('uhifadhi.devkit.content_provider');
