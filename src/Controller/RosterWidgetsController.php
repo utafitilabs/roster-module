@@ -28,19 +28,13 @@ use Uhifadhi\Bundle\AreaBundle\Entity\AreaOfInterest;
 use Uhifadhi\Bundle\ShellBundle\Widget\Model\WidgetCatalog;
 use Uhifadhi\Bundle\ShellBundle\Widget\Service\WidgetEndpoint;
 use Uhifadhi\Bundle\ShellBundle\Widget\Service\WidgetService;
-use Uhifadhi\Contracts\Area\LivePositionsInterface;
 use Uhifadhi\Contracts\Shell\Scope;
-use Uhifadhi\Roster\Model\LiveRailGroup;
 use Uhifadhi\Roster\Module\RosterModuleProvider;
-use Uhifadhi\Roster\Repository\ShiftRepository;
-use Uhifadhi\Roster\Service\PresenceReader;
 use Uhifadhi\Roster\Service\RosterDashboardService;
 use Uhifadhi\Roster\Service\RosterIdentityService;
-use Uhifadhi\Roster\Service\RosterLiveService;
 use Uhifadhi\Roster\Service\RosterOrgService;
 use Uhifadhi\Roster\Service\RosterWidgetUrls;
 use Uhifadhi\Roster\Widget\RosterOrgWidgets;
-use Uhifadhi\Roster\Widget\RosterRailWidgets;
 use Uhifadhi\Roster\Widget\RosterWidgets;
 
 /**
@@ -83,12 +77,6 @@ final class RosterWidgetsController
     /** Where a widget's own partial lives, as the library's sprintf format. */
     public const string PARTIAL = '@UhifadhiRoster/dashboard/_w_%s.html.twig';
 
-    /** And the rail's, whose widgets ARE the lists the Live tab draws. */
-    public const string RAIL_PARTIAL = '@UhifadhiRoster/rail/_%s.html.twig';
-
-    /** The id of the rail's section, which the Live tab's door names. */
-    public const string RAIL_ANCHOR = 'rail';
-
     /** And the organization section's, for a door from that scope. */
     public const string ORG_ANCHOR = 'org';
 
@@ -100,7 +88,7 @@ final class RosterWidgetsController
      * save the server had to guess at — and the guess would be wrong exactly
      * half the time.
      */
-    public const string SURFACES = RosterWidgets::SURFACE.'|'.RosterRailWidgets::SURFACE.'|'.RosterOrgWidgets::SURFACE;
+    public const string SURFACES = RosterWidgets::SURFACE.'|'.RosterOrgWidgets::SURFACE;
 
     public function __construct(
         private readonly Environment $twig,
@@ -110,12 +98,6 @@ final class RosterWidgetsController
         private readonly RosterDashboardService $dashboard,
         private readonly RosterIdentityService $identity,
         private readonly UrlGeneratorInterface $router,
-        // THE RAIL'S OWN READS, so its library twins are the real lists on
-        // this minute's data rather than a drawing of them.
-        private readonly RosterLiveService $liveService,
-        private readonly PresenceReader $presence,
-        private readonly LivePositionsInterface $positions,
-        private readonly ShiftRepository $shifts,
         private readonly RosterOrgService $org,
     ) {
     }
@@ -142,7 +124,6 @@ final class RosterWidgetsController
         // Two library pages would be two answers to "where do I change my
         // widgets", so there is one, and each section carries its own
         // catalogue, presets, routes and token.
-        $rail = RosterRailWidgets::declaration();
         $org = RosterOrgWidgets::declaration();
 
         return new Response($this->twig->render('@UhifadhiRoster/widgets/library.html.twig', [
@@ -190,41 +171,10 @@ final class RosterWidgetsController
                     'urls' => $this->urls->forArea($area, RosterOrgWidgets::SURFACE),
                     'csrfToken' => $this->endpoint->csrfToken($org, $areaUuid),
                 ],
-                [
-                    // THE DOOR ON THE LIVE TAB LANDS HERE, not at the top of
-                    // the page: a module with two surfaces has two doors into
-                    // one library, and a door that always lands at the top
-                    // makes the reader hunt for what it just opened.
-                    'anchor' => self::RAIL_ANCHOR,
-                    'label' => 'The Live tab’s plate rail',
-                    'intro' => 'The column beside the Live tab’s plate is a widget surface of its own, and the lists it carries are widgets. The rail is one column wide, so every widget in it is full width.',
-                    'catalog' => $rail,
-                    'builtins' => $rail->builtins(),
-                    'customPresets' => $this->widgets->customPresets($rail, $viewer, $areaUuid),
-                    'active' => $this->widgets->activeRef($rail, $viewer, $areaUuid),
-                    'widgets' => $this->widgets->resolve($rail, $viewer, $areaUuid),
-                    'partial' => self::RAIL_PARTIAL,
-                    // AND THE RAIL'S PREVIEWS ARE THE RAIL'S OWN LISTS, on
-                    // this minute's reading: a twin of the Live tab, not a
-                    // drawing of one. The composing controls are off here —
-                    // a preview of a list is not a place to reorder it.
-                    'widgetContext' => $this->railPreview($area, $now),
-                    'urls' => $this->urls->forArea($area, RosterRailWidgets::SURFACE),
-                    'csrfToken' => $this->endpoint->csrfToken($rail, $areaUuid),
-                ],
             ],
         ]));
     }
 
-    /**
-     * WHAT THE RAIL'S THREE LISTS NEED TO DRAW THEMSELVES, once.
-     *
-     * EVERY PREVIEW IS THE REAL LIST ON REAL DATA — the same partials the
-     * Live tab includes, reading the same services — so a twin here cannot
-     * fall out of step with the column it stands for.
-     *
-     * @return array<string, mixed>
-     */
     /**
      * WHAT THE ORGANIZATION WIDGETS NEED TO DRAW THEMSELVES.
      *
@@ -246,36 +196,6 @@ final class RosterWidgetsController
             'bands' => $this->org->bands($areas, $day, $now),
             'decisions' => $this->org->decisions($areas, $day, $now),
             'plate' => null,
-        ];
-    }
-
-    /**
-     * WHAT THE RAIL'S THREE LISTS NEED TO DRAW THEMSELVES, once.
-     *
-     * EVERY PREVIEW IS THE REAL LIST ON REAL DATA — the same partials the
-     * Live tab includes, reading the same services — so a twin here cannot
-     * fall out of step with the column it stands for.
-     *
-     * @return array<string, mixed>
-     */
-    private function railPreview(AreaOfInterest $area, \DateTimeImmutable $now): array
-    {
-        $day = new \DateTimeImmutable('today');
-        $live = $this->positions->liveIn((string) $area->getUuidString(), $now);
-        $posts = $this->presence->postsOn($area, $day, $now);
-
-        return [
-            'stations' => $this->liveService->stations($area, $live, $posts),
-            'zones' => $this->liveService->zones($area, $live),
-            'rail' => $rail = RosterLiveService::rail($live, $posts, $this->shifts->windowsFor($area), $now),
-            'people' => array_sum(array_map(static fn (LiveRailGroup $group): int => $group->count(), $rail)),
-            // A LIBRARY IS NOT THE SURFACE. The order marks and the way out
-            // of the rail belong to the rail itself; here they would be
-            // controls on a picture.
-            'position' => 1,
-            'total' => 1,
-            'mayCompose' => false,
-            'centre' => null,
         ];
     }
 
@@ -303,7 +223,7 @@ final class RosterWidgetsController
             \sprintf(
                 'This area’s %s is back to “%s”.',
                 self::nameOf($surface),
-                RosterRailWidgets::SURFACE === $surface ? RosterRailWidgets::DEFAULT_LABEL : RosterWidgets::DEFAULT_LABEL,
+                RosterOrgWidgets::SURFACE === $surface ? RosterOrgWidgets::DEFAULT_LABEL : RosterWidgets::DEFAULT_LABEL,
             ),
         );
     }
@@ -416,7 +336,6 @@ final class RosterWidgetsController
     private static function catalogOf(string $surface): WidgetCatalog
     {
         return match ($surface) {
-            RosterRailWidgets::SURFACE => RosterRailWidgets::declaration(),
             RosterOrgWidgets::SURFACE => RosterOrgWidgets::declaration(),
             default => RosterWidgets::declaration(),
         };
@@ -426,7 +345,6 @@ final class RosterWidgetsController
     private static function nameOf(string $surface): string
     {
         return match ($surface) {
-            RosterRailWidgets::SURFACE => 'Live plate rail',
             RosterOrgWidgets::SURFACE => 'organization roster',
             default => 'roster dashboard',
         };

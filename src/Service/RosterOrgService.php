@@ -277,7 +277,7 @@ final readonly class RosterOrgService
         // the rest are the AREA's to draw and the atlas's to place; what
         // this module adds is where its people are.
         foreach (\array_slice($areas, 1) as $area) {
-            $map = $map->livePositions($this->positions->liveIn((string) $area->getUuidString(), $now));
+            $map = $map->livePositions($this->positions->liveIn((string) $area->getUuidString(), $now), sheet: $this->live->sheetAddress());
         }
 
         return $map;

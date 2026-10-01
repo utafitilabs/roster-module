@@ -201,6 +201,10 @@ use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
         $crawler = $this->open();
 
         self::assertStringContainsString('3', $crawler->filter('[data-kpi="watches"] .disp')->text(), 'Three watches were seeded.');
-        self::assertSame('1', trim($crawler->filter('[data-kpi="nights-in-a-row"] .disp')->text()), 'One night, so the longest run is one.');
+
+        // THE NIGHT BEGAN YESTERDAY, which on the 1st is last month's - so
+        // the run is read on the month that holds it.
+        $nights = $this->client->request('GET', $this->client->getRequest()->getPathInfo().'?month='.new \DateTimeImmutable('yesterday')->format('Y-m'));
+        self::assertSame('1', trim($nights->filter('[data-kpi="nights-in-a-row"] .disp')->text()), 'One night, so the longest run is one.');
     }
 }

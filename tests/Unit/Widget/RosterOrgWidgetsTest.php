@@ -15,7 +15,6 @@ namespace Uhifadhi\Roster\Tests\Unit\Widget;
 
 use PHPUnit\Framework\TestCase;
 use Uhifadhi\Roster\Widget\RosterOrgWidgets;
-use Uhifadhi\Roster\Widget\RosterRailWidgets;
 use Uhifadhi\Roster\Widget\RosterWidgets;
 
 /**
@@ -83,9 +82,8 @@ final class RosterOrgWidgetsTest extends TestCase
     {
         self::assertSame('roster-org', RosterOrgWidgets::SURFACE);
 
-        self::assertCount(3, array_unique([
+        self::assertCount(2, array_unique([
             RosterWidgets::SURFACE,
-            RosterRailWidgets::SURFACE,
             RosterOrgWidgets::SURFACE,
         ]));
     }

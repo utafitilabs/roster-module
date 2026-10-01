@@ -20,7 +20,7 @@ use Uhifadhi\Bundle\ShellBundle\Widget\Model\WidgetPreset;
 use Uhifadhi\Bundle\ShellBundle\Widget\Registry\WidgetSurfaceInterface;
 
 /**
- * THE ROSTER AT ORGANIZATION SCOPE — the module's third surface.
+ * THE ROSTER AT ORGANIZATION SCOPE — the module's second surface.
  *
  * IT IS THE AREA PAGE ONE SCOPE WIDER, and that is the whole design. Every
  * figure on it is the area query with the area filter WIDENED — the same

@@ -14,6 +14,8 @@ declare(strict_types=1);
 namespace Uhifadhi\Roster\Tests\Unit\Service;
 
 use PHPUnit\Framework\TestCase;
+use Uhifadhi\Contracts\Area\DayState;
+use Uhifadhi\Contracts\Area\LivePosition;
 use Uhifadhi\Contracts\Area\LivePresence;
 use Uhifadhi\Roster\Model\PostPresence;
 use Uhifadhi\Roster\Model\PostState;
@@ -123,5 +125,35 @@ final class RosterLiveRailTailTest extends TestCase
                 self::assertTrue($group->isEmpty());
             }
         }
+    }
+
+    /**
+     * WHO THE PLATE CANNOT DRAW (ruled 1 Oct, #16 D): the people on duty with
+     * no position, and every stale fix - and nobody whose watch has not begun.
+     */
+    public function testTheStripNamesTheSilentAndTheStaleButNotTheDue(): void
+    {
+        $now = new \DateTimeImmutable('today 09:00');
+        $stale = new LivePosition(
+            personUuid: 'cleo',
+            personName: 'Cleo Example',
+            clientRef: 'c-1',
+            state: DayState::AtPostVerified,
+            latitude: -5.7,
+            longitude: 12.3,
+            recordedAt: $now->modify('-2 hours'),
+        );
+        $rail = RosterLiveService::rail(
+            new LivePresence(positions: [$stale], pingIntervalMinutes: 30, asOf: $now),
+            [$this->post([$this->person('ada', 'night'), $this->person('bea', 'day'), new RosteredPerson(personUuid: 'cleo', personName: 'Cleo Example', shiftKey: 'day', shiftLabel: 'day')])],
+            ['day' => ShiftWindow::of('day', '06:00', '18:00'), 'night' => ShiftWindow::of('night', '18:00', '06:00')],
+            $now,
+        );
+
+        $strip = RosterLiveService::notOnPlate($rail);
+
+        self::assertSame(['Cleo Example', 'bea'], array_column($strip, 'name'), 'the stale fix and the silent watch; never the watch not yet begun');
+        self::assertSame(['stale · 2 h 00', 'no position'], array_column($strip, 'reason'));
+        self::assertSame('north gate post', $strip[1]['seat']);
     }
 }

@@ -7,17 +7,14 @@
    the boundary, the posts, the imagery, the controls and the key are all
    somebody else's; the roster draws nothing itself.
 
-   THE RAIL LISTS EVERYBODY AND THE MAP DRAWS THE ONES WITH A FIX, which is
-   why both are here. Somebody at their post whose phone has said nothing is
-   in the rail and nowhere on the plate — a page with only the map would
-   report them absent, and a marker invented at the post's own point would
-   turn a claim into proof.
+   THE MAP DRAWS THE ONES WITH A FIX, AND THE STRIP NAMES THE REST. Somebody
+   on duty whose phone has said nothing is on no layer — a page with only the
+   map would report them absent, and a marker invented at the post's own
+   point would turn a claim into proof — so the strip under the plate names
+   them, and every stale fix beside them (ruled 1 Oct, #16 D).
    ========================================================================== #}
 {% extends '@UhifadhiRoster/base.html.twig' %}
 
-{# WHETHER THIS PERSON MAY COMPOSE THE RAIL — the pair the rail's own edit
-   route carries. A button that answers 403 is worse than no button. #}
-{% set mayCompose = door('roster.record', area) %}
 
 {% block title %}{{ area.name }} · Roster · live{% endblock %}
 
@@ -77,80 +74,27 @@
 
         {# THE PLATE IS THE ATLAS'S AND THE GROUND IS THE AREA'S. What this
            module contributes is the marker layers and their legend group;
-           it draws nothing itself. #}
+           it draws nothing itself.
+
+           THE PLATE TAKES THE ROW (ruled 1 Oct, #16 D): a click on a mark
+           opens the sheet at the plate's foot (C), so the rail beside it is
+           gone; its by-state reading is the legend's, and the people the
+           plate cannot draw are the strip under it. #}
         <div class="fg-live">
             <div>{{ render_map(plate, {"--map-plate-height": "min(64vh, 560px)"}) }}</div>
-
-            {# THE RAIL IS A WIDGET SURFACE OF ITS OWN (ruled): three
-               lists, composed the way every other surface in the app is
-               composed, and adopted as presets from this module's own
-               library.
-
-               HEAD, BODY, FOOT — AND ONLY THE BODY SCROLLS. An overflow
-               box clips everything positioned inside it, so a head, a
-               popover or a tooltip parented to a scrolling rail is cut off
-               the moment the lists are long enough to scroll, which on
-               this tab is always. The head and the foot sit OUTSIDE the
-               scroller and stay pinned. #}
-            <div class="fg-side">
-                <div class="fg-rlhd">
-                    <span class="k">{{ railCount }}</span>
-                    <span class="sp"></span>
-                    <a class="more" href="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterWidgetsController::LIBRARY_ROUTE'), {uuid: area.uuid}) }}#{{ constant('Uhifadhi\\Roster\\Controller\\RosterWidgetsController::RAIL_ANCHOR') }}">Widget library &rarr;</a>
-                </div>
-
-                {# A PRESET VISIBLY CHANGES WHICH LISTS SHOW AND THEIR
-                   ORDER, and the choice is remembered in the same store
-                   the Overview surface uses — so a duty officer's rail is
-                   the rail they left. #}
-                <div class="rl-presets">
-                    {% for preset in railPresets %}
-                        <a class="mchip{{ preset.id == railPreset ? ' on' : '' }}"
-                           href="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterController::RAIL_PRESET_ROUTE'), {uuid: area.uuid, presetId: preset.id}) }}">{{ preset.label }}</a>
-                    {% endfor %}
-                </div>
-
-                <div class="rl-body">
-                    {# THE LIST BRINGS ITS OWN ROOT. `.fg-lst` is the widget
-                       and `.rl-cell` is the rail's chrome around it — one
-                       element, so a twin in the library is this markup with
-                       the chrome left off rather than a second shape. #}
-                    {% for cell in railLists %}
-                        {{ include('@UhifadhiRoster/rail/_' ~ cell.id ~ '.html.twig', cell.context|merge({mayCompose: mayCompose}), with_context: false) }}
-                    {% else %}
-                        <div class="rfrag"><b>The rail carries no list</b><em>every list has been taken out of it &mdash; the widget library puts one back</em></div>
-                    {% endfor %}
-                </div>
-
-                <div class="fg-foot">
-                    {# ONE DOOR PER LIST, AND THE SHEET HIDES THE ONES
-                       ALREADY IN THE RAIL. Drawing all three and hiding
-                       the present ones is the design's arrangement: the
-                       foot then has a fixed set of doors whose order
-                       never shuffles as lists come and go. #}
-                    {% for list in railAll %}
-                        <button type="submit" class="rl-add" form="rail-{{ list.id }}-add" aria-pressed="{{ list.on ? 'true' : 'false' }}"{{ mayCompose ? '' : ' disabled' }}>+ Add <b>{{ list.label }}</b> from the library</button>
-                    {% endfor %}
-                    <span data-rail-default>default &middot; {{ railDefault }}</span>
-                </div>
-
-                {# THE FORMS THE CELL CONTROLS SUBMIT. They live outside the
-                   scrolling body — a form is not a box, so its buttons can
-                   sit anywhere on the page and still belong to it — which
-                   keeps the head, the rows and the foot free of nested
-                   forms and keeps composing the rail scriptless. #}
-                {% if mayCompose %}
-                    {% for list in railAll %}
-                        {% for op in ['up', 'down', 'remove', 'add'] %}
-                            <form id="rail-{{ list.id }}-{{ op }}" method="post" hidden
-                                  action="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterController::RAIL_EDIT_ROUTE'), {uuid: area.uuid, op: op, list: list.id}) }}">
-                                <input type="hidden" name="_token" value="{{ csrf_token(constant('Uhifadhi\\Roster\\Controller\\RosterController::CSRF_TOKEN_ID')) }}">
-                            </form>
-                        {% endfor %}
-                    {% endfor %}
-                {% endif %}
-            </div>
         </div>
+        {% if notOnPlate is not empty %}
+            <div class="lp-off">
+                <span class="k">Not on the plate &middot; {{ notOnPlate|length }}</span>
+                <span class="pps">
+                    {%- for person in notOnPlate -%}
+                        {%- set record = roster_url('team_member', {uuid: person.uuid}) -%}
+                        <{{ record ? 'a href="' ~ record ~ '"' : 'span' }} class="pp{{ person.stale ? ' warn' : '' }}" title="{{ person.seat }}"><span class="av">{{ person.initials }}</span>{{ person.name }}<em>{{ person.reason }}</em></{{ record ? 'a' : 'span' }}>
+                    {%- endfor -%}
+                </span>
+                {% if stationsUrl %}<a class="more" href="{{ stationsUrl }}">Stations &rarr;</a>{% endif %}
+            </div>
+        {% endif %}
     </div>
 
     {# BOUNDED — RULED 25 sep, the sheet's height rule (`roster--bound`,

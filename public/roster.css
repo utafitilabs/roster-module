@@ -1230,118 +1230,45 @@ td.sep:not([colspan]) > .stfoldb {
 .r-pres > .cnt.r { color: var(--fail); }
 .r-pres > .cnt.d { color: var(--dim); }
 
-/* ---- THE LIVE PLATE AND ITS RAIL ----------------------------------------
- * Graduated from the design (option E, ruled 20 sep). The plate takes the
- * room; the rail is a fixed column beside it, and on a narrow screen it
- * goes under rather than squeezing the map into a strip nobody can read a
- * position off. */
-.fg-live { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 12px; align-items: start; }
+/* ---- THE LIVE PLATE, ON THE FULL ROW --------------------------------------
+ * Ruled 1 Oct (#16 D): a click on a mark opens the atlas's sheet at the
+ * plate's foot (C), so the rail beside the plate is gone and the map takes
+ * the whole row. */
+.fg-live { display: block; }
 
-@media (max-width: 1180px) {
-    .fg-live { grid-template-columns: minmax(0, 1fr); }
+/* THE LEGEND FILLS THE ROW (owner, 1 Oct): its groups flow through balanced
+   columns, so every column ends at about the same line and no well of empty
+   space sits under a short group, however many groups the plate carries. A
+   long group (the zones, the posts) may continue in the next column; a
+   heading never parts from its first row. */
+.fg-live .map-legend { display: block; columns: 4 200px; column-gap: 34px; }
+.fg-live .map-legend > .grp { display: flex; flex-direction: column; gap: 6px; break-inside: auto; margin: 0 0 14px; }
+.fg-live .map-legend > .grp > :first-child { break-after: avoid; }
+.fg-live .map-legend > .grp > .lay { break-inside: avoid; }
+
+/* WHO THE PLATE CANNOT DRAW: one strip under it - the label, a pill per
+   person (name and why; the post in the tooltip), and the way to the
+   stations at the end. One wrapping row, so however many there are the
+   strip fills left to right and leaves no column of empty space. */
+.lp-off {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px;
+    margin-top: 10px; padding: 10px 12px; border: 1px dashed var(--ln2); border-radius: 10px;
 }
-
-/* THE RAIL IS HEAD + BODY + FOOT, AND ONLY THE BODY SCROLLS.
- * An overflow box clips everything positioned inside it, so a head menu, a
- * popover or a tooltip parented to a scrolling rail is cut off the moment
- * the lists are long enough to scroll — which on this tab is always. The
- * head and the foot therefore sit OUTSIDE the scroller and stay pinned:
- * the same head-pinned / body-scrolls shape the sidebar nav uses.
- *
- * The rail runs the height of the CARD and not of the plate, because the
- * legend sits under the plate and a rail that stopped at the plate would
- * leave the column empty beside it while its own second list was out of
- * reach. */
-.fg-side { display: flex; flex-direction: column; gap: 0; max-height: min(84vh, 832px); overflow: visible; position: relative; }
-.fg-side > .fg-rlhd { flex: none; position: relative; z-index: 6; }
-.fg-side > .rl-body { flex: 1 1 auto; min-height: 0; overflow: auto; display: flex; flex-direction: column; }
-.fg-side > .fg-foot {
-    flex: none; display: flex; flex-direction: column; align-items: stretch; gap: 8px;
-    padding: 8px 0 0; margin-top: 6px; border-top: 1px solid var(--ln);
-    font: 600 8.5px var(--font-mono); letter-spacing: .08em; color: var(--dim);
+.lp-off .pps { display: contents; }
+.lp-off > .more { margin-left: auto; }
+.lp-off .k { font: 700 9px var(--font-mono); letter-spacing: .13em; text-transform: uppercase; color: var(--dim); }
+.lp-off .pp {
+    display: inline-flex; align-items: center; gap: 8px; padding: 5px 10px 5px 5px;
+    border: 1px solid var(--ln); border-radius: 99px; background: var(--p1); color: var(--tx);
+    font-size: 12.5px; text-decoration: none;
 }
-
-/* THE RAIL'S OWN HEAD: what it is carrying, and the way to change that. */
-.fg-side .fg-rlhd { display: flex; align-items: center; gap: 8px; padding: 0 0 7px; border-bottom: 1px solid var(--ln); background: var(--p1); }
-.fg-side .fg-rlhd .k { font: 700 8.5px var(--font-mono); letter-spacing: .13em; text-transform: uppercase; color: var(--dim); padding: 4px 7px 5px; }
-.fg-side .fg-rlhd .sp { flex: 1 1 auto; }
-
-/* THE ARRANGEMENTS, as chips. Adopting one is a link, so a rail somebody
-   set up is a rail they can send. */
-.fg-side .rl-presets { display: flex; flex-wrap: wrap; gap: 5px; padding: 8px 0 4px; border-bottom: 1px dashed var(--ln); }
-.fg-side .rl-presets .mchip { font-size: 8.5px; letter-spacing: .07em; padding: 4px 9px 3px; cursor: pointer; }
-
-/* A LIST IS A CELL, because the rail is composed and a cell is what a
-   composed thing is made of. */
-.fg-side .rl-cell { border: 1px dashed var(--ln2); border-radius: 10px; padding: 0 9px 7px; margin-top: 9px; }
-.fg-side .rl-cell .rl-cellhd { display: flex; align-items: center; gap: 7px; padding: 7px 0 6px; border-bottom: 1px solid var(--ln); }
-.fg-side .rl-cell .rl-cellhd .ord { flex: none; }
-.fg-side .rl-cell .rl-cellhd .k { font: 700 8.5px var(--font-mono); letter-spacing: .13em; text-transform: uppercase; color: var(--tx); }
-.fg-side .rl-cell .rl-cellhd em { font: 700 8.5px var(--font-mono); font-style: normal; color: var(--acc); }
-.fg-side .rl-cell .rl-cellhd .sp { flex: 1 1 auto; }
-
-/* ---- WHAT A LIST DRAWS BELONGS TO THE LIST -------------------------------
- * A RAIL WIDGET IS A LIST, AND `.fg-lst` IS THE WIDGET ROOT. The same markup
- * is rendered in the rail beside the plate AND at full size in the widget
- * library, so every rule a list needs is scoped to the list. A rule scoped to
- * `.fg-side` instead would leave the library showing raw text, which is what
- * the library twin is FOR catching.
- *
- * What stays on `.fg-side` is only the RAIL itself — its head, its preset
- * strip, its scrolling body, its foot, and the cell chrome it wraps a list
- * in. Those have no meaning anywhere else.
- */
-
-/* A SUB-HEAD INSIDE A LIST. Sticky, so a reader thirty rows down still
-   knows which half of the list they are in. */
-.fg-lst .grp {
-    font: 700 8.5px var(--font-mono); letter-spacing: .12em; text-transform: uppercase;
-    color: var(--dim); padding: 9px 0 5px; border-bottom: 1px solid var(--ln);
-    position: sticky; top: 0; background: var(--p1); z-index: 1;
+.lp-off a.pp:hover { text-decoration: none; border-color: var(--ln2); }
+.lp-off .pp .av {
+    width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+    font: 800 9px var(--font-mono); background: color-mix(in srgb, var(--fog) 22%, transparent);
 }
-
-.fg-lst .grp:first-child { padding-top: 0; }
-.fg-lst .grp.gsub { letter-spacing: .09em; color: var(--fog); border-bottom: 1px dashed var(--ln); font-size: 8px; padding: 7px 0 4px; }
-.fg-lst .grp.st-ok { color: var(--ok); }
-.fg-lst .grp.st-warn { color: var(--warn); }
-.fg-lst .grp.st-fail { color: var(--fail); }
-
-.fg-lst { display: flex; flex-direction: column; }
-
-/* A PERSON ROW. */
-.fg-lst .pr { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px dashed var(--ln); }
-.fg-lst .pr .nm { flex: 1 1 auto; min-width: 0; font-size: 12px; font-weight: 600; color: var(--tx); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.fg-lst .pr .nm em { display: block; font: 500 8.5px var(--font-mono); font-style: normal; color: var(--dim); }
-
-/* A POST ROW, and a ZONE ROW. Name and detail, how many are live, and the
-   one thing wrong with that count.
- *
- * EVERY ROW CENTRES THE PLATE ON WHAT IT NAMES, so the whole row is the
- * target and it carries the locate mark. A row that cannot be centred is
- * NOT A LINK and wears no mark — an affordance that does nothing teaches a
- * reader to distrust the ones that work. */
-.fg-stn, .fg-zn {
-    display: flex; align-items: center; gap: 8px; padding: 6px 0;
-    border-bottom: 1px dashed var(--ln); text-decoration: none; color: inherit; border-radius: 7px;
-}
-
-a.fg-stn, a.fg-zn { cursor: pointer; }
-a.fg-stn:hover, a.fg-zn:hover { background: var(--raised); text-decoration: none; box-shadow: 0 0 0 6px var(--raised); }
-.fg-stn.on, .fg-zn.on { box-shadow: inset 2px 0 0 var(--acc), 0 0 0 6px var(--raised); background: var(--raised); }
-
-.fg-stn .nm, .fg-zn .nm { flex: 1 1 auto; min-width: 0; font-size: 12px; font-weight: 600; color: var(--tx); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.fg-stn .nm em, .fg-zn .nm em { display: block; font: 500 8.5px var(--font-mono); font-style: normal; color: var(--dim); }
-.fg-stn.quiet .nm, .fg-stn.quiet .nm em, .fg-zn.quiet .nm, .fg-zn.quiet .nm em { color: var(--dim); }
-
-.fg-zn .zsw { width: 9px; height: 9px; border-radius: 3px; flex: none; font-style: normal; }
-
-.fg-stn .lv, .fg-zn .lv { display: inline-flex; align-items: center; gap: 5px; flex: none; font: 700 10px var(--font-mono); color: var(--ok); }
-.fg-stn .lv em, .fg-zn .lv em { font-style: normal; font-weight: 600; color: var(--warn); }
-.fg-stn .lv.none, .fg-zn .lv.none { color: var(--dim); font-weight: 600; }
-
-.fg-stn .loc, .fg-zn .loc { display: inline-flex; flex: none; color: var(--dim); opacity: .55; }
-a.fg-stn:hover .loc, a.fg-zn:hover .loc, .fg-stn.on .loc, .fg-zn.on .loc { color: var(--acc); opacity: 1; }
-.fg-stn .loc svg, .fg-zn .loc svg { display: block; }
+.lp-off .pp em { font-style: normal; color: var(--dim); font-size: 11.5px; }
+.lp-off .pp.warn { border-color: color-mix(in srgb, var(--warn) 55%, transparent); }
 
 /* ---- THE PLAN SHEET: SLOTS AND THE PILLS THAT FILL THEM ------------------
  * A slot is the question the pattern asks — "the gate asks two tomorrow
@@ -1398,33 +1325,11 @@ a.fg-stn:hover .loc, a.fg-zn:hover .loc, .fg-stn.on .loc, .fg-zn.on .loc { color
 .r-pill em.why { font: 500 9px var(--font-mono); font-style: normal; color: var(--fail); }
 .r-pill em.warn { font: 500 9px var(--font-mono); font-style: normal; color: var(--warn); }
 
-/* ---- COMPOSING THE RAIL, AND THE TAIL OF A LIST -------------------------
- * The order buttons, the way out of the rail, the doors that put a list
- * back, and the fold that keeps a list bounded. Graduated with the rail
- * itself: the Live tab depends on all four.
- */
+/* ---- AN ORDER NUMBER, and the buttons that move it (configure lists). */
 .ord { flex: none; display: flex; align-items: center; gap: 4px; }
 .ord b { font: 700 10px var(--font-mono); color: var(--dim); min-width: 12px; text-align: right; }
 .ord button { width: 20px; height: 20px; border: 1px solid var(--ln2); border-radius: 5px; background: none; color: var(--fog); cursor: pointer; font-family: inherit; font-size: 9px; line-height: 1; padding: 0; }
 .ord button:disabled { opacity: .35; cursor: default; }
-
-.fg-side .rl-cell .rl-cellhd .rm { border: 0; background: none; padding: 0 2px; cursor: pointer; color: var(--ln2); font-size: 15px; line-height: 1; }
-.fg-side .rl-cell:hover .rl-cellhd .rm { color: var(--fail); }
-
-.fg-side > .fg-foot { flex-direction: column; align-items: stretch; }
-.fg-side .rl-add { display: block; width: 100%; margin: 0 0 7px; cursor: pointer; background: none; padding: 9px 0; text-align: center; border-radius: 10px; border: 1px dashed var(--acc); color: var(--acc); text-decoration: none; font: 700 9px var(--font-mono); letter-spacing: .1em; text-transform: uppercase; }
-.fg-side .rl-add:hover { background: color-mix(in srgb, var(--acc) 9%, transparent); text-decoration: none; }
-/* A list already in the rail needs no door back into it. */
-.fg-side .rl-add[aria-pressed="true"] { display: none; }
-
-.fg-lst details.rl-more > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-.fg-lst details.rl-more > summary::-webkit-details-marker { display: none; }
-.fg-lst details.rl-more > summary .grp { flex: 1 1 auto; position: static; }
-.fg-lst details.rl-more > summary .cv { display: inline-flex; color: var(--fog); flex: none; padding-bottom: 5px; transition: transform .15s ease; }
-.fg-lst details.rl-more > summary .cv svg { display: block; }
-.fg-lst details.rl-more[open] > summary .cv { transform: rotate(180deg); }
-/* Nobody in the tail is a row to act on, so none of them reads as one. */
-.fg-lst .pr.note, .fg-lst .pr.note:hover { cursor: default; background: none; box-shadow: none; }
 
 /* ============================================================================
    THE CONFIGURE REDESIGN — WATCHES AND PATTERNS.

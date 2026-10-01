@@ -77,7 +77,6 @@ use Uhifadhi\Roster\Service\SheetService;
 use Uhifadhi\Roster\Service\ShiftRuleService;
 use Uhifadhi\Roster\Service\SwapCostService;
 use Uhifadhi\Roster\Service\SwapService;
-use Uhifadhi\Roster\Widget\RosterRailWidgets;
 use Uhifadhi\Roster\Widget\RosterWidgets;
 
 /**
@@ -157,21 +156,6 @@ final class RosterController
 
     /** What is true this minute. */
     public const string LIVE_ROUTE = 'roster_live';
-
-    /** Adopting one of the rail's arrangements. */
-    public const string RAIL_PRESET_ROUTE = 'roster_live_rail_preset';
-
-    /** Moving, taking out or putting back one of the rail's lists. */
-    public const string RAIL_EDIT_ROUTE = 'roster_live_rail_edit';
-
-    /**
-     * WHAT THE ATLAS BRINGS BACK WITH THE PLATE, prefixed once.
-     *
-     * A row in the rail asks the plate to change in place and to carry its
-     * own list across from the same answer, so the row that was clicked
-     * returns wearing the mark. The id is the list's; this is its stem.
-     */
-    public const string RAIL_LIST_ID = 'rail-list-';
 
     /** The generated plan for a day, as slots to fill. */
     public const string PLAN_ROUTE = 'roster_plan';
@@ -945,77 +929,12 @@ final class RosterController
 
         // WHERE EVERYBODY IS, ASKED OF THE AREA FOR ONE STATED MOMENT. The
         // instant is passed rather than taken from a clock inside the
-        // seam, so the plate, the rail and the figures on this page are
+        // seam, so the plate, the strip and the figures on this page are
         // all answering the same minute.
         $live = $this->positions->liveIn((string) $area->getUuidString(), $now);
 
-        // THE RAIL IS A SURFACE, resolved exactly as the Overview's is and
-        // out of the same store: which lists it carries, and in what
-        // order, is a decision somebody made and the framework remembers.
-        $catalog = RosterRailWidgets::declaration();
-        $resolved = $this->widgetService->resolve($catalog, $this->viewer(), $area->getUuid());
-        $active = $this->widgetService->activeRef($catalog, $this->viewer(), $area->getUuid());
-
-        $stations = $this->liveService->stations($area, $live, $whole);
-        $zones = $this->liveService->zones($area, $live);
         $people = RosterLiveService::rail($live, $narrowed, $this->shifts->windowsFor($area), $now);
-
         $centre = self::centreAsked($request);
-
-        $shown = [];
-        foreach ($resolved as $widget) {
-            // The framework answers a resolved surface as rows, not as
-            // catalogue objects: the layout is what a person arranged, and
-            // a Widget is what the module declared.
-            if ($widget['on']) {
-                $shown[] = (string) $widget['id'];
-            }
-        }
-
-        $lists = [];
-        $counted = 0;
-        foreach ($shown as $id) {
-            $position = \count($lists) + 1;
-            $common = [
-                'position' => $position,
-                'total' => \count($shown),
-                'centre' => $centre,
-                // THE RAIL'S OWN CHROME, asked for by the rail. The same
-                // partial renders in the widget library without any of it,
-                // and is then the list and nothing else.
-                'cell' => ' rl-cell',
-                'head' => true,
-                // AND THE NAME THE ATLAS BRINGS BACK. A row asks the plate
-                // to swap itself and to carry this one region across with
-                // it, so the row that was clicked returns marked. Only the
-                // rail names it: the library draws this same list three
-                // times from one render, and three of one id is not a page.
-                'listId' => self::RAIL_LIST_ID.$id,
-            ];
-            $context = match ($id) {
-                'stations' => ['stations' => $stations, ...$common],
-                'zones' => ['zones' => $zones, ...$common],
-                default => ['rail' => $people, 'people' => self::railPeople($people), ...$common],
-            };
-
-            $counted += match ($id) {
-                'stations' => $stations->count(),
-                'zones' => $zones->count(),
-                default => self::railPeople($people),
-            };
-
-            $lists[] = ['id' => $id, 'context' => $context];
-        }
-
-        // EVERY LIST THE SURFACE DECLARES, so the foot can offer the ones
-        // that are out. The button for a list already in the rail is drawn
-        // and hidden by the sheet, which is the design's own arrangement:
-        // one door per list, and only the absent ones read as doors.
-        $railAll = [];
-        foreach ($resolved as $widget) {
-            $id = (string) $widget['id'];
-            $railAll[] = ['id' => $id, 'label' => RosterRailWidgets::NAMES[$id] ?? (string) $widget['label'], 'on' => (bool) $widget['on']];
-        }
 
         // THE MARKS KEEP MOVING. The area's own stream and cookie, under
         // the area's own pair; with no hub the plate draws once.
@@ -1036,17 +955,11 @@ final class RosterController
             // too: they are on no layer, and a plate silent about them
             // would be a plate claiming the park is fully seen.
             'plate' => $plate,
-            'rail' => $people,
-            'railLists' => $lists,
-            'railCount' => \sprintf('%d in %d list%s', $counted, \count($lists), 1 === \count($lists) ? '' : 's'),
+            // WHO THE PLATE CANNOT DRAW (ruled 1 Oct, #16 D): the rail is
+            // gone and the map takes the row, so the people with no position
+            // and the stale fixes are named in a strip under it.
+            'notOnPlate' => RosterLiveService::notOnPlate($people),
             'centre' => $centre,
-            'railAll' => $railAll,
-            'railPresets' => $catalog->presets(),
-            'railPreset' => $active['id'],
-            // WHO CHOSE THE ARRANGEMENT AND WHEN. A rail somebody else set
-            // up is a rail whose shape needs explaining, and the foot is
-            // where it explains itself.
-            'railDefault' => $this->railDefault($catalog, $area),
             'live' => $this->liveService->figures($live, $whole),
             'stationsUrl' => $this->stationsUrl($area),
             'chosenPost' => $this->chosenPost($whole, $filter),
@@ -1101,157 +1014,6 @@ final class RosterController
             'post' => $station?->getName(),
             'postUrl' => null === $station ? null : $this->stationUrl($station),
         ];
-    }
-
-    /**
-     * HOW MANY PEOPLE THE RAIL'S PEOPLE LIST HOLDS, across its groups.
-     *
-     * @param list<\Uhifadhi\Roster\Model\LiveRailGroup> $groups
-     */
-    private static function railPeople(array $groups): int
-    {
-        $total = 0;
-        foreach ($groups as $group) {
-            $total += $group->count();
-        }
-
-        return $total;
-    }
-
-    /**
-     * WHAT THE RAIL'S FOOT SAYS: the arrangement in force, who put it
-     * there and when — or that nobody has, and it is the one the module
-     * ships with.
-     */
-    private function railDefault(\Uhifadhi\Bundle\ShellBundle\Widget\Model\WidgetCatalog $catalog, AreaOfInterest $area): string
-    {
-        $active = $this->widgetService->activeRef($catalog, $this->viewer(), $area->getUuid());
-        $chosen = $catalog->preset($active['id']);
-
-        return null === $chosen || $catalog->defaultPresetId() === $active['id']
-            ? \sprintf('%s · the module · as shipped', $catalog->builtins()[0]->label ?? RosterRailWidgets::DEFAULT_LABEL)
-            : \sprintf('%s · %s · chosen here', $chosen->label, $this->viewer()?->getFullName() ?? 'this installation');
-    }
-
-    /**
-     * ADOPT ONE OF THE RAIL'S ARRANGEMENTS. It is a write, so it is a POST
-     * and it is attributed — the same endpoint the Overview's presets go
-     * through, over this surface's own catalogue.
-     */
-    #[Route('/areas/{uuid}/modules/roster/live/rail/{presetId}', name: self::RAIL_PRESET_ROUTE, requirements: ['uuid' => Requirement::UUID, 'presetId' => '[a-z0-9_-]+'], methods: ['GET', 'POST'])]
-    #[IsGranted('areas.read', subject: 'area')]
-    public function adoptRailPreset(
-        #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
-        Request $request,
-        string $presetId,
-    ): Response {
-        $viewer = $this->viewer();
-
-        if (null !== $viewer) {
-            $this->widgetService->applyPreset(RosterRailWidgets::declaration(), $viewer, $area->getUuid(), $presetId);
-        }
-
-        return new RedirectResponse($this->router->generate(self::LIVE_ROUTE, ['uuid' => (string) $area->getUuidString()]));
-    }
-
-    /**
-     * COMPOSE THE RAIL: move a list, take one out, put one back.
-     *
-     * THIS IS THE SURFACE'S OWN EDITING and it is persisted exactly as the
-     * preset choice is — the same store, the same rules. What it is NOT is
-     * a second way of writing a shipped design: the framework refuses that
-     * outright, and rightly, so the first edit to an arrangement the module
-     * ships COPIES it and edits the copy. The copy keeps the design's name,
-     * because "The duty officer, mine" is what it is.
-     */
-    #[Route('/areas/{uuid}/modules/roster/live/rail/{op}/{list}', name: self::RAIL_EDIT_ROUTE, requirements: ['uuid' => Requirement::UUID, 'op' => 'up|down|remove|add', 'list' => '[a-z]+'], methods: ['POST'])]
-    #[IsGranted('roster.record', subject: 'area')]
-    public function composeRail(
-        #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
-        Request $request,
-        string $op,
-        string $list,
-    ): Response {
-        $this->guardTheForm($request);
-
-        $viewer = $this->viewer();
-        $catalog = RosterRailWidgets::declaration();
-
-        if (null !== $viewer && $catalog->has($list)) {
-            $areaUuid = $area->getUuid();
-
-            // A SHIPPED DESIGN IS NOT EDITED IN PLACE. Copying first is the
-            // framework's rule and the library says so in as many words;
-            // doing it here rather than refusing means the control the
-            // design draws actually works on the first click.
-            if ('mine' !== $this->widgetService->activeRef($catalog, $viewer, $areaUuid)['kind']) {
-                $this->widgetService->copyBuiltinPreset(
-                    $catalog,
-                    $viewer,
-                    $areaUuid,
-                    $this->widgetService->activeRef($catalog, $viewer, $areaUuid)['id'],
-                );
-            }
-
-            $this->widgetService->save(
-                $catalog,
-                $viewer,
-                self::railPayload($this->widgetService->resolve($catalog, $viewer, $areaUuid), $op, $list),
-                $areaUuid,
-            );
-        }
-
-        return new RedirectResponse($this->router->generate(self::LIVE_ROUTE, ['uuid' => (string) $area->getUuidString()]));
-    }
-
-    /**
-     * THE RAIL AFTER ONE EDIT, as the framework's own payload.
-     *
-     * MOVING IS AMONG THE LISTS THAT ARE ON. A list moved "up" past one
-     * that is switched off would appear not to move at all, which reads as
-     * a broken button rather than as a no-op.
-     *
-     * @param list<array{id: string, label: string, group: string, on: bool, cols: int, spans: list<int>}> $resolved
-     *
-     * @return array{order: list<string>, widgets: array<string, array{on: bool, cols: int}>}
-     */
-    private static function railPayload(array $resolved, string $op, string $list): array
-    {
-        $order = [];
-        $widgets = [];
-        foreach ($resolved as $widget) {
-            $order[] = $widget['id'];
-            $widgets[$widget['id']] = ['on' => $widget['on'], 'cols' => $widget['cols']];
-        }
-
-        if ('remove' === $op || 'add' === $op) {
-            if (isset($widgets[$list])) {
-                $widgets[$list] = ['on' => 'add' === $op, 'cols' => $widgets[$list]['cols']];
-            }
-
-            return ['order' => $order, 'widgets' => $widgets];
-        }
-
-        $shown = array_values(array_filter($order, static fn (string $id): bool => $widgets[$id]['on']));
-        $at = array_search($list, $shown, true);
-
-        if (false === $at) {
-            return ['order' => $order, 'widgets' => $widgets];
-        }
-
-        $to = $at + ('up' === $op ? -1 : 1);
-
-        if (!isset($shown[$to])) {
-            return ['order' => $order, 'widgets' => $widgets];
-        }
-
-        [$shown[$at], $shown[$to]] = [$shown[$to], $shown[$at]];
-
-        // The off lists keep their places behind the on ones, so switching
-        // one back on puts it where it was rather than at the front.
-        $off = array_values(array_filter($order, static fn (string $id): bool => !$widgets[$id]['on']));
-
-        return ['order' => [...$shown, ...$off], 'widgets' => $widgets];
     }
 
     /** The area's stations page, or null where this installation omits it. */
@@ -1500,7 +1262,7 @@ final class RosterController
         return self::SLOT_FIELD.$stationUuid.'__'.$shiftKey;
     }
 
-    /** What a rail row asked the plate to centre on, if anything readable. */
+    /** What a link asked the plate to centre on, if anything readable. */
     private static function centreAsked(Request $request): ?string
     {
         $centre = $request->query->get('centre');

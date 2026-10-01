@@ -14,6 +14,21 @@ has to do for a release is in [docs/upgrading.md](docs/upgrading.md).
 
 Not released yet.
 
+ * THE LIVE PLATE TAKES THE ROW (ruled 1 Oct, #16 D): a click on a mark opens
+   the atlas's sheet at the plate's foot (C, core 0.1.27), so the rail beside
+   the plate is gone. Its legend lays its groups out in balanced columns, and
+   the people the plate cannot draw - on duty with no position, or with a
+   stale fix - are named in a strip under it, one pill each with the reason
+   and the post in the tooltip (`RosterLiveService::notOnPlate()`). The
+   rail's widget surface goes with it: the Live tab's presets and its
+   compose routes (`roster_live_rail_preset`, `roster_live_rail_edit`), the
+   library's rail section and reset, `RosterRailWidgets`, the rail partials
+   and `RailList`/`RailRow`. A person's stored rail arrangement is left in
+   the widget store, unread. Needs core 0.1.27.
+ * the devkit seed's tests read a trade in the planner's fortnight, and the
+   calendar's night run on the month that holds it - both read only this
+   month, and failed on the 1st.
+
  * a person's own roster (#19, the dashboard for everyone): on the dashboard
    `/` draws for somebody who may not read the areas, the door "My roster ·
    the week at …", the My roster card — this week Monday to Sunday with one

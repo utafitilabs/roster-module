@@ -74,7 +74,6 @@ use Uhifadhi\Roster\Shell\RosterModuleTabs;
 use Uhifadhi\Roster\Shell\RosterStationSections;
 use Uhifadhi\Roster\Shell\RosterStylesheets;
 use Uhifadhi\Roster\Widget\RosterOrgWidgets;
-use Uhifadhi\Roster\Widget\RosterRailWidgets;
 use Uhifadhi\Roster\Widget\RosterWidgets;
 
 use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
@@ -441,6 +440,7 @@ final class UhifadhiRosterBundle extends AbstractBundle
                 service(StationRepository::class),
                 service(PostingRepository::class),
                 service(ZoneRepository::class),
+                service('router')->nullOnInvalid(),
             ]);
 
         // THE WHOLE SURFACE'S ONE READ. Both the dashboard and the library
@@ -493,15 +493,8 @@ final class UhifadhiRosterBundle extends AbstractBundle
         $services->set('roster.widgets', RosterWidgets::class)
             ->tag(WidgetSurfaceInterface::TAG);
 
-        // THE LIVE TAB'S RAIL IS A SECOND SURFACE, not a preset of the
-        // first: one composes a page out of cards, the other a column out
-        // of lists. They share the mechanism and nothing else, which is
-        // what a surface is for. Tagged by hand like every contribution.
-        $services->set('roster.rail_widgets', RosterRailWidgets::class)
-            ->tag(WidgetSurfaceInterface::TAG);
-
-        // AND THE THIRD: the module read across every area. It is a surface
-        // like the other two and composed the same way; what makes it
+        // AND THE SECOND: the module read across every area. It is a surface
+        // like the first and composed the same way; what makes it
         // different is only the scope the figures under it are read at.
         $services->set('roster.org_widgets', RosterOrgWidgets::class)
             ->tag(WidgetSurfaceInterface::TAG);
@@ -747,10 +740,6 @@ final class UhifadhiRosterBundle extends AbstractBundle
                     service('roster.dashboard'),
                     service('roster.identity'),
                     service('router'),
-                    service('roster.live'),
-                    service('roster.presence'),
-                    service(LivePositionsInterface::class),
-                    service(ShiftRepository::class),
                     service('roster.org'),
                 ])
                 ->public();

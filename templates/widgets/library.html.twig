@@ -44,16 +44,9 @@
             {{ stimulus_controller('confirm-modal') }}
             data-action="click->confirm-modal#ask"
             data-confirm-modal-title-value="Reset the dashboard layout?"
-            data-confirm-modal-message-value="This area's roster dashboard goes back to the composition the module ships with. Your own designs are kept, the plate rail is untouched, and your other areas are untouched."
+            data-confirm-modal-message-value="This area's roster dashboard goes back to the composition the module ships with. Your own designs are kept, the organization roster is untouched, and your other areas are untouched."
             data-confirm-modal-confirm-label-value="Reset the dashboard"
             data-confirm-modal-danger-value="true">{{ ux_icon('shell:rotate-ccw') }}Reset the dashboard</button>
-    <button type="button" class="tgl w-act" {{ constant('Uhifadhi\\Bundle\\ShellBundle\\Widget\\Model\\WidgetDom::RESET') }}="{{ constant('Uhifadhi\\Roster\\Widget\\RosterRailWidgets::SURFACE') }}"
-            {{ stimulus_controller('confirm-modal') }}
-            data-action="click->confirm-modal#ask"
-            data-confirm-modal-title-value="Reset the plate rail?"
-            data-confirm-modal-message-value="The Live tab's rail goes back to the lists the module ships with. Your own designs are kept, the dashboard is untouched, and your other areas are untouched."
-            data-confirm-modal-confirm-label-value="Reset the rail"
-            data-confirm-modal-danger-value="true">{{ ux_icon('shell:rotate-ccw') }}Reset the rail</button>
 {% endblock %}
 
 {% block roster_section %}
@@ -61,7 +54,7 @@
        component, given BOTH of this module's surfaces: one house section
        each, each with its own catalogue, presets, routes and token.
  #}
-    <div class="rfrag"><b>Two compositions, one place to change them</b><em>the roster&rsquo;s Overview is a page of cards and the Live tab&rsquo;s rail is a column of lists. They share the mechanism and nothing else, and both are arranged here.</em></div>
+    <div class="rfrag"><b>Two compositions, one place to change them</b><em>the roster&rsquo;s Overview is this area&rsquo;s page of cards and the organization roster reads every area at once. They share the mechanism and nothing else, and both are arranged here.</em></div>
 
     {{ include('@Shell/widget/_library.html.twig', {surfaces: surfaces}, with_context: false) }}
 {% endblock %}

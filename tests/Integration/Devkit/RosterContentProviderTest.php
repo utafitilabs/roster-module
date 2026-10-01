@@ -432,13 +432,15 @@ final class RosterContentProviderTest extends IntegrationTestCase
         self::assertNotEmpty($absences, 'Somebody is away this month.');
 
         self::assertNotEmpty(
-            $this->repository(SwapRepository::class)->findOpenBetween($this->area, $this->monthStart(), $this->monthEnd()),
+            // THE PLANNER'S FORTNIGHT, which is where the seeder puts its
+            // trades - on the 1st of a month it starts in the month before.
+            $this->repository(SwapRepository::class)->findOpenBetween($this->area, $this->windowStart(), $this->monthEnd()),
             'A trade is in flight — the pair the grid marks on both cells.',
         );
 
         $states = array_map(
             static fn (object $swap): string => $swap->getState()->value,
-            $this->repository(SwapRepository::class)->findRecentBetween($this->area, $this->monthStart(), $this->monthEnd(), 50),
+            $this->repository(SwapRepository::class)->findRecentBetween($this->area, $this->windowStart(), $this->monthEnd(), 50),
         );
         self::assertGreaterThan(1, \count(array_unique($states)), 'And one already answered, so the card is not all one state.');
     }
@@ -459,7 +461,7 @@ final class RosterContentProviderTest extends IntegrationTestCase
             $counted($this->repository(RotationRepository::class)->findByArea($this->area)),
             $counted($this->repository(DutyRepository::class)->findByAreaBetween($this->area, $this->monthStart(), $this->monthEnd())),
             $counted($this->repository(AbsenceRepository::class)->findOverlapping($this->area, $this->monthStart(), $this->monthEnd())),
-            $counted($this->repository(SwapRepository::class)->findRecentBetween($this->area, $this->monthStart(), $this->monthEnd(), 50)),
+            $counted($this->repository(SwapRepository::class)->findRecentBetween($this->area, $this->windowStart(), $this->monthEnd(), 50)),
         ];
 
         $this->provider()->load();
@@ -470,7 +472,7 @@ final class RosterContentProviderTest extends IntegrationTestCase
             $counted($this->repository(RotationRepository::class)->findByArea($this->area)),
             $counted($this->repository(DutyRepository::class)->findByAreaBetween($this->area, $this->monthStart(), $this->monthEnd())),
             $counted($this->repository(AbsenceRepository::class)->findOverlapping($this->area, $this->monthStart(), $this->monthEnd())),
-            $counted($this->repository(SwapRepository::class)->findRecentBetween($this->area, $this->monthStart(), $this->monthEnd(), 50)),
+            $counted($this->repository(SwapRepository::class)->findRecentBetween($this->area, $this->windowStart(), $this->monthEnd(), 50)),
         ];
 
         self::assertSame($before, $after);
@@ -676,7 +678,7 @@ final class RosterContentProviderTest extends IntegrationTestCase
 
         $protected = 0;
         foreach ($this->em->getRepository(Station::class)->findBy(['area' => $this->area]) as $post) {
-            $protected += \count($this->repository(EditedDayRepository::class)->protectedPersonDaysBetween($post, $this->monthStart(), $this->monthEnd()));
+            $protected += \count($this->repository(EditedDayRepository::class)->protectedPersonDaysBetween($post, $this->windowStart(), $this->monthEnd()));
         }
 
         self::assertGreaterThan(0, $protected);

@@ -18,7 +18,6 @@ use Uhifadhi\Bundle\AreaBundle\Entity\AreaOfInterest;
 use Uhifadhi\Bundle\ShellBundle\Widget\Model\WidgetDom;
 use Uhifadhi\Roster\Controller\RosterController;
 use Uhifadhi\Roster\Controller\RosterWidgetsController;
-use Uhifadhi\Roster\Widget\RosterRailWidgets;
 use Uhifadhi\Roster\Widget\RosterWidgets;
 
 /**
@@ -66,11 +65,10 @@ final readonly class RosterWidgetUrls
             'apply' => $url(RosterWidgetsController::PRESET_APPLY_ROUTE, ['presetUuid' => $id]),
             'rename' => $url(RosterWidgetsController::PRESET_RENAME_ROUTE, ['presetUuid' => $id]),
             'delete' => $url(RosterWidgetsController::PRESET_DELETE_ROUTE, ['presetUuid' => $id]),
-            // WHERE THE COMPOSITION IS ACTUALLY SEEN: the dashboard for one,
-            // the Live tab for the other. The library's "back to it" door is
-            // only useful if it opens the thing being arranged.
+            // WHERE THE COMPOSITION IS SEEN: the library's "back to it" door
+            // opens the roster dashboard.
             'dashboard' => $this->router->generate(
-                RosterRailWidgets::SURFACE === $surface ? RosterController::LIVE_ROUTE : RosterController::OVERVIEW_ROUTE,
+                RosterController::OVERVIEW_ROUTE,
                 ['uuid' => (string) $area->getUuidString()],
             ),
         ];

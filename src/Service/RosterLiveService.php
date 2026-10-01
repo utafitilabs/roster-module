@@ -13,7 +13,9 @@ declare(strict_types=1);
 
 namespace Uhifadhi\Roster\Service;
 
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Uid\Uuid;
+use Uhifadhi\Bundle\AreaBundle\Controller\LiveSheetController;
 use Uhifadhi\Bundle\AreaBundle\Entity\AreaOfInterest;
 use Uhifadhi\Bundle\AreaBundle\Repository\PostingRepository;
 use Uhifadhi\Bundle\AreaBundle\Repository\StationRepository;
@@ -23,14 +25,13 @@ use Uhifadhi\Bundle\AreaBundle\Service\ZoneSetService;
 use Uhifadhi\Bundle\AtlasBundle\Model\AtlasMap;
 use Uhifadhi\Bundle\AtlasBundle\Model\LayerShape;
 use Uhifadhi\Bundle\AtlasBundle\Model\LegendItem;
+use Uhifadhi\Bundle\AtlasBundle\Model\LiveMarks;
 use Uhifadhi\Contracts\Area\DayState;
 use Uhifadhi\Contracts\Area\LivePresence;
 use Uhifadhi\Roster\Model\LiveFigures;
 use Uhifadhi\Roster\Model\LiveRailGroup;
 use Uhifadhi\Roster\Model\PostPresence;
 use Uhifadhi\Roster\Model\PostState;
-use Uhifadhi\Roster\Model\RailList;
-use Uhifadhi\Roster\Model\RailRow;
 use Uhifadhi\Roster\Model\RosteredPerson;
 use Uhifadhi\Roster\Model\ShiftWindow;
 
@@ -66,7 +67,7 @@ use Uhifadhi\Roster\Model\ShiftWindow;
 final readonly class RosterLiveService
 {
     /** What the legend heads the rail's own colour coding with. */
-    public const string PRESENCE_GROUP = 'Presence states · in the rail';
+    public const string PRESENCE_GROUP = 'Presence states';
 
     public function __construct(
         private AreaPlateService $plates,
@@ -74,7 +75,15 @@ final readonly class RosterLiveService
         private StationRepository $stations,
         private PostingRepository $postings,
         private ZoneRepository $zoneRepository,
+        /** Where a click on a live mark asks who it is (#16 C); absent, the marks open nothing. */
+        private ?UrlGeneratorInterface $urls = null,
     ) {
+    }
+
+    /** The address a live mark's click asks, `{id}` for the person, or null where it is not mounted. */
+    public function sheetAddress(): ?string
+    {
+        return null === $this->urls ? null : LiveSheetController::addressTemplate($this->urls);
     }
 
     /**
@@ -123,7 +132,7 @@ final readonly class RosterLiveService
         // LivePresence::isStale at two ping intervals, never a threshold of
         // ours. All the roster contributes is the positions and the count
         // of the people missing from them.
-        $map->livePositions($live, $withoutPosition);
+        $map->livePositions($live, $withoutPosition, $this->sheetAddress());
 
         // THE PRESENCE STATES ARE A KEY TO THE RAIL, not to the plate, and
         // the legend says so in its own heading. They are legend ITEMS and
@@ -193,6 +202,40 @@ final readonly class RosterLiveService
         }
 
         return $rows;
+    }
+
+    /**
+     * WHO THE PLATE CANNOT DRAW (ruled 1 Oct, #16 D): the people on duty with
+     * no position, and those whose last fix is stale - the strip under the
+     * plate, now the rail is gone. Read off the rail's own groups, so the
+     * strip and the reading cannot disagree.
+     *
+     * @param list<LiveRailGroup> $rail
+     *
+     * @return list<array{uuid: string, name: string, initials: string, reason: string, seat: string, stale: bool}>
+     */
+    public static function notOnPlate(array $rail): array
+    {
+        $off = [];
+        foreach ($rail as $group) {
+            foreach ($group->rows as $row) {
+                $none = 'no position' === $group->label;
+                if (!$none && !$row['stale']) {
+                    continue;
+                }
+                $name = $row['person']->personName;
+                $off[] = [
+                    'uuid' => $row['person']->personUuid,
+                    'name' => $name,
+                    'initials' => LiveMarks::initials($name),
+                    'reason' => $none ? 'no position' : 'stale · '.$row['age'],
+                    'seat' => $row['post']->stationName,
+                    'stale' => !$none,
+                ];
+            }
+        }
+
+        return $off;
     }
 
     /**
@@ -280,152 +323,6 @@ final readonly class RosterLiveService
         return $rail;
     }
 
-    /**
-     * THE STATIONS LIST — one row per post the AREA registers, not per post
-     * this module keeps a watch on.
-     *
-     * THE POSTS LEFT THE LEGEND TO GET HERE, and that is the ruling worth
-     * restating: a legend is a KEY TO WHAT IS DRAWN, and "which post has
-     * how many people on it right now" is not a key, it is the answer. A
-     * key that carried answers would grow with the park.
-     *
-     * THE ONES WITH A WATCH COME FIRST. The rest are still listed, quiet,
-     * because a post this module ignores is still a post on the plate and
-     * a reader who clicks it should be centred on it.
-     *
-     * @param list<PostPresence> $posts the posts on this module's books
-     */
-    public function stations(AreaOfInterest $area, LivePresence $live, array $posts): RailList
-    {
-        $onTheBooks = [];
-        foreach ($posts as $post) {
-            $onTheBooks[$post->stationUuid] = $post;
-        }
-
-        $liveAt = [];
-        $staleAt = [];
-        foreach ($live->positions as $position) {
-            $at = $position->stationUuid;
-            if (null === $at) {
-                continue;
-            }
-
-            if ($live->isStale($position)) {
-                $staleAt[$at] = ($staleAt[$at] ?? 0) + 1;
-
-                continue;
-            }
-
-            $liveAt[$at] = ($liveAt[$at] ?? 0) + 1;
-        }
-
-        $watched = [];
-        $quiet = [];
-        foreach ($this->stations->findByArea($area) as $station) {
-            $uuid = (string) $station->getUuidString();
-            $posted = $this->postings->countStandingByStation($station);
-            $stale = $staleAt[$uuid] ?? 0;
-
-            $row = new RailRow(
-                // A POST WITH NO POINT CANNOT BE CENTRED ON, so its row is
-                // not a link. The area gazettes a post before it surveys
-                // one, and a dead link is worse than an inert row.
-                centre: null === $station->getPoint() ? null : $uuid,
-                name: (string) $station->getName(),
-                detail: self::detail([$station->getCode(), self::people($posted)]),
-                live: $liveAt[$uuid] ?? 0,
-                wrong: $stale > 0 ? \sprintf('%d stale', $stale) : null,
-                quiet: !isset($onTheBooks[$uuid]),
-            );
-
-            if (isset($onTheBooks[$uuid])) {
-                $watched[] = $row;
-            } else {
-                $quiet[] = $row;
-            }
-        }
-
-        $sections = [];
-        if ([] !== $watched) {
-            $sections[] = ['label' => \sprintf('with a watch · %d', \count($watched)), 'rows' => $watched];
-        }
-
-        if ([] !== $quiet) {
-            $sections[] = ['label' => \sprintf('no watch in this module · %d', \count($quiet)), 'rows' => $quiet];
-        }
-
-        return new RailList('stations', 'Stations', $sections);
-    }
-
-    /**
-     * THE ZONES LIST — one row per zone, with the swatch the plate draws it
-     * in.
-     *
-     * THE SWATCH IS A CATEGORY POSITION AND NEVER A COLOUR. A zone's place
-     * in the set picks the house's nth category token; this module does not
-     * read the zone's own colour field and does not name a value. The same
-     * position gives the same token on the plate and in this list, which is
-     * the only reason the two agree.
-     *
-     * A ZONE'S LIVE COUNT IS ITS POSTS' — the positions claimed at a post
-     * that stands inside it. A fix with no post claimed belongs to nobody's
-     * zone, and guessing one from a coordinate would be this module doing
-     * geography the area already does.
-     */
-    public function zones(AreaOfInterest $area, LivePresence $live): RailList
-    {
-        $liveAt = [];
-        foreach ($live->positions as $position) {
-            if (null !== $position->stationUuid && !$live->isStale($position)) {
-                $liveAt[$position->stationUuid] = ($liveAt[$position->stationUuid] ?? 0) + 1;
-            }
-        }
-
-        $postedIn = [];
-        $liveIn = [];
-        foreach ($this->stations->findByArea($area) as $station) {
-            $zone = $station->getZone()?->getName();
-            if (null === $zone) {
-                continue;
-            }
-
-            $postedIn[$zone] = ($postedIn[$zone] ?? 0) + $this->postings->countStandingByStation($station);
-            $liveIn[$zone] = ($liveIn[$zone] ?? 0) + ($liveAt[(string) $station->getUuidString()] ?? 0);
-        }
-
-        $staffed = [];
-        $empty = [];
-        foreach ($this->zones->view($area)->rows as $position => $zone) {
-            $posted = $postedIn[$zone->name] ?? 0;
-
-            $row = new RailRow(
-                centre: $zone->uuid,
-                name: $zone->name,
-                detail: self::detail([self::km2($zone->km2), self::people($posted)]),
-                live: $liveIn[$zone->name] ?? 0,
-                category: ($position % self::CATEGORIES) + 1,
-                quiet: 0 === $posted,
-            );
-
-            if ($posted > 0) {
-                $staffed[] = $row;
-            } else {
-                $empty[] = $row;
-            }
-        }
-
-        $sections = [];
-        if ([] !== $staffed) {
-            $sections[] = ['label' => \sprintf('with somebody posted · %d', \count($staffed)), 'rows' => $staffed];
-        }
-
-        if ([] !== $empty) {
-            $sections[] = ['label' => \sprintf('nobody posted · %d', \count($empty)), 'rows' => $empty];
-        }
-
-        return new RailList('zones', 'Zones', $sections);
-    }
-
     /** How close a plate comes to a post, which has no extent of its own. */
     private const int POST_ZOOM = 13;
 
@@ -455,32 +352,6 @@ final readonly class RosterLiveService
         }
 
         return null;
-    }
-
-    /** The house ships nine category tokens; a longer set wraps round them. */
-    private const int CATEGORIES = 9;
-
-    /**
-     * A row's second line: the facts it has, in order, dots between.
-     *
-     * @param list<string|null> $parts
-     */
-    private static function detail(array $parts): string
-    {
-        return implode(' · ', array_values(array_filter(
-            $parts,
-            static fn (?string $part): bool => null !== $part && '' !== $part,
-        )));
-    }
-
-    private static function people(int $posted): string
-    {
-        return 0 === $posted ? 'nobody posted' : \sprintf('%d posted', $posted);
-    }
-
-    private static function km2(int $km2): string
-    {
-        return \sprintf('%s km²', number_format($km2));
     }
 
     /**
