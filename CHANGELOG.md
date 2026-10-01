@@ -25,6 +25,9 @@ Not released yet.
    library's rail section and reset, `RosterRailWidgets`, the rail partials
    and `RailList`/`RailRow`. A person's stored rail arrangement is left in
    the widget store, unread. Needs core 0.1.27.
+ * one count of the silent (1 Oct): the legend's "No position", the plate card's
+   "with none" and the Positions-now figure count the people the strip names - on
+   duty with no position - never somebody whose watch has not begun.
  * the devkit seed's tests read a trade in the planner's fortnight, and the
    calendar's night run on the month that holds it - both read only this
    month, and failed on the 1st.

@@ -38,7 +38,7 @@
         <div class="c kpi hot" data-kpi="positions-now">
             <span class="tab">Positions now</span>
             <b class="disp">{{ live.positions }}<em>of {{ live.expected }} expected</em></b>
-            <span class="sub">{{ live.stale }} stale &middot; {{ live.withoutAFix }} with none at all</span>
+            <span class="sub">{{ live.stale }} stale &middot; {{ silent }} with none at all</span>
         </div>
         {# AWAY FROM A POST IS A FRAGMENT OF VERIFIED, not a card — a row
            is four, never five. Both are readings of the same set of live
@@ -69,7 +69,7 @@
 
     <h2 class="zone">The plate first</h2>
     <div class="c">
-        <span class="tab">Where everybody is<span class="src">&middot; <time datetime="{{ now.format('c') }}" data-localtime-format="time">{{ now.format('H:i') }}</time> &middot; {{ live.positions }} position{{ live.positions == 1 ? '' : 's' }} &middot; {{ live.stale }} stale &middot; {{ live.withoutAFix }} with none</span></span>
+        <span class="tab">Where everybody is<span class="src">&middot; <time datetime="{{ now.format('c') }}" data-localtime-format="time">{{ now.format('H:i') }}</time> &middot; {{ live.positions }} position{{ live.positions == 1 ? '' : 's' }} &middot; {{ live.stale }} stale &middot; {{ silent }} with none</span></span>
         {% if stationsUrl %}<a class="more" href="{{ stationsUrl }}">The stations layer &rarr;</a>{% endif %}
 
         {# THE PLATE IS THE ATLAS'S AND THE GROUND IS THE AREA'S. What this

@@ -170,6 +170,23 @@ use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
     }
 
     /**
+     * ONE COUNT OF THE SILENT (1 Oct): the legend's "No position" and the
+     * strip name the same people - somebody whose watch has not begun is in
+     * neither, whatever the hour the suite runs at.
+     */
+    public function testTheLegendAndTheStripCountTheSilentAlike(): void
+    {
+        $crawler = $this->open();
+
+        $row = $crawler->filter('.map-legend .lay')->reduce(static fn (\Symfony\Component\DomCrawler\Crawler $r): bool => str_starts_with(trim($r->text()), 'No position'));
+        $legend = 0 === $row->count() ? null : (int) preg_replace('/\D+/', '', $row->filter('em')->text(''));
+        $strip = $crawler->filter('.lp-off .pp')->reduce(static fn (\Symfony\Component\DomCrawler\Crawler $p): bool => str_contains($p->text(), 'no position'))->count();
+
+        self::assertNotNull($legend, 'The key states the row whatever its count.');
+        self::assertSame($strip, $legend);
+    }
+
+    /**
      * THE PLATE TAKES THE ROW (ruled 1 Oct, #16 D). A click on a mark opens
      * the sheet at the plate's foot, so no rail stands beside the plate and
      * nothing on the page composes one.

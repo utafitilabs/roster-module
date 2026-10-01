@@ -936,9 +936,15 @@ final class RosterController
         $people = RosterLiveService::rail($live, $narrowed, $this->shifts->windowsFor($area), $now);
         $centre = self::centreAsked($request);
 
+        // ONE COUNT OF THE SILENT (1 Oct): the strip, the legend's "No
+        // position" and the card's "with none" all read the people on duty
+        // with no position - never somebody whose watch has not begun.
+        $notOnPlate = RosterLiveService::notOnPlate($people);
+        $silent = \count(array_filter($notOnPlate, static fn (array $person): bool => !$person['stale']));
+
         // THE MARKS KEEP MOVING. The area's own stream and cookie, under
         // the area's own pair; with no hub the plate draws once.
-        $plate = $this->liveService->plate($area, $live, $this->liveService->figures($live, $whole)->withoutAFix, $whole, $centre);
+        $plate = $this->liveService->plate($area, $live, $silent, $whole, $centre);
         $subscription = $this->streams?->forArea($request, $area);
         if (null !== $subscription) {
             $plate->liveStream($subscription->stream);
@@ -958,7 +964,8 @@ final class RosterController
             // WHO THE PLATE CANNOT DRAW (ruled 1 Oct, #16 D): the rail is
             // gone and the map takes the row, so the people with no position
             // and the stale fixes are named in a strip under it.
-            'notOnPlate' => RosterLiveService::notOnPlate($people),
+            'notOnPlate' => $notOnPlate,
+            'silent' => $silent,
             'centre' => $centre,
             'live' => $this->liveService->figures($live, $whole),
             'stationsUrl' => $this->stationsUrl($area),
