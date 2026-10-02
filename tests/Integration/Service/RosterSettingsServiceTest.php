@@ -13,43 +13,26 @@ declare(strict_types=1);
 
 namespace Uhifadhi\Roster\Tests\Integration\Service;
 
-use Uhifadhi\Roster\Enum\LateThreshold;
 use Uhifadhi\Roster\Service\RosterSettingsService;
 use Uhifadhi\Roster\Tests\Integration\IntegrationTestCase;
+use Uhifadhi\Roster\Tests\SetsCoreSettings;
 
 /**
- * "TWICE THE INTERVAL" COUNTS FROM THE AREA'S INTERVAL — the one the handset
- * is told and the live reading judges by, never a number of the roster's own.
+ * WHAT THE ROSTER READS OF SETTINGS: the ping interval in force for an area,
+ * Settings › Core's — never a number of the roster's own.
  */
 final class RosterSettingsServiceTest extends IntegrationTestCase
 {
-    public function testTwiceTheIntervalIsTwiceTheAreasNumber(): void
-    {
-        $area = $this->anArea()->setPingIntervalMinutes(20);
-        $this->em->flush();
+    use SetsCoreSettings;
 
-        self::assertSame(LateThreshold::TwiceTheInterval, $this->settings()->forArea($area)->getLateThreshold());
-        self::assertSame(40, $this->settings()->lateAfterMinutes($area));
-        self::assertSame(20, $this->settings()->pingIntervalFor($area));
-    }
-
-    /** An area that sets none runs at half an hour, so twice it is an hour. */
-    public function testAnAreaThatSetsNoneCountsFromTheDefault(): void
+    public function testTheIntervalIsTheOneInForceForTheArea(): void
     {
         $area = $this->anArea();
         $this->em->flush();
+        self::assertSame(30, $this->settings()->pingIntervalFor($area), 'Nothing set: half an hour.');
 
-        self::assertSame(60, $this->settings()->lateAfterMinutes($area));
-    }
-
-    /** A fixed threshold does not move with the interval. */
-    public function testAFixedThresholdIgnoresTheInterval(): void
-    {
-        $area = $this->anArea()->setPingIntervalMinutes(20);
-        $this->em->flush();
-        $this->settings()->forArea($area)->setLateThreshold(LateThreshold::FourHours);
-
-        self::assertSame(240, $this->settings()->lateAfterMinutes($area));
+        $this->pingEvery($this->em, $area, 20);
+        self::assertSame(20, $this->settings()->pingIntervalFor($area));
     }
 
     private function settings(): RosterSettingsService

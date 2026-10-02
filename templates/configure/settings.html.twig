@@ -16,16 +16,13 @@
    |-------------------------------|---------|--------------------------|------------------|--------|
    | page subline, three fragments | chrome  | static                   | none             | done   |
    | h2.zone + subhead → Watches   | chrome  | static                   | door to Watches  | done   |
-   | Settings card head + caption  | chrome  | static                   | none             | done   |
-   | Off days on a tour            | control | AreaRosterSettings       | two-state switch | done   |
-   | Leave approval                | control | AreaRosterSettings       | two-state switch | done   |
-   | Discard / Save settings       | control | —                        | reload / write   | done   |
    | Check-in statuses card        | data    | the AREA's list          | none — read here | done   |
    | one .rstat per status         | data    | CheckInStatus            | none             | done   |
    | retired row, dimmed and kept  | state   | CheckInStatus            | none             | done   |
    | empty status list             | state   | the area offers none     | none             | done   |
+   | off days · leave approval     | —       | —                        | —                | RETIRED 2 Oct 2026: read by nothing, return with their feature |
    | catchment / thresholds        | —       | —                        | —                | ON Watches, ruled 20–21 sep |
-   | ping interval                 | —       | —                        | —                | THE AREA'S: Area settings, shown read-only on Watches |
+   | ping interval                 | —       | —                        | —                | SETTINGS › CORE'S: shown read-only on Watches |
    | shift vocabulary row          | —       | —                        | —                | MOVED to Watches, ruled 21 sep |
    | .rstat re-order / edit / retire | —     | —                        | —                | NOT THIS MODULE'S: the area writes them |
 
@@ -40,59 +37,13 @@
 {# WHETHER THIS PERSON MAY CHANGE HOW THE AREA RUNS ITS ROSTER — the pair
    every write on this page carries. The page itself opens on the ground,
    so a reader sees the setup with every control disabled. #}
-{% set mayManage = door('roster.configure', area) %}
 
 {# THE DESIGN'S OWN SUBLINE, as fragments. #}
 {% block shell_page_subtitle %}What this module cannot guess about this organization &middot; each answer a field, with a default and the consequence of choosing wrong &middot; shifts and rules live on Watches{% endblock %}
 
 {% block roster_section %}
 <h2 class="zone" id="settings">Settings</h2>
-<p class="pgsub">What is neither a shift nor a rule &middot; shifts and the rules that read them are edited once, on <a href="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterConfigureController::WATCHES_ROUTE'), {uuid: area.uuid}) }}">Watches</a></p>
-
-<form method="post" action="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterConfigureController::SAVE_SETTINGS_ROUTE'), {uuid: area.uuid}) }}">
-    <input type="hidden" name="_token" value="{{ csrfToken }}">
-    <div class="c rband">
-        {# HEADER = IDENTITY ONLY, no door: ruled 2026-09-20. #}
-        <div class="rb-hd">
-            <span class="tab">Settings</span>
-            <span class="rb-ttl">two answers &mdash; neither of them a shift or a rule &middot; each with the consequence of getting it wrong</span>
-        </div>
-        <div class="rb-body">
-
-            <div class="rset">
-                <span class="lb"><b>Off days on a tour</b><em>what an off day in a cycle produces</em></span>
-                <span class="ct">
-                    <span class="rsw">
-                        <label class="{{ settings.offDayHasNoState ? 'on' : '' }}"><input type="radio" name="off_day_has_no_state" value="1" {{ settings.offDayHasNoState ? 'checked' : '' }} {{ mayManage ? '' : 'disabled' }}>no state</label>
-                        <label class="{{ settings.offDayHasNoState ? '' : 'on' }}"><input type="radio" name="off_day_has_no_state" value="0" {{ settings.offDayHasNoState ? '' : 'checked' }} {{ mayManage ? '' : 'disabled' }}>no check-in</label>
-                    </span>
-                </span>
-                <span class="why"><b>Default: no state.</b> A ranger stood down owes no check-in &middot; choose <i>no check-in</i> only where everyone owes one daily &mdash; it colours every rest day red.</span>
-            </div>
-
-            <div class="rset">
-                <span class="lb"><b>Leave approval</b><em>a request, an approver, a state machine</em></span>
-                <span class="ct">
-                    <span class="rsw">
-                        <label class="{{ settings.leaveApprovalShown ? '' : 'on' }}"><input type="radio" name="leave_approval_shown" value="0" {{ settings.leaveApprovalShown ? '' : 'checked' }} {{ mayManage ? '' : 'disabled' }}>off</label>
-                        <label class="{{ settings.leaveApprovalShown ? 'on' : '' }}"><input type="radio" name="leave_approval_shown" value="1" {{ settings.leaveApprovalShown ? 'checked' : '' }} {{ mayManage ? '' : 'disabled' }}>on</label>
-                    </span>
-                </span>
-                <span class="why"><b>Default: off.</b> The roster records an absence &middot; approval belongs to Team &middot; on adds a read-only state chip, nothing more.</span>
-            </div>
-
-            {# Save at the END of the form body, right-aligned — the house's
-               own .staddrow, not a footer strip. #}
-            {% if mayManage %}
-                <div class="staddrow">
-                    <span class="sp"></span>
-                    <a class="btn sm" href="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterConfigureController::SETTINGS_ROUTE'), {uuid: area.uuid}) }}">Discard</a>
-                    <button type="submit" class="cta">Save settings</button>
-                </div>
-            {% endif %}
-        </div>
-    </div>
-</form>
+<p class="pgsub">The check-in statuses the area offers &middot; shifts and the rules that read them are edited once, on <a href="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterConfigureController::WATCHES_ROUTE'), {uuid: area.uuid}) }}">Watches</a></p>
 
 {# THE CHECK-IN STATUSES A RANGER IS OFFERED are the AREA's list, not this
    module's. The design puts them on this page because this is where somebody

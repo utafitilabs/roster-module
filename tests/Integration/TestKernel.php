@@ -254,7 +254,6 @@ final class TestKernel extends Kernel
             \Uhifadhi\Roster\Repository\EditedDayRepository::class => \Uhifadhi\Roster\Repository\EditedDayRepository::class,
             \Uhifadhi\Roster\Repository\AbsenceRepository::class => \Uhifadhi\Roster\Repository\AbsenceRepository::class,
             \Uhifadhi\Roster\Repository\StationWatchRepository::class => \Uhifadhi\Roster\Repository\StationWatchRepository::class,
-            \Uhifadhi\Roster\Repository\AreaRosterSettingsRepository::class => \Uhifadhi\Roster\Repository\AreaRosterSettingsRepository::class,
             \Uhifadhi\Roster\Service\RosterSettingsService::class => 'roster.settings',
             \Uhifadhi\Roster\Service\ShiftVocabularyService::class => 'roster.shift_vocabulary',
             \Uhifadhi\Roster\Service\StationWatchService::class => 'roster.station_watches',

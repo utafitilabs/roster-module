@@ -118,7 +118,6 @@ final class RosterConfigureController
     public const string SAVE_ROTATION_ROUTE = 'roster_configure_rotation_save';
     public const string GENERATE_ROTATION_ROUTE = 'roster_configure_rotation_generate';
     public const string SAVE_WATCHES_ROUTE = 'roster_configure_watches_save';
-    public const string SAVE_SETTINGS_ROUTE = 'roster_configure_settings_save';
 
     /**
      * WHAT A PERSON MUST HOLD TO CHANGE HOW THIS AREA'S ROSTER IS SET UP.
@@ -472,13 +471,11 @@ final class RosterConfigureController
         return new Response($this->twig->render('@UhifadhiRoster/configure/settings.html.twig', [
             'area' => $area,
             'band' => $this->identity->bandFor($area),
-            'settings' => $this->settings->forArea($area),
             // THE AREA'S LIST, READ AND NEVER WRITTEN. A check-in belongs to
             // the area and so do the statuses it can carry; this section
             // shows them because this is where somebody configuring the
             // roster looks for them, and links to where they are edited.
             'checkInStatuses' => $this->checkInStatuses->offeredBy($area),
-            'csrfToken' => $this->csrfTokenManager->getToken(self::CSRF_TOKEN_ID)->getValue(),
         ]));
     }
 
@@ -891,35 +888,6 @@ final class RosterConfigureController
         }
 
         return Shift::FIRST_SLOT;
-    }
-
-    #[Route('/areas/{uuid}/modules/roster/settings', name: self::SAVE_SETTINGS_ROUTE, requirements: ['uuid' => Requirement::UUID], methods: ['POST'])]
-    #[IsGranted('roster.configure', subject: 'area')]
-    public function saveSettings(
-        #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
-        Request $request,
-    ): Response {
-        $this->guardTheForm($request);
-
-        $current = $this->settings->forArea($area);
-
-        /*
-         * ONLY WHAT THIS PAGE OWNS. The default catchment and the late
-         * threshold are rules on the Watches section and the ping interval
-         * is the area's, so they are passed through or not taken at all: a
-         * second editor for one fact is a fact that disagrees with itself
-         * the first time somebody uses the other one.
-         */
-        $this->settings->save(
-            $area,
-            $request->request->getBoolean('off_day_has_no_state', $current->offDayHasNoState()),
-            $request->request->getBoolean('leave_approval_shown', $current->isLeaveApprovalShown()),
-            $current->getDefaultCatchmentMetres(),
-            $current->getLateThreshold(),
-            $current->getVacancyAnnounce(),
-        );
-
-        return $this->backTo(self::SETTINGS_ROUTE, $area);
     }
 
     /**

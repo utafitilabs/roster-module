@@ -211,8 +211,8 @@ final class RosterConfiguration
                          * vendor/symfony/config/Definition/ArrayNode.php finalizeValue().
                          */
                         ->integerNode('ping_interval_minutes')
-                            ->info('Deprecated and read by nothing: the ping interval is the area\'s, set on its Area settings.')
-                            ->setDeprecated('uhifadhi/roster-module', '0.1.2', '"roster.defaults.ping_interval_minutes" is read by nothing: the ping interval is the area\'s, set on its Area settings. Remove the key; it goes in the next release.')
+                            ->info('Deprecated and read by nothing: the ping interval is Settings › Core\'s.')
+                            ->setDeprecated('uhifadhi/roster-module', '0.1.2', '"roster.defaults.ping_interval_minutes" is read by nothing: the ping interval is Settings › Core\'s, set by Admins. Remove the key; it goes with the next recipe.')
                             ->min(1)->defaultValue(self::DEFAULT_PING_INTERVAL_MINUTES)
                         ->end()
                         ->integerNode('silence_window_minutes')
@@ -223,8 +223,13 @@ final class RosterConfiguration
                             ->info('How long before late becomes offline.')
                             ->min(1)->defaultValue(self::DEFAULT_OFFLINE_AFTER_MINUTES)
                         ->end()
+                        // ACCEPTED AND INERT, as ping_interval_minutes above: a new
+                        // post's ring is the area's Check-in within rule, edited
+                        // on Watches (0.2, ruled 2 Oct 2026). The recipe still
+                        // writes the key, so it is deprecated rather than removed.
                         ->integerNode('catchment_metres')
-                            ->info('How close a ping has to be for a claim of "at post" to read as verified.')
+                            ->info('Deprecated and read by nothing: a new post\'s ring is the area\'s Check-in within rule, on Watches.')
+                            ->setDeprecated('uhifadhi/roster-module', '0.2.0', '"roster.defaults.catchment_metres" is read by nothing: a new post\'s ring is the area\'s Check-in within rule, set on Watches. Remove the key; it goes with the next recipe.')
                             ->min(1)->defaultValue(self::DEFAULT_CATCHMENT_METRES)
                         ->end()
                         ->integerNode('horizon_days')

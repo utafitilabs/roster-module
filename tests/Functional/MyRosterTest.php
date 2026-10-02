@@ -30,6 +30,7 @@ use Uhifadhi\Roster\Enum\AbsenceKind;
 use Uhifadhi\Roster\Service\StationWatchService;
 use Uhifadhi\Roster\Tests\FreshDatabase;
 use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
+use Uhifadhi\Roster\Tests\SetsCoreSettings;
 use Uhifadhi\Roster\UhifadhiRosterBundle;
 
 /**
@@ -43,6 +44,7 @@ final class MyRosterTest extends WebTestCase
 {
     use EveryAreaRunsTheRoster;
     use FreshDatabase;
+    use SetsCoreSettings;
 
     private KernelBrowser $client;
     private EntityManagerInterface $em;
@@ -62,7 +64,7 @@ final class MyRosterTest extends WebTestCase
         $this->area = new AreaOfInterest()->setSource('test fixture')->setName('sample reserve')->setGeom(
             '{"type":"MultiPolygon","coordinates":[[[[12.2,-5.8],[12.5,-5.8],[12.5,-5.5],[12.2,-5.5],[12.2,-5.8]]]]}',
         );
-        $this->area->setPingIntervalMinutes(5);
+        $this->pingEvery($this->em, $this->area, 5);
         $this->em->persist($this->area);
         $this->post = new Station()->setArea($this->area)->setName('north gate post')->setCode('ST-01')->setPoint('{"type":"Point","coordinates":[12.3,-5.7]}');
         $this->em->persist($this->post);

@@ -25,11 +25,11 @@ use Uhifadhi\Roster\Enum\NightThenDay;
 use Uhifadhi\Roster\Enum\RuleKind;
 use Uhifadhi\Roster\Enum\RuleUnit;
 use Uhifadhi\Roster\Model\RuleValue;
-use Uhifadhi\Roster\Service\RosterSettingsService;
 use Uhifadhi\Roster\Service\ShiftRuleService;
 use Uhifadhi\Roster\Service\StationWatchService;
 use Uhifadhi\Roster\Tests\FreshDatabase;
 use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
+use Uhifadhi\Roster\Tests\SetsCoreSettings;
 
 /**
  * THE CONFIGURE PAGE, OVER REAL HTTP — the three sections, who may save them,
@@ -44,6 +44,7 @@ final class ConfigurePageTest extends WebTestCase
 {
     use EveryAreaRunsTheRoster;
     use FreshDatabase;
+    use SetsCoreSettings;
 
     private KernelBrowser $client;
     private EntityManagerInterface $em;
@@ -118,14 +119,6 @@ final class ConfigurePageTest extends WebTestCase
     {
         $service = static::getContainer()->get('test_public.'.ShiftRuleService::class);
         self::assertInstanceOf(ShiftRuleService::class, $service);
-
-        return $service;
-    }
-
-    private function settings(): RosterSettingsService
-    {
-        $service = static::getContainer()->get('test_public.'.RosterSettingsService::class);
-        self::assertInstanceOf(RosterSettingsService::class, $service);
 
         return $service;
     }
@@ -259,110 +252,42 @@ final class ConfigurePageTest extends WebTestCase
     }
 
     /**
-     * A READER SEES THE PAGE AND NO SAVE BUTTON. Withheld rather than
-     * disabled: a greyed control tells somebody a thing exists and they are
-     * not trusted with it, which is a worse product than not offering it.
+     * THE ROSTER KEEPS NO SETTINGS OF ITS OWN (0.2, ruled 2 Oct 2026): its
+     * four stored answers were read by nothing and went, so the section shows
+     * the area's check-in statuses, read here and written on the area, and
+     * offers nothing to save.
      */
-    public function testAReaderSeesTheSettingsAndIsOfferedNoSave(): void
+    public function testTheSettingsSectionShowsTheCheckInStatusesAndNothingToSave(): void
     {
-        $this->signIn(FixedManageVoter::READER_EMAIL);
+        $this->signIn(FixedManageVoter::MANAGER_EMAIL);
 
         $crawler = $this->client->request('GET', $this->url('settings'));
 
         self::assertResponseIsSuccessful();
-        self::assertStringContainsString('Off days on a tour', $crawler->filter('body')->text());
+        self::assertStringContainsString('Check-in statuses', $crawler->filter('body')->text());
+        self::assertStringNotContainsString('Off days on a tour', $crawler->filter('body')->text());
         self::assertSame(0, $crawler->filter('button[type=submit]')->count());
     }
 
-    /**
-     * SAVING THE SETTINGS STORES THE SIX. The token is read off the rendered
-     * form rather than spelled out here: a test that hardcoded it would still
-     * pass the day the page stopped rendering one.
-     */
-    public function testAManagerSavesTheSettings(): void
+    /** And nothing posted to it is taken: the save went with the settings. */
+    public function testNothingIsSavedToTheSettingsSection(): void
     {
         $this->signIn(FixedManageVoter::MANAGER_EMAIL);
-        $crawler = $this->client->request('GET', $this->url('settings'));
-        $token = $crawler->filter('input[name=_token]')->attr('value');
-        self::assertIsString($token);
 
-        $this->client->request('POST', $this->url('settings'), [
-            '_token' => $token,
-            'off_day_has_no_state' => '0',
-            'leave_approval_shown' => '1',
-        ]);
+        $this->client->request('POST', $this->url('settings'), ['off_day_has_no_state' => '0']);
 
-        self::assertResponseRedirects($this->url('settings'));
-
-        $this->em->clear();
-        $settings = $this->settings()->forArea($this->em->getRepository(AreaOfInterest::class)->findOneBy(['name' => 'seed reserve']) ?? throw new \LogicException('The fixture area vanished.'));
-
-        self::assertFalse($settings->offDayHasNoState());
-        self::assertTrue($settings->isLeaveApprovalShown());
+        self::assertResponseStatusCodeSame(405);
     }
 
     /**
-     * AND WHAT THIS PAGE DOES NOT OWN, IT DOES NOT WRITE. The ping interval
-     * is the area's and the default catchment is a rule on the Watches
-     * card, so a post here naming either changes nothing.
-     */
-    public function testTheSettingsPageCannotWriteWhatItDoesNotOwn(): void
-    {
-        $this->area->setPingIntervalMinutes(45);
-        $this->em->flush();
-
-        $this->signIn(FixedManageVoter::MANAGER_EMAIL);
-        $crawler = $this->client->request('GET', $this->url('settings'));
-        $token = $crawler->filter('input[name=_token]')->attr('value');
-        self::assertIsString($token);
-
-        $this->client->request('POST', $this->url('settings'), [
-            '_token' => $token,
-            'ping_interval_minutes' => '5',
-            'default_catchment_metres' => '900',
-        ]);
-
-        $this->em->clear();
-        $area = $this->areaAgain();
-
-        self::assertSame(45, $area->getPingIntervalMinutes(), 'The area is the one home for it.');
-        self::assertNotSame(900, $this->settings()->forArea($area)->getDefaultCatchmentMetres());
-    }
-
-    /** A reader who posts anyway is refused, token or no token. */
-    public function testAReaderCannotSaveTheSettings(): void
-    {
-        $this->signIn(FixedManageVoter::MANAGER_EMAIL);
-        $crawler = $this->client->request('GET', $this->url('settings'));
-        $token = $crawler->filter('input[name=_token]')->attr('value');
-        self::assertIsString($token);
-
-        $this->signIn(FixedManageVoter::READER_EMAIL);
-        $this->client->request('POST', $this->url('settings'), ['_token' => $token, 'ping_interval_minutes' => '5']);
-
-        self::assertResponseStatusCodeSame(403);
-    }
-
-    /** A form that did not come from this page is refused. */
-    public function testASaveWithoutAValidTokenIsRefused(): void
-    {
-        $this->signIn(FixedManageVoter::MANAGER_EMAIL);
-
-        $this->client->request('POST', $this->url('settings'), ['_token' => 'not-the-token', 'ping_interval_minutes' => '5']);
-
-        self::assertResponseStatusCodeSame(403);
-    }
-
-    /**
-     * PING EVERY IS THE AREA'S, SHOWN HERE READ-ONLY. The row states the
-     * area's number, says whose it is in one fragment, and carries the door
-     * to the area's settings — no control, and nothing for a station to
-     * overrule.
+     * PING EVERY IS SETTINGS › CORE'S, SHOWN HERE READ-ONLY. The row states
+     * the value in force for the area, says whose it is in one fragment, and
+     * carries the door to the area's settings section — no control, and
+     * nothing for a station to overrule.
      */
     public function testThePingRowShowsTheAreasValueReadOnlyWithADoor(): void
     {
-        $this->area->setPingIntervalMinutes(45);
-        $this->em->flush();
+        $this->pingEvery($this->em, $this->area, 45);
 
         $this->signIn(FixedManageVoter::MANAGER_EMAIL);
         $crawler = $this->client->request('GET', $this->url('watches'));
@@ -375,7 +300,7 @@ final class ConfigurePageTest extends WebTestCase
         self::assertCount(1, $row, 'One read-only row.');
         self::assertSame('Ping every', trim($row->filter('.k')->text()));
         self::assertSame('45 minutes', trim($row->filter('.v')->text()));
-        self::assertStringContainsString('set on the area', $row->filter('.m')->text());
+        self::assertStringContainsString('set in Settings › Core', $row->filter('.m')->text());
         self::assertSame(
             '/areas/'.$this->area->getUuidString().'/configure/settings',
             $row->filter('.m a')->attr('href'),
@@ -402,8 +327,7 @@ final class ConfigurePageTest extends WebTestCase
      */
     public function testSavingTheRulesLeavesTheAreasPingIntervalAlone(): void
     {
-        $this->area->setPingIntervalMinutes(45);
-        $this->em->flush();
+        $this->pingEvery($this->em, $this->area, 45);
 
         $this->signIn(FixedManageVoter::MANAGER_EMAIL);
         $crawler = $this->client->request('GET', $this->url('watches'));
@@ -422,7 +346,7 @@ final class ConfigurePageTest extends WebTestCase
 
         $this->em->clear();
         $area = $this->areaAgain();
-        self::assertSame(45, $area->getPingIntervalMinutes());
+        self::assertSame(45, $this->pingIntervalOf($area));
         self::assertSame('3 hours', $this->rules()->forArea($area)[RuleKind::LateAfter->value]->label());
         self::assertArrayNotHasKey(RuleKind::PingEvery->value, $this->rules()->forArea($area), 'The roster keeps no copy.');
     }

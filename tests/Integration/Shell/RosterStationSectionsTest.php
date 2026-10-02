@@ -27,6 +27,7 @@ use Uhifadhi\Roster\Module\RosterModuleProvider;
 use Uhifadhi\Roster\Service\StationWatchService;
 use Uhifadhi\Roster\Shell\RosterStationSections;
 use Uhifadhi\Roster\Tests\Integration\IntegrationTestCase;
+use Uhifadhi\Roster\Tests\SetsCoreSettings;
 
 /**
  * WHAT THE ROSTER PUTS ON A POST — and, just as load-bearing, what it stays
@@ -34,6 +35,7 @@ use Uhifadhi\Roster\Tests\Integration\IntegrationTestCase;
  */
 final class RosterStationSectionsTest extends IntegrationTestCase
 {
+    use SetsCoreSettings;
     private AreaOfInterest $area;
     private Station $onTheBooks;
     private Station $offTheBooks;
@@ -262,7 +264,7 @@ final class RosterStationSectionsTest extends IntegrationTestCase
     public function testTheWatchesRowsSayWhatThePostExpects(): void
     {
         $this->onTheBooksNeeds(['day' => 2, 'night' => 1]);
-        $this->area->setPingIntervalMinutes(5);
+        $this->pingEvery($this->em, $this->area, 5);
         $this->em->flush();
 
         $section = $this->sections()->sectionsFor($this->request(StationSurface::Mine, $this->onTheBooks))

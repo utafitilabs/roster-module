@@ -67,7 +67,6 @@ final readonly class ShiftRuleService
         // THE CATCHMENT IS THE STATION'S COLUMN, so the verb that writes it
         // is the area's. This module states the distance; the area measures.
         private StationService $stations,
-        private RosterSettingsService $settings,
     ) {
     }
 
@@ -288,10 +287,6 @@ final readonly class ShiftRuleService
         foreach ($this->watches->findByArea($area) as $watch) {
             $this->projectStation($watch->getStation());
         }
-
-        $settings = $this->settings->forArea($area);
-        $rules = $this->forArea($area);
-        $settings->setDefaultCatchmentMetres($rules[RuleKind::CheckInWithin->value]->toMetres());
 
         $this->entityManager->flush();
     }

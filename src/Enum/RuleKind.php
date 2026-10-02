@@ -107,7 +107,7 @@ enum RuleKind: string
         return match ($this) {
             self::LateAfter => 'without a ping',
             self::OfflineAfter => 'the map stops claiming to know',
-            self::PingEvery => 'set on the area · per handset',
+            self::PingEvery => 'set in Settings › Core · per handset',
             self::CheckInWithin => 'of the station',
             self::RaiseShortCover => 'before it starts · as needing a decision',
             self::RestBetween => 'one watch ending to the next starting',

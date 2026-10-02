@@ -45,7 +45,6 @@ final class MigrationsCoverSchemaTest extends MigrationsTestCase
         'roster_edited_day',
         'roster_absence',
         'roster_station_watch',
-        'roster_area_settings',
         'roster_swap',
     ];
 

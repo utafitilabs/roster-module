@@ -17,7 +17,6 @@ use Uhifadhi\Bundle\AreaBundle\Repository\AreaOfInterestRepository;
 use Uhifadhi\Bundle\AreaBundle\Service\StationService;
 use Uhifadhi\Contracts\Area\PresenceProviderInterface;
 use Uhifadhi\Roster\Repository\AbsenceRepository;
-use Uhifadhi\Roster\Repository\AreaRosterSettingsRepository;
 use Uhifadhi\Roster\Repository\DutyRepository;
 use Uhifadhi\Roster\Repository\EditedDayRepository;
 use Uhifadhi\Roster\Repository\PatternRepository;
@@ -91,7 +90,6 @@ return static function (ContainerConfigurator $container): void {
         SheetPreferenceRepository::class,
         AbsenceRepository::class,
         StationWatchRepository::class,
-        AreaRosterSettingsRepository::class,
         SwapRepository::class,
         PatternRepository::class,
         ShiftRuleRepository::class,
@@ -120,16 +118,12 @@ return static function (ContainerConfigurator $container): void {
             service(AbsenceRepository::class),
         ]);
 
-    // WHAT THE AREA RUNS ON. Created from the installation's starting values
-    // on first ask, and never read from config again once the row exists.
-    // The ping interval is the AREA's, asked of the area bundle's own reader.
+    // WHAT THE ROSTER READS OF SETTINGS: the ping interval in force, Settings
+    // › Core's, asked of the area bundle's own reader. The roster has no
+    // settings of its own (ruled 2 Oct 2026); its configuration is the
+    // Watches rules.
     $services->set('roster.settings', RosterSettingsService::class)
-        ->args([
-            service('doctrine.orm.entity_manager'),
-            service(AreaRosterSettingsRepository::class),
-            service('area.ping_interval'),
-            param('roster.default_catchment_metres'),
-        ]);
+        ->args([service('area.ping_interval')]);
 
     // THE AREA'S ONE LIST OF NAMED SHIFTS, seeded from the configured
     // vocabulary the first time anybody asks for it.
@@ -148,7 +142,8 @@ return static function (ContainerConfigurator $container): void {
             service('doctrine.orm.entity_manager'),
             service(StationWatchRepository::class),
             service(RotationRepository::class),
-            service('roster.settings'),
+            // A NEW POST'S RING is the area's Check-in within rule.
+            service('roster.shift_rules'),
             service(StationService::class),
             param('roster.default_silence_window_minutes'),
             param('roster.default_offline_after_minutes'),
@@ -165,7 +160,6 @@ return static function (ContainerConfigurator $container): void {
             service(StationRuleExceptionRepository::class),
             service(StationWatchRepository::class),
             service(StationService::class),
-            service('roster.settings'),
         ]);
 
     /*

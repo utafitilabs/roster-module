@@ -18,6 +18,7 @@ use Uhifadhi\Bundle\AreaBundle\Entity\AreaOfInterest;
 use Uhifadhi\Bundle\AreaBundle\Entity\Station;
 use Uhifadhi\Bundle\AreaBundle\Service\StationService;
 use Uhifadhi\Roster\Entity\StationWatch;
+use Uhifadhi\Roster\Enum\RuleKind;
 use Uhifadhi\Roster\Repository\RotationRepository;
 use Uhifadhi\Roster\Repository\StationWatchRepository;
 
@@ -40,7 +41,8 @@ final readonly class StationWatchService
         private EntityManagerInterface $entityManager,
         private StationWatchRepository $watches,
         private RotationRepository $rotations,
-        private RosterSettingsService $settings,
+        // A NEW POST'S RING is the area's Check-in within rule.
+        private ShiftRuleService $rules,
         // THE RING IS THE POST'S, so the verb that writes it is the area's.
         private StationService $stations,
         private int $defaultSilenceWindowMinutes,
@@ -62,10 +64,10 @@ final readonly class StationWatchService
     }
 
     /**
-     * PUT A POST ON THE BOOKS. Its ring starts at whatever the AREA's default
-     * is rather than the installation's, because the area setting is
-     * explicitly "used by a post that sets none of its own" — reading past it
-     * to the config would make the area's own number mean nothing.
+     * PUT A POST ON THE BOOKS. Its ring starts at the area's Check-in within
+     * rule — the distance the area's watches are held to — rather than the
+     * installation's, because reading past it to the config would make the
+     * area's own number mean nothing.
      *
      * THE RING IS THE POST'S, AND IT IS SET ON THE POST. A post that already
      * carries one keeps it: joining the roster is not a reason to move a
@@ -78,7 +80,7 @@ final readonly class StationWatchService
             return $existing;
         }
 
-        $settings = $this->settings->forArea($station->getArea() ?? throw new \LogicException('A station always belongs to an area; this one does not, so there is no roster to add it to.'));
+        $area = $station->getArea() ?? throw new \LogicException('A station always belongs to an area; this one does not, so there is no roster to add it to.');
 
         $watch = new StationWatch(
             $station,
@@ -88,7 +90,7 @@ final readonly class StationWatchService
         $this->entityManager->persist($watch);
 
         if (null === $station->getCatchmentM()) {
-            $this->stations->setCatchment($station, $settings->getDefaultCatchmentMetres());
+            $this->stations->setCatchment($station, $this->rules->forArea($area)[RuleKind::CheckInWithin->value]->toMetres());
         }
 
         $this->entityManager->flush();

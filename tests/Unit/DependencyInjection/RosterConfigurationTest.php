@@ -200,7 +200,7 @@ final class RosterConfigurationTest extends TestCase
      */
     public function testSettingThePingIntervalHereIsDeprecated(): void
     {
-        $this->expectUserDeprecationMessage('Since uhifadhi/roster-module 0.1.2: "roster.defaults.ping_interval_minutes" is read by nothing: the ping interval is the area\'s, set on its Area settings. Remove the key; it goes in the next release.');
+        $this->expectUserDeprecationMessage('Since uhifadhi/roster-module 0.1.2: "roster.defaults.ping_interval_minutes" is read by nothing: the ping interval is Settings › Core\'s, set by Admins. Remove the key; it goes with the next recipe.');
 
         $defaults = $this->process(['defaults' => ['ping_interval_minutes' => 15]])['defaults'];
 
@@ -224,7 +224,7 @@ final class RosterConfigurationTest extends TestCase
 
     public function testAZeroPingIntervalIsRefused(): void
     {
-        $this->expectUserDeprecationMessage('Since uhifadhi/roster-module 0.1.2: "roster.defaults.ping_interval_minutes" is read by nothing: the ping interval is the area\'s, set on its Area settings. Remove the key; it goes in the next release.');
+        $this->expectUserDeprecationMessage('Since uhifadhi/roster-module 0.1.2: "roster.defaults.ping_interval_minutes" is read by nothing: the ping interval is Settings › Core\'s, set by Admins. Remove the key; it goes with the next recipe.');
         $this->expectException(InvalidConfigurationException::class);
 
         $this->process(['defaults' => ['ping_interval_minutes' => 0]]);

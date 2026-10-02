@@ -24,6 +24,7 @@ use Uhifadhi\Roster\Model\RuleValue;
 use Uhifadhi\Roster\Service\ShiftRuleService;
 use Uhifadhi\Roster\Service\StationWatchService;
 use Uhifadhi\Roster\Tests\Integration\IntegrationTestCase;
+use Uhifadhi\Roster\Tests\SetsCoreSettings;
 
 /**
  * THE FIVE RULES AND THEIR EXCEPTIONS, against the real database.
@@ -37,6 +38,7 @@ use Uhifadhi\Roster\Tests\Integration\IntegrationTestCase;
  */
 final class ShiftRuleServiceTest extends IntegrationTestCase
 {
+    use SetsCoreSettings;
     private AreaOfInterest $area;
     private Station $gate;
     private Station $outpost;
@@ -240,15 +242,14 @@ final class ShiftRuleServiceTest extends IntegrationTestCase
      */
     public function testSavingTheRulesWritesNoPingInterval(): void
     {
-        $this->area->setPingIntervalMinutes(45);
-        $this->em->flush();
+        $this->pingEvery($this->em, $this->area, 45);
 
         $this->rules()->save($this->area, [
             RuleKind::PingEvery->value => new RuleValue(5.0, RuleUnit::Minutes),
             RuleKind::LateAfter->value => new RuleValue(3.0, RuleUnit::Hours),
         ]);
 
-        self::assertSame(45, $this->area->getPingIntervalMinutes());
+        self::assertSame(45, $this->pingIntervalOf($this->area));
         self::assertArrayNotHasKey(RuleKind::PingEvery->value, $this->rules()->forArea($this->area));
     }
 
