@@ -721,11 +721,9 @@ final readonly class RosterContentProvider implements ContentProviderInterface
                     continue;
                 }
 
-                // PLACED IN THIS ONE BY NAME. A placement across ALL
-                // departments is not membership of any: it would make
-                // everybody a member of every department and the squad
-                // would be whoever the sort happened to reach first.
-                if (\in_array($department, $person->getPlacement()?->getDepartments() ?? [], true)) {
+                // THEIR OWN DEPARTMENT. Supporting it is not belonging to it,
+                // and the squad is made of its members.
+                if ($person->getPlacement()?->belongsTo($department) ?? false) {
                     $carried[] = $person;
                 }
 

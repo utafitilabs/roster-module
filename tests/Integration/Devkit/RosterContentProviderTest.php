@@ -846,7 +846,7 @@ final class RosterContentProviderTest extends IntegrationTestCase
         $this->em->persist($position);
 
         foreach ($whichPeople as $index) {
-            $placement = new Placement()->acrossTheOrganization()->inDepartments([$department]);
+            $placement = new Placement()->acrossTheOrganization()->inDepartment($department);
             $this->em->persist($placement);
 
             $this->people[$index]->setPosition($position)->setPlacement($placement);
