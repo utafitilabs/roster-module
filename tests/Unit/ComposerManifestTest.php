@@ -42,4 +42,25 @@ final class ComposerManifestTest extends TestCase
         self::assertNotEmpty($package['symfony']['controllers'] ?? [], 'The module ships Stimulus controllers.');
         self::assertContains('symfony-ux', $composer['keywords'] ?? [], 'Without the "symfony-ux" keyword Flex never writes the controllers into an installation and strips any hand-written entry on the next update.');
     }
+
+    /**
+     * THE CORE ARRIVES BY A TAG, FROM THE REGISTRY. A `repositories` block
+     * would make every installation resolve the core from a VCS checkout,
+     * and a constraint that is not a caret would pin a branch: the fleet
+     * releases tags on version lines and nothing else.
+     */
+    public function testTheCoreIsRequiredByACaretAgainstItsTagsAndNoRepositoryIsNamed(): void
+    {
+        /** @var array{require?: array<string, string>, require-dev?: array<string, string>, repositories?: mixed, extra?: array<string, mixed>} $composer */
+        $composer = json_decode((string) file_get_contents(\dirname(__DIR__, 2).'/composer.json'), true, 512, \JSON_THROW_ON_ERROR);
+
+        self::assertArrayNotHasKey('repositories', $composer);
+        self::assertArrayNotHasKey('branch-alias', $composer['extra'] ?? []);
+        self::assertSame('^0.2', $composer['require']['uhifadhi/uhifadhi'] ?? null);
+
+        foreach ([...($composer['require'] ?? []), ...($composer['require-dev'] ?? [])] as $package => $constraint) {
+            self::assertStringNotContainsString('@dev', $constraint, $package);
+            self::assertStringNotContainsString('dev-', $constraint, $package);
+        }
+    }
 }

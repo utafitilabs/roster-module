@@ -20,12 +20,6 @@
             "homepage": "https://github.com/eemjema"
         }
     ],
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/utafitilabs/uhifadhi"
-        }
-    ],
     "require": {
         "php": ">=8.4",
         "doctrine/dbal": "^4.0",
