@@ -305,6 +305,8 @@ class TestKernel extends Kernel
             // catalogue the page folds every package's powers into.
             \Uhifadhi\Roster\Access\RosterPowers::class => 'roster.access.powers',
             \Uhifadhi\Bundle\TeamBundle\Permissions\PowerCatalogue::class => 'team.permissions.powers',
+            // The organization reading, so which areas it covers is asked directly.
+            \Uhifadhi\Roster\Service\RosterOrgService::class => 'roster.org',
             \Uhifadhi\Roster\Service\SwapCostService::class => 'roster.swap_cost',
             \Uhifadhi\Roster\Service\RotationEditor::class => 'roster.rotation_editor',
             \Uhifadhi\Roster\Service\RotationPreview::class => 'roster.rotation_preview',

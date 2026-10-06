@@ -140,7 +140,7 @@ final readonly class RosterOrgOverview implements OrgOverviewContributorInterfac
      */
     public function figures(Scope $scope, \DateTimeImmutable $now): array
     {
-        $areas = $this->org->areasIn($scope, []);
+        $areas = $this->org->areasIn($scope, null);
         if ([] === $areas) {
             return [];
         }
@@ -182,7 +182,7 @@ final readonly class RosterOrgOverview implements OrgOverviewContributorInterfac
      */
     public function context(Scope $scope, \DateTimeImmutable $now): array
     {
-        $areas = $this->org->areasIn($scope, []);
+        $areas = $this->org->areasIn($scope, null);
         $day = $now->setTime(0, 0);
         $rows = [] === $areas ? [] : $this->org->watches($areas, $day, $now);
 

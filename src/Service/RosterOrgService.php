@@ -72,11 +72,16 @@ final readonly class RosterOrgService
     /**
      * THE AREAS A SCOPE REACHES, in the declared order.
      *
-     * @param list<Scope> $available everything the reader was offered
+     * NULL IS THE WHOLE ORGANIZATION, read by the organization dashboard the
+     * way the core's own presence reads it: every area. A list is what one
+     * reader was offered, and an empty one reaches nothing — a reader who may
+     * open no area is never shown every area instead.
+     *
+     * @param list<Scope>|null $available everything the reader was offered, or null for every area
      *
      * @return list<AreaOfInterest>
      */
-    public function areasIn(Scope $scope, array $available): array
+    public function areasIn(Scope $scope, ?array $available): array
     {
         $ordered = $this->declaredOrder();
 
@@ -90,6 +95,10 @@ final readonly class RosterOrgService
             return [];
         }
 
+        if (null === $available) {
+            return $ordered;
+        }
+
         // THE ORGANIZATION IS THE AREAS THE READER WAS OFFERED, and not
         // every area there is: somebody who may open two of five is shown
         // an organization of two. The control is the authority on that.
@@ -98,10 +107,6 @@ final readonly class RosterOrgService
             if (null !== $one->areaUuid) {
                 $offered[$one->areaUuid] = true;
             }
-        }
-
-        if ([] === $offered) {
-            return $ordered;
         }
 
         return array_values(array_filter(

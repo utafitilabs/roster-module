@@ -25,6 +25,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Uid\Uuid;
 use Twig\Environment;
 use Uhifadhi\Bundle\AreaBundle\Entity\AreaOfInterest;
+use Uhifadhi\Bundle\ShellBundle\Service\Scopes;
 use Uhifadhi\Bundle\ShellBundle\Widget\Model\WidgetCatalog;
 use Uhifadhi\Bundle\ShellBundle\Widget\Service\WidgetEndpoint;
 use Uhifadhi\Bundle\ShellBundle\Widget\Service\WidgetService;
@@ -99,6 +100,9 @@ final class RosterWidgetsController
         private readonly RosterIdentityService $identity,
         private readonly UrlGeneratorInterface $router,
         private readonly RosterOrgService $org,
+        // WHAT THE READER MAY OPEN, so the organization preview is the
+        // organization `/roster` shows them and not every area there is.
+        private readonly Scopes $scopes,
     ) {
     }
 
@@ -188,7 +192,7 @@ final class RosterWidgetsController
     private function orgPreview(\DateTimeImmutable $now): array
     {
         $day = $now->setTime(0, 0);
-        $areas = $this->org->areasIn(Scope::organization(), []);
+        $areas = $this->org->areasIn(Scope::organization(), $this->scopes->available());
 
         return [
             'areas' => $areas,
