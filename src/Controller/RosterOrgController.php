@@ -104,9 +104,9 @@ final class RosterOrgController
         $subscription = null;
         if (null !== $plate && null !== $this->streams) {
             $subscription = 1 === \count($areas) ? $this->streams->forArea($request, $areas[0]) : $this->streams->forOrganization($request);
-        }
-        if (null !== $subscription) {
-            $plate?->liveStream($subscription->stream);
+            if (null !== $subscription) {
+                $plate->liveStream($subscription->stream);
+            }
         }
 
         $response = new Response($this->twig->render('@UhifadhiRoster/org/live.html.twig', [
