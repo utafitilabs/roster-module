@@ -13,6 +13,7 @@ hand is a release with a note under it.
 - [`station_watch.catchment_metres` is dropped](#station_watchcatchment_metres-is-dropped)
 - [0.1.2 — the ping interval is the area's](#012--the-ping-interval-is-the-areas)
 - [0.1.3 — `bound`, one height for every bounded card](#013--bound-one-height-for-every-bounded-card)
+- [0.2.0 — core 0.2](#020--core-02)
 
 ## The rule for anything this module ships to a host
 
@@ -206,3 +207,25 @@ The day board's line at "now" now stays at the centre of the board and the
 hours scroll under it; that is the `now-line` controller the installation
 already has, and it needs nothing new. Then `asset-map:compile` and
 `cache:clear`, and check the compiled map as above.
+
+## 0.2.0 — core 0.2
+
+**Needs core 0.2.** Widen the installation's constraints to
+`uhifadhi/uhifadhi:^0.2` and `uhifadhi/roster-module:^0.2`, then
+`composer update`, `doctrine:migrations:migrate`, `registry:sync`,
+`cache:clear` and `asset-map:compile`.
+
+**The roster's settings table is dropped**, and nothing is copied out of it:
+the ping interval is Settings › Core's, and the four answers it stored were
+read by nothing. The migration is marked `@destructive`; take a backup first if
+the rows matter to anybody.
+
+**Everybody but the tiers belongs to one department.** On core 0.2 a placement
+names one department and may support others, and a person with no department
+reaches no module's records. Give every duty officer and planner their
+department before they look for the roster.
+
+**Team › Permissions shows who may change somebody else's watches.** The three
+roster powers appear there with nothing to configure: they are asked of the
+grants positions already hold.
+

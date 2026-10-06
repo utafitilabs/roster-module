@@ -67,7 +67,9 @@ fortnight without the org chart quietly rewriting itself.
 | What becomes a row | `src/Service/RotationGenerator.php` |
 | The SQL that creates it all | `migrations/` |
 | The four columns the roster owns on a station | `src/Entity/StationWatch.php` |
-| The answers this module cannot guess | `src/Entity/AreaRosterSettings.php` |
+| The area's rules, and what one station does differently | `src/Entity/ShiftRule.php`, `src/Entity/StationRuleException.php` |
+| What there is to hold a permission about | `src/Access/RosterConcerns.php` |
+| What it lets one person do to another's watches | `src/Access/RosterPowers.php` |
 | The tabs and the configure sections | `src/Shell/` |
 | All six tabs | `src/Controller/RosterController.php` |
 | One ranger's month, fed to the house calendar | `src/Service/RosterCalendar.php` |
@@ -138,6 +140,14 @@ swaps the day's watches, and `roster.configure` to whoever changes how the
 area runs its roster at all. Every page that only reads opens on the ground's
 own `areas.read`, so a reader who may open the area may read its roster.
 
+This line runs on core 0.2 (`uhifadhi/uhifadhi ^0.2`). There a grant reaches a
+roster only through a placement that names the person's one department, so
+somebody with no department fills, swaps and configures nothing. Team ›
+Permissions lists the three powers this module declares over somebody else's
+watches: putting them on a watch or changing it, offering it to somebody else,
+and generating a rotation's watches. Each is asked about the area the person's
+latest watch stands in, or else the area they are posted in.
+
 ### What a development machine needs
 
 Set **`opcache.enable_cli=1`** in `php.ini`. The opcode cache is off for the
@@ -197,6 +207,13 @@ composer check      # cs:check -> phpstan (max) -> phpunit
 - The integration suite boots a real installation
   (`tests/Integration/TestKernel.php`) against a real PostGIS database at
   `postgresql://app:app@127.0.0.1:5434/roster_bundle_test`. Never SQLite.
+- **The authority table.** `tests/Functional/AuthorityTableTest.php` calls every
+  route as every kind of person through the core's `AuthorityTableTestCase`, on
+  a kernel where only the installation's own rules decide
+  (`tests/Functional/Authority/AuthorityKernel.php`), and compares the answers
+  with `tests/Functional/authority-table.md`. A change in who may open what fails
+  until it is recorded and its diff is read:
+  `UHIFADHI_RECORD_AUTHORITY_TABLE=1 vendor/bin/phpunit tests/Functional/AuthorityTableTest.php`.
 
 ## License
 

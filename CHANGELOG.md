@@ -5,8 +5,20 @@ has to do for a release is in [docs/upgrading.md](docs/upgrading.md).
 
 ## Contents
 
+- [0.2.0](#020)
 - [0.1.3](#013)
 - [0.1.2](#012)
+
+## 0.2.0
+
+Not released yet. Runs on core 0.2; see [docs/upgrading.md](docs/upgrading.md#020--core-02).
+
+ * requires `uhifadhi/uhifadhi ^0.2`, from the registry: the VCS repository block is gone
+ * the roster keeps no settings of its own: the ping interval is Settings › Core's, the four stored answers nothing read are gone, a new post's ring is the area's Check-in within rule, and `roster_area_settings` is dropped
+ * seed squads are a department's members: supporting a department is not belonging to it
+ * Team › Permissions lists the roster's three powers over somebody else's watches (`RosterPowers`, group "Somebody else's records"): put another ranger on a watch, move, change or clear it, or give them the day off (`roster.record`); offer their watch to somebody else or take the offer back (`roster.record`); generate a rotation's watches (`roster.configure`). Each is asked about the area of the person's latest watch, or of their standing posting
+ * the widget library's organization preview shows only the areas the reader may open, as `/roster` does; it showed every area. A reader offered no area is shown none
+ * the authority table: every route of the module called as every kind of person and recorded in `tests/Functional/authority-table.md`
 
 ## 0.1.3
 
