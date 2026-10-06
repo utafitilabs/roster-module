@@ -301,6 +301,10 @@ class TestKernel extends Kernel
             \Uhifadhi\Roster\Module\RosterWatches::class => 'roster.watches',
             \Uhifadhi\Roster\Service\PresenceReader::class => 'roster.presence',
             \Uhifadhi\Roster\Service\SwapService::class => 'roster.swaps',
+            // What the roster declares to Team › Permissions, and the
+            // catalogue the page folds every package's powers into.
+            \Uhifadhi\Roster\Access\RosterPowers::class => 'roster.access.powers',
+            \Uhifadhi\Bundle\TeamBundle\Permissions\PowerCatalogue::class => 'team.permissions.powers',
             \Uhifadhi\Roster\Service\SwapCostService::class => 'roster.swap_cost',
             \Uhifadhi\Roster\Service\RotationEditor::class => 'roster.rotation_editor',
             \Uhifadhi\Roster\Service\RotationPreview::class => 'roster.rotation_preview',

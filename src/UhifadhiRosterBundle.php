@@ -35,6 +35,7 @@ use Uhifadhi\Bundle\ShellBundle\Widget\Service\WidgetService;
 use Uhifadhi\Bundle\TeamBundle\Repository\DepartmentRepository;
 use Uhifadhi\Bundle\TeamBundle\Repository\UserRepository;
 use Uhifadhi\Contracts\Access\ConcernSourceInterface;
+use Uhifadhi\Contracts\Access\PowerSourceInterface;
 use Uhifadhi\Contracts\Area\LivePositionsInterface;
 use Uhifadhi\Contracts\Area\StationSectionsInterface;
 use Uhifadhi\Contracts\Me\MyCardProviderInterface;
@@ -42,6 +43,7 @@ use Uhifadhi\Contracts\Roster\WatchProviderInterface;
 use Uhifadhi\Contracts\Shell\ConfigurationSectionsInterface;
 use Uhifadhi\Contracts\Shell\ModuleTabsInterface;
 use Uhifadhi\Roster\Access\RosterConcerns;
+use Uhifadhi\Roster\Access\RosterPowers;
 use Uhifadhi\Roster\Controller\RosterConfigureController;
 use Uhifadhi\Roster\Controller\RosterController;
 use Uhifadhi\Roster\Controller\RosterMeController;
@@ -290,6 +292,14 @@ final class UhifadhiRosterBundle extends AbstractBundle
          */
         $services->set('roster.access.concerns', RosterConcerns::class)
             ->tag(ConcernSourceInterface::TAG);
+
+        /*
+         * AND WHAT IT LETS ONE PERSON DO TO ANOTHER'S WATCHES, declared to
+         * the Permissions page so a Super Admin reading it sees who may.
+         */
+        $services->set('roster.access.powers', RosterPowers::class)
+            ->args([service(DutyRepository::class), service(PostingRepository::class)])
+            ->tag(PowerSourceInterface::TAG);
 
         // THE DEPLOYMENT'S SHIFT VOCABULARY, as a parameter for the services
         // that read it. Shape-checked on the way in: phpstan max will demand
