@@ -58,7 +58,7 @@ final class ComposerManifestTest extends TestCase
         self::assertArrayNotHasKey('branch-alias', $composer['extra'] ?? []);
         self::assertSame('^0.2', $composer['require']['uhifadhi/uhifadhi'] ?? null);
 
-        foreach ([...($composer['require'] ?? []), ...($composer['require-dev'] ?? [])] as $package => $constraint) {
+        foreach ([...$composer['require'], ...($composer['require-dev'] ?? [])] as $package => $constraint) {
             self::assertStringNotContainsString('@dev', $constraint, $package);
             self::assertStringNotContainsString('dev-', $constraint, $package);
         }
