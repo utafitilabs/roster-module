@@ -60,7 +60,7 @@ use function Symfony\Component\DependencyInjection\Loader\Configurator\tagged_it
  * is derived from. A duty carries a foreign key to a station, so a suite
  * without AreaBundle would be asserting against a schema no installation has.
  */
-final class TestKernel extends Kernel
+class TestKernel extends Kernel
 {
     use MicroKernelTrait;
 
@@ -79,6 +79,18 @@ final class TestKernel extends Kernel
 
     /** The hub the Live pages stream from; never reached, nothing here publishes. */
     public const string HUB_URL = 'http://localhost:3000/.well-known/mercure';
+
+    /**
+     * WHETHER THE INSTALLATION'S OWN RULES DECIDE ALONE — the team's voters,
+     * the area's scope list, and the sign-in a skeleton installation writes —
+     * with no fixture voting beside them. The authority table's kernel says
+     * yes; a fixture voter granting the ground's reads to every account would
+     * otherwise be a row of "allowed" nobody's rules wrote.
+     */
+    protected static function theInstallationsRulesAlone(): bool
+    {
+        return false;
+    }
 
     public function registerBundles(): iterable
     {
@@ -166,9 +178,28 @@ final class TestKernel extends Kernel
                     'lazy' => true,
                     'provider' => 'team_user_provider',
                     'user_checker' => 'team.user_checker',
-                ],
+                ] + (static::theInstallationsRulesAlone() ? [
+                    // The sign-in a skeleton installation writes, so somebody
+                    // signed out is sent to it as they would be there.
+                    'form_login' => [
+                        'login_path' => 'team_login',
+                        'check_path' => 'team_login',
+                        'enable_csrf' => true,
+                        'default_target_path' => '/',
+                    ],
+                    'logout' => ['path' => 'team_logout', 'target' => 'team_login'],
+                ] : []),
             ],
-        ]);
+        ] + (static::theInstallationsRulesAlone() ? [
+            'role_hierarchy' => [
+                'ROLE_ADMIN' => ['ROLE_USER'],
+                'ROLE_SUPER_ADMIN' => ['ROLE_ADMIN', 'ROLE_ALLOWED_TO_SWITCH'],
+            ],
+            'access_control' => [
+                ['path' => '^/login', 'roles' => 'PUBLIC_ACCESS'],
+                ['path' => '^/', 'roles' => 'ROLE_USER'],
+            ],
+        ] : []));
 
         $container->extension('doctrine', [
             'dbal' => [
@@ -216,15 +247,17 @@ final class TestKernel extends Kernel
         // module declares the roster concern and grants nobody its verbs, so
         // something has to decide who holds it. Tagged by hand — a
         // reusable-bundle test kernel does not autoconfigure.
-        $container->services()->set(FixedManageVoter::class)->tag('security.voter');
+        if (!static::theInstallationsRulesAlone()) {
+            $container->services()->set(FixedManageVoter::class)->tag('security.voter');
 
-        // WHAT THIS VIEWER MAY LOOK AT. The shell holds no areas and no
-        // voters, so the scope list is the application's — and there is no
-        // application here, so a fixture stands where one would.
-        $container->services()
-            ->set(FixedScopeSource::class)
-            ->args([service(\Uhifadhi\Bundle\AreaBundle\Repository\AreaOfInterestRepository::class)])
-            ->tag('shell.scope_source');
+            // WHAT THIS VIEWER MAY LOOK AT. The shell holds no areas and no
+            // voters, so the scope list is the application's — and there is no
+            // application here, so a fixture stands where one would.
+            $container->services()
+                ->set(FixedScopeSource::class)
+                ->args([service(\Uhifadhi\Bundle\AreaBundle\Repository\AreaOfInterestRepository::class)])
+                ->tag('shell.scope_source');
+        }
 
         // THE CLOCK IS FIXED IN THIS SUITE, and that is the whole point of
         // it being a collaborator. What the presence seeder writes depends
@@ -366,6 +399,12 @@ final class TestKernel extends Kernel
          * end-to-end test walks the whole chain and finishes there.
          */
         $routes->import('.', 'api_platform')->prefix('/api');
+
+        // The sign-in page somebody signed out is sent to, where an
+        // installation's own config/routes/team.yaml mounts it.
+        if (static::theInstallationsRulesAlone()) {
+            $routes->import('@TeamBundle/Controller/', 'attribute');
+        }
     }
 
     /**
@@ -405,7 +444,7 @@ final class TestKernel extends Kernel
      */
     private static function keyedBy(string $what): string
     {
-        return \sprintf('%s/roster-module-tests/%s-%s/%s', sys_get_temp_dir(), self::coreReference(), self::ourOwnStamp(), $what);
+        return \sprintf('%s/roster-module-tests/%s-%s/%s/%s', sys_get_temp_dir(), self::coreReference(), self::ourOwnStamp(), (new \ReflectionClass(static::class))->getShortName(), $what);
     }
 
     /**
