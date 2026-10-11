@@ -64,6 +64,7 @@ final class AuthorityTableTest extends AuthorityTableTestCase
     private string $rotation = '';
     private string $duty = '';
     private string $swap = '';
+    private string $waitingSwap = '';
     private string $shift = '';
     private string $ownPreset = '';
     private string $secondRanger = '';
@@ -131,6 +132,7 @@ final class AuthorityTableTest extends AuthorityTableTestCase
             Probe::post('roster_sheet_clear_mark', $area, $week, ['station' => $world->station, 'day' => $monday, 'person' => $world->member]),
             Probe::post('roster_swap_offer', $area, $week, ['duty' => $this->duty, 'taking' => $this->secondRanger]),
             Probe::post('roster_swap_withdraw', $area, $week, ['swap' => $this->swap]),
+            Probe::post('roster_approval_decide', $area + ['item' => $this->waitingSwap, 'decision' => 'refuse'], $week),
             Probe::post('roster_plan_publish', $area, $week, ['day' => $tomorrow, RosterController::slotField($world->station, 'day') => [$world->member]]),
 
             Probe::get('roster_configure_rotation', $area),
@@ -145,6 +147,7 @@ final class AuthorityTableTest extends AuthorityTableTestCase
             Probe::post('roster_configure_rotation_save', $area + ['rotation' => $this->rotation], $configure, ['draft' => $this->draft($world)]),
             Probe::post('roster_configure_rotation_generate', $area + ['rotation' => $this->rotation], $configure),
             Probe::post('roster_configure_watches_save', $area, $configure),
+            Probe::post('roster_configure_approval', $area + ['station' => $world->station], $configure, ['required' => '0']),
             Probe::post('roster_configure_pattern_save', $area, $configure, ['cycle' => '[{"days":2,"shift":"day"},{"days":1,"shift":"off"}]']),
             Probe::post('roster_configure_pattern_delete', $area + ['pattern' => $this->spare], $configure),
 
@@ -208,12 +211,21 @@ final class AuthorityTableTest extends AuthorityTableTestCase
         $em->flush();
         $swap = $this->service(SwapService::class)->offer($theirs, $member, $second);
 
+        // A SWAP AGREED AND WAITING FOR THE HEAD (#60), for the probe that
+        // decides one: a third day, its offer accepted where nobody approved yet.
+        $later = new Duty($kilimani, $station, $second, 'day', new \DateTimeImmutable('+2 days'));
+        $em->persist($later);
+        $em->flush();
+        $waiting = $this->service(SwapService::class)->offer($later, $member, $second)->awaitTheHead(new \DateTimeImmutable());
+        $em->flush();
+
         $this->postOffTheBooks = (string) $offTheBooks->getUuidString();
         $this->pattern = $pattern->getUuid()->toRfc4122();
         $this->spare = $spare->getUuid()->toRfc4122();
         $this->rotation = $rotation->getUuid()->toRfc4122();
         $this->duty = $duty->getUuid()->toRfc4122();
         $this->swap = $swap->getUuid()->toRfc4122();
+        $this->waitingSwap = $waiting->getUuid()->toRfc4122();
         $this->shift = $shifts[\count($shifts) - 1]->getUuid()->toRfc4122();
         $this->ownPreset = (string) $preset->getUuidString();
         $this->secondRanger = (string) $second->getUuidString();

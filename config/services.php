@@ -28,6 +28,8 @@ use Uhifadhi\Roster\Repository\ShiftRuleRepository;
 use Uhifadhi\Roster\Repository\StationRuleExceptionRepository;
 use Uhifadhi\Roster\Repository\StationWatchRepository;
 use Uhifadhi\Roster\Repository\SwapRepository;
+use Uhifadhi\Roster\Repository\WatchChangeRepository;
+use Uhifadhi\Roster\Service\ApprovalService;
 use Uhifadhi\Roster\Service\CyclePlanner;
 use Uhifadhi\Roster\Service\DayBoardService;
 use Uhifadhi\Roster\Service\MyRosterService;
@@ -94,6 +96,7 @@ return static function (ContainerConfigurator $container): void {
         PatternRepository::class,
         ShiftRuleRepository::class,
         StationRuleExceptionRepository::class,
+        WatchChangeRepository::class,
     ] as $repository) {
         $services->set($repository)
             ->args([service('doctrine')])
@@ -209,6 +212,27 @@ return static function (ContainerConfigurator $container): void {
             service('roster.sheet_day'),
             service(DutyRepository::class),
             service('roster.rostered_people'),
+            // WHERE A STATION'S HEAD APPROVES (#60), an acceptance waits.
+            service(StationWatchRepository::class),
+        ]);
+
+    /*
+     * A STATION'S HEAD APPROVES (#60): what waits for the head — agreed swaps
+     * and a planner's changes to their own watch — and the head's decision.
+     * The checker is optional so a kernel without security still boots; there
+     * only the head decides.
+     */
+    $services->set('roster.approvals', ApprovalService::class)
+        ->args([
+            service('doctrine.orm.entity_manager'),
+            service(StationWatchRepository::class),
+            service('Uhifadhi\Bundle\AreaBundle\Repository\PostingRepository'),
+            service(SwapRepository::class),
+            service(WatchChangeRepository::class),
+            service('roster.swaps'),
+            service('roster.sheet_day'),
+            service('clock'),
+            service('security.authorization_checker')->nullOnInvalid(),
         ]);
 
     // WHAT A TRADE COSTS — every check stated, none enforced. A duty officer

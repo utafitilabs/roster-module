@@ -142,6 +142,15 @@ class StationWatch
     #[ORM\Column(name: 'filled_through', type: 'date_immutable', nullable: true)]
     private ?\DateTimeImmutable $filledThrough = null;
 
+    /**
+     * WHETHER THE STATION'S HEAD APPROVES (ruled 29 Sep, #60): an accepted
+     * swap here, and a planner's change to their own watch, wait for the
+     * head before a watch moves. Off until somebody switches it on, and only
+     * a station with a head can have it on.
+     */
+    #[ORM\Column(name: 'requires_approval', options: ['default' => false])]
+    private bool $requiresApproval = false;
+
     public function __construct(
         Station $station,
         int $silenceWindowMinutes,
@@ -151,6 +160,18 @@ class StationWatch
         $this->silenceWindowMinutes = $silenceWindowMinutes;
         $this->offlineAfterMinutes = $offlineAfterMinutes;
         $this->guardThresholds();
+    }
+
+    public function requiresApproval(): bool
+    {
+        return $this->requiresApproval;
+    }
+
+    public function setRequiresApproval(bool $requiresApproval): static
+    {
+        $this->requiresApproval = $requiresApproval;
+
+        return $this;
     }
 
     public function getId(): ?int

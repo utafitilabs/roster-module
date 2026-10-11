@@ -1577,3 +1577,8 @@ select.psbs { padding-right: 24px; }
     .pfld > .len { margin-left: 0; flex: 1 1 100%; }
     .psbl > .lead { flex: 1 1 100%; }
 }
+
+/* WHAT WAITS FOR A HEAD (#60): the strip above the sheet, and the dashboard card. */
+.ap-strip { margin: 0 0 14px; border-color: color-mix(in srgb, rgb(var(--c-warn)) 45%, rgb(var(--c-ln))); }
+.ap-act { display: inline-flex; gap: 8px; align-items: center; }
+.ap-act form { margin: 0; }

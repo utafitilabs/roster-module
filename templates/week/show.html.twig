@@ -206,6 +206,32 @@
         </div>
     {% endif %}
 
+    {# WHAT WAITS FOR A HEAD (#60): an agreed swap, or a planner's change to
+       their own watch, at a station whose head approves. The head decides
+       here; everybody else sees who it waits for. Nothing is drawn when
+       nothing waits. #}
+    {% if approvals is not empty %}
+        <div class="c ap-strip" data-approvals>
+            <span class="tab">Waiting for the head<span class="src">&middot; {{ approvals|length }} waiting &middot; nothing moves until the head approves</span></span>
+            {% for item in approvals %}
+                <div class="rln" data-approval="{{ item.uuid }}">
+                    <span><span class="chip">{{ item.kind }}</span> <b>{{ item.sentence }}</b>
+                        <span class="mono d">&middot; <time datetime="{{ item.since.format('c') }}" data-localtime-format="stamp">{{ item.since.format('D j H:i')|lower }}</time></span></span>
+                    {% if item.mayDecide %}
+                        <span class="ap-act">
+                            <form method="post" action="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterController::DECIDE_ROUTE'), {uuid: area.uuid, item: item.uuid, decision: 'refuse'}) }}">
+                                <input type="hidden" name="_token" value="{{ csrfToken }}"><button type="submit" class="btn sm">Refuse</button></form>
+                            <form method="post" action="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterController::DECIDE_ROUTE'), {uuid: area.uuid, item: item.uuid, decision: 'approve'}) }}">
+                                <input type="hidden" name="_token" value="{{ csrfToken }}"><button type="submit" class="cta sm">Approve</button></form>
+                        </span>
+                    {% else %}
+                        <span class="chip warn">waiting for {{ item.head ? item.head.fullName : 'the head' }}</span>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
     {# ====================================================================
        THE SHEET. A bounded card whose HEAD carries every control it has and
        whose BODY is the only thing that scrolls.
@@ -416,15 +442,19 @@
                         the state. An offer's sent time is the instant its identifier was
                         minted — a v7 uuid carries it, so no column says it twice. -#}
                     <span><b>{{ swap.offeredTo.fullName }}</b> <span class="mono">
-                        {{- swap.state.value == 'accepted' ? 'took' : (swap.state.value == 'offered' ? 'takes' : 'asked for') }}
+                        {{- swap.state.value == 'accepted' ? 'took' : (swap.state.value in ['offered', 'waiting'] ? 'takes' : 'asked for') }}
                         {{ swap.duty.person.fullName }}&rsquo;s {{ swap.duty.onDay.format('D j')|lower }} {{ swap.duty.shiftKey }} at {{ swap.duty.station.code }}</span></span>
                     <span style="display:flex;align-items:center;gap:9px">
-                        <span class="chip {{ {'offered': 'acc', 'accepted': 'ok', 'declined': 'fail', 'withdrawn': 'idle'}[swap.state.value] }}">{{ swap.state.label }}</span>
+                        <span class="chip {{ {'offered': 'acc', 'waiting': 'warn', 'accepted': 'ok', 'declined': 'fail', 'withdrawn': 'idle', 'refused': 'fail'}[swap.state.value] }}">{{ swap.state.label }}</span>
                         <span class="mono d">
                             {%- if swap.state.value == 'offered' -%}
                                 sent <time datetime="{{ swap.uuid.dateTime.format('c') }}" data-localtime-format="time">{{ swap.uuid.dateTime.format('H:i') }}</time>, not answered
                             {%- elseif swap.state.value == 'accepted' -%}
                                 accepted on the handset {% if swap.respondedAt %}<time datetime="{{ swap.respondedAt.format('c') }}" data-localtime-format="time">{{ swap.respondedAt.format('H:i') }}</time>{% endif %}
+                            {%- elseif swap.state.value == 'waiting' -%}
+                                agreed {% if swap.respondedAt %}<time datetime="{{ swap.respondedAt.format('c') }}" data-localtime-format="time">{{ swap.respondedAt.format('H:i') }}</time>{% endif %}, waiting for the head
+                            {%- elseif swap.state.value == 'refused' -%}
+                                refused by the head &mdash; both watches stand
                             {%- elseif swap.state.value == 'declined' -%}
                                 declined {% if swap.respondedAt %}<time datetime="{{ swap.respondedAt.format('c') }}" data-localtime-format="time">{{ swap.respondedAt.format('H:i') }}</time>{% endif %} &mdash; {{ swap.note ?: 'no reason given' }}
                             {%- else -%}

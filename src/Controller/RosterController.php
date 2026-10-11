@@ -26,6 +26,7 @@ use Symfony\Component\Routing\Exception\RouteNotFoundException;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Security\Csrf\CsrfToken;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -60,6 +61,7 @@ use Uhifadhi\Roster\Repository\PatternRepository;
 use Uhifadhi\Roster\Repository\ShiftRepository;
 use Uhifadhi\Roster\Repository\StationWatchRepository;
 use Uhifadhi\Roster\Service\AgendaService;
+use Uhifadhi\Roster\Service\ApprovalService;
 use Uhifadhi\Roster\Service\DayBoardService;
 use Uhifadhi\Roster\Service\DayPlanService;
 use Uhifadhi\Roster\Service\PatternService;
@@ -131,6 +133,9 @@ final class RosterController
 
     /** Taking an offer back, before it has been answered. */
     public const string WITHDRAW_SWAP_ROUTE = 'roster_swap_withdraw';
+
+    /** A station's head approving or refusing what waits there (#60). */
+    public const string DECIDE_ROUTE = 'roster_approval_decide';
 
     /**
      * WHAT A PERSON MUST HOLD TO OFFER A WATCH TO SOMEBODY ELSE.
@@ -210,6 +215,8 @@ final class RosterController
         private readonly ?CsrfTokenManagerInterface $csrfTokenManager = null,
         /** The area's live stream: the Live tab's marks keep moving, as the area overview's do. */
         private readonly ?PresenceStreamService $streams = null,
+        /** What waits for a station's head (#60), and the head's decision. */
+        private readonly ?ApprovalService $approvals = null,
     ) {
     }
 
@@ -367,6 +374,8 @@ final class RosterController
             'shifts' => $this->shifts->findByArea($area),
             // THE SWAP FLOW: the register of offers over this window, and
             // the trade being put together, if one is.
+            // WHAT WAITS FOR A HEAD (#60), above the sheet: every station's.
+            'approvals' => $this->approvals?->waitingIn($area, $viewer) ?? [],
             'recent' => $this->swaps->recentBetween($area, $from, $through, 5),
             'offering' => $offering = $this->swaps->offering($area, $request->query->get('give'), $request->query->get('take')),
             'cost' => null === $offering ? null : $this->cost->of($offering['duty'], $offering['taking']),
@@ -475,9 +484,28 @@ final class RosterController
         }
 
         $viewer = $this->viewer();
+        $op = (string) $request->request->get('op');
+
+        // ONE'S OWN WATCH, AT A STATION WHOSE HEAD APPROVES (#60), is asked
+        // rather than changed: nobody approves their own day off.
+        $approvals = $this->approvals;
+        if (null !== $viewer && null !== $approvals && \in_array($op, ['shift', 'move', 'off'], true) && $approvals->needsApproval($duty, $viewer)) {
+            try {
+                match ($op) {
+                    'shift' => $approvals->askToChangeShift($duty, (string) $request->request->get('shift'), $viewer),
+                    'move' => $approvals->askToMove($duty, $this->person($area, (string) $request->request->get('person')), $viewer),
+                    default => $approvals->askForTheDayOff($duty, $viewer),
+                };
+                $this->flash($request, 'info', \sprintf('It is your own watch, so it waits for the head of %s to approve it.', (string) $duty->getStation()->getName()));
+            } catch (\InvalidArgumentException $refused) {
+                $this->flash($request, 'error', $refused->getMessage());
+            }
+
+            return $this->backToTheSheet($area, $request);
+        }
 
         try {
-            match ((string) $request->request->get('op')) {
+            match ($op) {
                 'shift' => $this->days->changeShift($duty, (string) $request->request->get('shift'), $viewer),
                 'move' => $this->days->moveTo($duty, $this->person($area, (string) $request->request->get('person')), $viewer),
                 'off' => $this->days->giveTheDayOff($duty, $viewer),
@@ -516,6 +544,66 @@ final class RosterController
             $this->days->clearTheMark($station, $day, $this->person($area, (string) $request->request->get('person')));
         } catch (\InvalidArgumentException $refused) {
             $this->flash($request, 'error', $refused->getMessage());
+        }
+
+        return $this->backToTheSheet($area, $request);
+    }
+
+    /**
+     * THE HEAD DECIDES (#60) — approve or refuse what waits at their station:
+     * an agreed swap, or a planner's change to their own watch. The route asks
+     * what the Week tab it sits on asks; the service then refuses anybody who
+     * is not the station's head.
+     */
+    #[Route('/areas/{uuid}/modules/roster/approvals/{item}/{decision}', name: self::DECIDE_ROUTE, requirements: ['uuid' => Requirement::UUID, 'item' => Requirement::UUID, 'decision' => 'approve|refuse'], methods: ['POST'])]
+    #[IsGranted('areas.read', subject: 'area')]
+    public function decide(
+        #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
+        string $item,
+        string $decision,
+        Request $request,
+    ): Response {
+        $this->guardTheForm($request);
+        $viewer = $this->viewer();
+        if (null === $this->approvals || null === $viewer) {
+            throw new AccessDeniedHttpException('Nobody to decide as.');
+        }
+
+        $found = null;
+        foreach ($this->approvals->waitingIn($area, $viewer) as $waiting) {
+            if ($waiting->uuid() === $item) {
+                $found = $waiting;
+            }
+        }
+        if (null === $found) {
+            $this->flash($request, 'error', 'That is no longer waiting for the head.');
+
+            return $this->backTo($area, $request);
+        }
+
+        try {
+            match (true) {
+                null !== $found->swap && 'approve' === $decision => $this->approvals->approveSwap($found->swap, $viewer),
+                null !== $found->swap => $this->approvals->refuseSwap($found->swap, $viewer),
+                null !== $found->change && 'approve' === $decision => $this->approvals->approveChange($found->change, $viewer),
+                null !== $found->change => $this->approvals->refuseChange($found->change, $viewer),
+                default => null,
+            };
+        } catch (AccessDeniedException $refused) {
+            throw new AccessDeniedHttpException($refused->getMessage(), $refused);
+        }
+
+        $this->flash($request, 'success', 'approve' === $decision ? 'Approved — the watch has changed.' : 'Refused — every watch stands as it was, and both people see it.');
+
+        return $this->backTo($area, $request);
+    }
+
+    /** Back where the decision was made: the dashboard, or the week. */
+    private function backTo(AreaOfInterest $area, Request $request): RedirectResponse
+    {
+        $return = (string) $request->request->get('_return');
+        if (str_starts_with($return, '/') && !str_starts_with($return, '//')) {
+            return new RedirectResponse($return);
         }
 
         return $this->backToTheSheet($area, $request);

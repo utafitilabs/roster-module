@@ -1,0 +1,21 @@
+{# WAITING FOR YOU (#60, design C) — what waits at the stations this person
+   heads: an agreed swap, or a planner's change to their own watch. Decided
+   here; the decision comes back to the dashboard. #}
+<div class="c" data-waiting-for-you>
+    <span class="tab">Waiting for you<span class="src">&middot; as head of {{ items|map(i => i.station.code ?: i.station.name)|reduce((carry, code) => code in carry ? carry : carry|merge([code]), [])|join(', ') }}</span></span>
+    {% for item in items %}
+        <div class="rln">
+            <span><span class="chip">{{ item.kind }}</span> <b>{{ item.sentence }}</b></span>
+            <span class="ap-act">
+                {% for decision in ['refuse', 'approve'] %}
+                    <form method="post" action="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterController::DECIDE_ROUTE'), {uuid: item.station.area.uuidString, item: item.uuid, decision: decision}) }}">
+                        <input type="hidden" name="_token" value="{{ token }}">
+                        <input type="hidden" name="_return" value="{{ path(constant('Uhifadhi\\Bundle\\AreaBundle\\Controller\\OrgDashboardController::MINE')) }}">
+                        <button type="submit" class="{{ decision == 'approve' ? 'cta sm' : 'btn sm' }}">{{ decision == 'approve' ? 'Approve' : 'Refuse' }}</button>
+                    </form>
+                {% endfor %}
+            </span>
+        </div>
+    {% endfor %}
+    <div class="sxfoot"><span>{{ items|length }} waiting</span><a class="more" href="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterController::WEEK_ROUTE'), {uuid: items[0].station.area.uuidString}) }}">The week &rarr;</a></div>
+</div>

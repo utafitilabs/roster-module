@@ -21,6 +21,7 @@ use Uhifadhi\Roster\Entity\Duty;
 use Uhifadhi\Roster\Entity\Swap;
 use Uhifadhi\Roster\Enum\SwapState;
 use Uhifadhi\Roster\Repository\DutyRepository;
+use Uhifadhi\Roster\Repository\StationWatchRepository;
 use Uhifadhi\Roster\Repository\SwapRepository;
 
 /**
@@ -51,6 +52,8 @@ final readonly class SwapService
         private SheetDayService $days,
         private DutyRepository $duties,
         private RosteredPeople $pool,
+        /** Where a station says its head approves; null in a suite that is not about it. */
+        private ?StationWatchRepository $watches = null,
     ) {
     }
 
@@ -87,6 +90,24 @@ final readonly class SwapService
      * marked edited so the generator leaves them alone.
      */
     public function accept(Swap $swap, \DateTimeImmutable $at): Swap
+    {
+        // AT A STATION WHOSE HEAD APPROVES (#60), agreeing moves nothing yet:
+        // the swap waits, and the head's approval makes it.
+        if ($this->watches?->findOneForStation($swap->getDuty()->getStation())?->requiresApproval() ?? false) {
+            $swap->awaitTheHead($at);
+            $this->entityManager->flush();
+
+            return $swap;
+        }
+
+        return $this->make($swap, $at);
+    }
+
+    /**
+     * MAKE AN AGREED SWAP: the duties change hands. Called on acceptance, or
+     * on the head's approval where the station requires it.
+     */
+    public function make(Swap $swap, \DateTimeImmutable $at): Swap
     {
         $swap->resolve(SwapState::Accepted, $at);
 
@@ -126,6 +147,15 @@ final readonly class SwapService
     public function decline(Swap $swap, \DateTimeImmutable $at): Swap
     {
         $swap->resolve(SwapState::Declined, $at);
+        $this->entityManager->flush();
+
+        return $swap;
+    }
+
+    /** Refused by the station's head. Both duties stand as they were. */
+    public function refuse(Swap $swap, \DateTimeImmutable $at): Swap
+    {
+        $swap->resolve(SwapState::Refused, $at);
         $this->entityManager->flush();
 
         return $swap;

@@ -243,6 +243,33 @@
     </div>
 </form>
 
+{# WHETHER EACH STATION'S HEAD APPROVES (#60). Its own forms, outside the
+   stations table's save: one switch per station on these books. #}
+<div class="c" data-approval-switches>
+    <span class="tab">Approval by the station head<span class="src">&middot; an agreed swap, and a planner&rsquo;s change to their own watch, wait for the head</span></span>
+    {% for row in approvalRows %}
+        <div class="rln">
+            <span><b>{{ row.station.name }}</b> <span class="mono d">{{ row.station.code ?: '' }} &middot; {{ row.head ? 'head ' ~ row.head.fullName : 'no head yet' }}</span></span>
+            <span>
+                {% if row.head is null and not row.required %}
+                    <span class="mono d">needs a head first</span>
+                {% elseif mayManage %}
+                    <form method="post" action="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterConfigureController::APPROVAL_ROUTE'), {uuid: area.uuid, station: row.station.uuidString}) }}" style="display:inline">
+                        <input type="hidden" name="_token" value="{{ csrfToken }}">
+                        <input type="hidden" name="required" value="{{ row.required ? '0' : '1' }}">
+                        <button type="submit" class="{{ row.required ? 'btn sm' : 'cta sm' }}">{{ row.required ? 'Stop requiring it' : 'Require the head’s approval' }}</button>
+                    </form>
+                    {% if row.required %}<span class="chip warn">required</span>{% endif %}
+                {% else %}
+                    <span class="chip{{ row.required ? ' warn' : '' }}">{{ row.required ? 'required' : 'not required' }}</span>
+                {% endif %}
+            </span>
+        </div>
+    {% else %}
+        <div class="rfrag"><b>No station on the roster yet</b><em>add a post above, then choose whether its head approves</em></div>
+    {% endfor %}
+</div>
+
 {# ---- WHICH STATION RUNS WHAT, AND WHAT IT DOES DIFFERENTLY -------------
    ITS OWN FORM, because toggling twelve stations and typing a threshold are
    two acts a duty officer does at two different moments. An exception lives
@@ -250,7 +277,7 @@
    are not made to say it. #}
 <form method="post" action="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterConfigureController::SAVE_WATCHES_ROUTE'), {uuid: area.uuid}) }}">
     <input type="hidden" name="_token" value="{{ csrfToken }}">
-    <div class="c rband">
+<div class="c rband">
         <div class="rb-hd">
             <span class="tab">Stations</span>
             <span class="rb-ttl">{{ rows|length }} station{{ rows|length == 1 ? '' : 's' }} &middot; {{ runs_at_least_one }} run{{ runs_at_least_one == 1 ? 's' : '' }} at least one shift &middot; the last column is what each one does differently</span>

@@ -5,9 +5,22 @@ has to do for a release is in [docs/upgrading.md](docs/upgrading.md).
 
 ## Contents
 
+- [0.2.1](#021)
 - [0.2.0](#020)
 - [0.1.3](#013)
 - [0.1.2](#012)
+
+## 0.2.1
+
+ * A STATION'S HEAD APPROVES (ruled 29 Sep, #60, design C with A): a station may require its
+   head's approval — switched on the Watches page's "Approval by the station head" card, and only
+   where the station has a head. There, an agreed swap waits (`SwapState::Waiting`) and moves no
+   watch until the head approves it (`Refused` when refused), and a planner's change to their own
+   watch from the sheet's menu — another shift, a hand-over, a day off — is asked rather than made
+   (`WatchChange`). The head decides in a strip above the Week sheet and in a "Waiting for you" card
+   on their own dashboard (`/me`); anybody else sees who it waits for. `ApprovalService`
+   (`roster.approvals`). Migration `Version20261012100000` adds `requires_approval` to
+   `roster_station_watch` and the `roster_watch_change` table.
 
 ## 0.2.0
 

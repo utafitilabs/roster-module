@@ -190,6 +190,25 @@ class Swap
     }
 
     /**
+     * AGREED, AND WAITING FOR THE HEAD (#60): the person asked said yes at a
+     * station that requires its head's approval. Nothing moves; the answer
+     * is kept, and the head's decision resolves it.
+     *
+     * @throws \LogicException when the offer has already been answered
+     */
+    public function awaitTheHead(\DateTimeImmutable $at): static
+    {
+        if (SwapState::Offered !== $this->state) {
+            throw new \LogicException(\sprintf('This swap was already %s; only an offer waits for the head.', $this->state->label()));
+        }
+
+        $this->state = SwapState::Waiting;
+        $this->respondedAt = $at;
+
+        return $this;
+    }
+
+    /**
      * RESOLVE THE OFFER. Only an open one can be answered: a swap that has
      * already been accepted, declined or withdrawn has moved the roster or
      * decided not to, and answering it twice would do it twice.
@@ -206,8 +225,9 @@ class Swap
             throw new \LogicException('Resolving a swap means accepting, declining or withdrawing it.');
         }
 
+        // A SWAP THE HEAD DECIDES keeps the moment the person asked agreed.
+        $this->respondedAt = SwapState::Waiting === $this->state ? $this->respondedAt : $at;
         $this->state = $state;
-        $this->respondedAt = $at;
 
         return $this;
     }

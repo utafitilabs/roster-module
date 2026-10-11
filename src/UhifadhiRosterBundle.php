@@ -612,6 +612,7 @@ final class UhifadhiRosterBundle extends AbstractBundle
                 // own, under the area's own pair. Null keeps the page drawing
                 // once, as on an installation without the hub.
                 service('area.presence_stream')->nullOnInvalid(),
+                service('roster.approvals'),
             ])
             ->public();
         $services->alias(RosterController::class, 'roster.controller.overview')->public();
@@ -659,6 +660,7 @@ final class UhifadhiRosterBundle extends AbstractBundle
                     service('roster.rotation_generator'),
                     service(RotationRepository::class),
                     service('security.csrf.token_manager'),
+                    service('roster.approvals'),
                 ])
                 ->public();
             $services->alias(RosterConfigureController::class, 'roster.controller.configure')->public();
@@ -710,7 +712,7 @@ final class UhifadhiRosterBundle extends AbstractBundle
             $services->alias(RosterMeController::class, 'roster.controller.me')->public();
 
             $services->set('roster.my_cards', RosterMyCards::class)
-                ->args([service('twig'), service('roster.my_roster'), service('router')])
+                ->args([service('twig'), service('roster.my_roster'), service('router'), service('roster.approvals'), service('security.csrf.token_manager')->nullOnInvalid()])
                 ->tag(MyCardProviderInterface::TAG);
 
             $services->set('roster.shell.stylesheets', RosterStylesheets::class)

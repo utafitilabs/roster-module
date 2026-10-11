@@ -14,10 +14,13 @@ declare(strict_types=1);
 namespace Uhifadhi\Roster\Me;
 
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 use Twig\Environment;
 use Uhifadhi\Contracts\Me\MyCard;
 use Uhifadhi\Contracts\Me\MyCardProviderInterface;
+use Uhifadhi\Roster\Controller\RosterController;
 use Uhifadhi\Roster\Controller\RosterMeController;
+use Uhifadhi\Roster\Service\ApprovalService;
 use Uhifadhi\Roster\Service\MyRosterService;
 
 /**
@@ -41,6 +44,9 @@ final readonly class RosterMyCards implements MyCardProviderInterface
         private Environment $twig,
         private MyRosterService $roster,
         private UrlGeneratorInterface $router,
+        /** What waits for a station's head (#60): the head's own card. */
+        private ?ApprovalService $approvals = null,
+        private ?CsrfTokenManagerInterface $csrf = null,
     ) {
     }
 
@@ -65,6 +71,16 @@ final readonly class RosterMyCards implements MyCardProviderInterface
         $leave = $this->roster->leaveFor($personUuid, $now);
         if (null !== $roster || [] !== $leave->absences) {
             $cards[] = new MyCard(MyCard::ROW, 25, $this->twig->render('@UhifadhiRoster/me/_leave_card.html.twig', ['leave' => $leave]));
+        }
+
+        // WAITING FOR YOU (#60, design C): what waits at the stations this
+        // person heads, decided from their dashboard.
+        $waiting = $this->approvals?->waitingForHeadByUuid($personUuid) ?? [];
+        if ([] !== $waiting) {
+            $cards[] = new MyCard(MyCard::RIGHT, 5, $this->twig->render('@UhifadhiRoster/me/_waiting_card.html.twig', [
+                'items' => $waiting,
+                'token' => $this->csrf?->getToken(RosterController::CSRF_TOKEN_ID)->getValue() ?? '',
+            ]));
         }
 
         return $cards;

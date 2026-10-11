@@ -16,6 +16,7 @@ namespace Uhifadhi\Roster\Repository;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Uhifadhi\Bundle\AreaBundle\Entity\AreaOfInterest;
+use Uhifadhi\Bundle\AreaBundle\Entity\Station;
 use Uhifadhi\Roster\Entity\Duty;
 use Uhifadhi\Roster\Entity\Swap;
 use Uhifadhi\Roster\Enum\SwapState;
@@ -122,5 +123,40 @@ final class SwapRepository extends ServiceEntityRepository
     public function findOpenForDuty(Duty $duty): ?Swap
     {
         return $this->findOneBy(['duty' => $duty, 'state' => SwapState::Offered]);
+    }
+
+    /** @return list<Swap> the swaps agreed and waiting for a head, oldest answer first */
+    public function findWaitingInArea(AreaOfInterest $area): array
+    {
+        /** @var list<Swap> $rows */
+        $rows = $this->createQueryBuilder('s')
+            ->andWhere('s.area = :area')->setParameter('area', $area)
+            ->andWhere('s.state = :waiting')->setParameter('waiting', SwapState::Waiting)
+            ->orderBy('s.respondedAt', 'ASC')
+            ->getQuery()->getResult();
+
+        return $rows;
+    }
+
+    /**
+     * @param list<Station> $stations
+     *
+     * @return list<Swap> the swaps waiting for the head of any of these stations
+     */
+    public function findWaitingAtStations(array $stations): array
+    {
+        if ([] === $stations) {
+            return [];
+        }
+
+        /** @var list<Swap> $rows */
+        $rows = $this->createQueryBuilder('s')
+            ->join('s.duty', 'd')
+            ->andWhere('d.station IN (:stations)')->setParameter('stations', $stations)
+            ->andWhere('s.state = :waiting')->setParameter('waiting', SwapState::Waiting)
+            ->orderBy('s.respondedAt', 'ASC')
+            ->getQuery()->getResult();
+
+        return $rows;
     }
 }

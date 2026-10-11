@@ -32,6 +32,12 @@ enum SwapState: string
     /** Sent to the handset, waiting. Neither duty has moved. */
     case Offered = 'offered';
 
+    /**
+     * Agreed by the person asked, at a station that requires its head's
+     * approval (#60): neither duty has moved until the head approves.
+     */
+    case Waiting = 'waiting';
+
     /** Agreed, and the duties have changed hands. */
     case Accepted = 'accepted';
 
@@ -41,20 +47,25 @@ enum SwapState: string
     /** Taken back by whoever offered it, before an answer. */
     case Withdrawn = 'withdrawn';
 
+    /** Agreed, and refused by the station's head. Both duties stand as they were. */
+    case Refused = 'refused';
+
     public function label(): string
     {
         return match ($this) {
             self::Offered => 'offered',
+            self::Waiting => 'waiting for the head',
             self::Accepted => 'accepted',
             self::Declined => 'declined',
             self::Withdrawn => 'withdrawn',
+            self::Refused => 'refused by the head',
         };
     }
 
     /** Whether this swap is still waiting on somebody. */
     public function isOpen(): bool
     {
-        return self::Offered === $this;
+        return self::Offered === $this || self::Waiting === $this;
     }
 
     /** Whether it moved anybody. */

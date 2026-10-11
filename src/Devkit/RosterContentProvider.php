@@ -31,6 +31,7 @@ use Uhifadhi\Roster\Entity\Absence;
 use Uhifadhi\Roster\Entity\Duty;
 use Uhifadhi\Roster\Entity\Rotation;
 use Uhifadhi\Roster\Entity\RotationPoolMember;
+use Uhifadhi\Roster\Entity\Swap;
 use Uhifadhi\Roster\Enum\AbsenceKind;
 use Uhifadhi\Roster\Enum\RotationScope;
 use Uhifadhi\Roster\Enum\RuleKind;
@@ -888,6 +889,10 @@ final readonly class RosterContentProvider implements ContentProviderInterface
                 SwapState::Accepted => $this->swaps->accept($swap, $answeredOn),
                 SwapState::Declined => $this->swaps->decline($swap, $answeredOn),
                 SwapState::Withdrawn => $this->swaps->withdraw($swap, $answeredOn),
+                // ONE AGREED AND WAITING FOR THE HEAD, ONE THE HEAD REFUSED, so the
+                // strip above the sheet and every chip on the Swaps card have a row.
+                SwapState::Waiting => $this->waits($swap, $answeredOn),
+                SwapState::Refused => $this->swaps->refuse($this->waits($swap, $answeredOn), $answeredOn),
             };
 
             if (SwapState::Accepted === $state) {
@@ -1009,5 +1014,14 @@ final readonly class RosterContentProvider implements ContentProviderInterface
         $last = (int) $this->monthEnd()->format('j');
 
         return $this->monthStart()->modify(\sprintf('+%d days', min($day, $last) - 1));
+    }
+
+    /** An offer agreed and waiting for the head, as an acceptance at a station whose head approves leaves it. */
+    private function waits(Swap $swap, \DateTimeImmutable $at): Swap
+    {
+        $swap->awaitTheHead($at);
+        $this->entityManager->flush();
+
+        return $swap;
     }
 }

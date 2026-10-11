@@ -46,10 +46,12 @@ use Uhifadhi\Roster\Enum\RotationPreset;
 use Uhifadhi\Roster\Enum\RuleChoiceInterface;
 use Uhifadhi\Roster\Enum\RuleKind;
 use Uhifadhi\Roster\Enum\RuleUnit;
+use Uhifadhi\Roster\Exception\ApprovalNeedsAHeadException;
 use Uhifadhi\Roster\Model\RotationDraft;
 use Uhifadhi\Roster\Model\RuleValue;
 use Uhifadhi\Roster\Module\RosterModuleProvider;
 use Uhifadhi\Roster\Repository\RotationRepository;
+use Uhifadhi\Roster\Service\ApprovalService;
 use Uhifadhi\Roster\Service\RosteredPeople;
 use Uhifadhi\Roster\Service\RosterIdentityService;
 use Uhifadhi\Roster\Service\RosterSettingsService;
@@ -119,6 +121,9 @@ final class RosterConfigureController
     public const string GENERATE_ROTATION_ROUTE = 'roster_configure_rotation_generate';
     public const string SAVE_WATCHES_ROUTE = 'roster_configure_watches_save';
 
+    /** Whether a station's head approves (#60). */
+    public const string APPROVAL_ROUTE = 'roster_configure_approval';
+
     /**
      * WHAT A PERSON MUST HOLD TO CHANGE HOW THIS AREA'S ROSTER IS SET UP.
      *
@@ -160,6 +165,8 @@ final class RosterConfigureController
         private readonly RotationGenerator $generator,
         private readonly RotationRepository $rotations,
         private readonly CsrfTokenManagerInterface $csrfTokenManager,
+        /** Whether each station's head approves (#60). */
+        private readonly ?ApprovalService $approvals = null,
     ) {
     }
 
@@ -358,8 +365,42 @@ final class RosterConfigureController
             'rows' => $this->stationRows($area, $shifts),
             // The area's other posts — what "Add a post to the roster" offers.
             'postsOffTheBooks' => $this->postsOffTheBooks($area, $watches),
+            // WHETHER EACH STATION'S HEAD APPROVES (#60), with its head.
+            'approvalRows' => null === ($approvals = $this->approvals) ? [] : array_map(static fn ($watch): array => [
+                'station' => $watch->getStation(),
+                'head' => $approvals->headOf($watch->getStation()),
+                'required' => $watch->requiresApproval(),
+            ], $watches),
             'csrfToken' => $this->csrfTokenManager->getToken(self::CSRF_TOKEN_ID)->getValue(),
         ]));
+    }
+
+    /**
+     * WHETHER A STATION'S HEAD APPROVES (#60) — switched per station. A
+     * station with no head cannot have it on.
+     */
+    #[Route('/areas/{uuid}/modules/roster/watches/{station}/approval', name: self::APPROVAL_ROUTE, requirements: ['uuid' => Requirement::UUID, 'station' => Requirement::UUID], methods: ['POST'])]
+    #[IsGranted('roster.configure', subject: 'area')]
+    public function switchApproval(
+        #[MapEntity(mapping: ['uuid' => 'uuid'])] AreaOfInterest $area,
+        string $station,
+        Request $request,
+    ): Response {
+        $this->guardTheForm($request);
+        $post = $this->stations->findOneBy(['uuid' => Uuid::fromString($station)]);
+        if (!$post instanceof Station || $post->getArea()?->getId() !== $area->getId() || null === $this->approvals) {
+            throw new NotFoundHttpException('No such station in this area.');
+        }
+
+        $required = '1' === (string) $request->request->get('required');
+        try {
+            $this->approvals->require($post, $required);
+            self::flash($request, 'success', \sprintf($required ? 'At %s, an agreed swap and a planner’s change to their own watch now wait for the head.' : 'At %s, an agreed swap is made at once again.', (string) $post->getName()));
+        } catch (ApprovalNeedsAHeadException|\LogicException $refused) {
+            self::flash($request, 'error', $refused->getMessage());
+        }
+
+        return $this->backTo(self::WATCHES_ROUTE, $area);
     }
 
     /**
