@@ -30,7 +30,7 @@ use Uhifadhi\Roster\Service\SwapService;
 use Uhifadhi\Roster\Tests\Integration\IntegrationTestCase;
 
 /**
- * A STATION MAY REQUIRE ITS HEAD'S APPROVAL (ruled 29 Sep, #60; built 12 Oct):
+ * A STATION MAY REQUIRE ITS HEAD'S APPROVAL (ruled 29 Sep, #60; built 11 Oct):
  * an accepted swap there waits for the head before a watch moves, and so does
  * a planner's change to their own watch. Approving makes the change; refusing
  * leaves both watches as they were. Only the head decides, and a station with

@@ -34,7 +34,7 @@ use Uhifadhi\Roster\Repository\SwapRepository;
 use Uhifadhi\Roster\Repository\WatchChangeRepository;
 
 /**
- * A STATION'S HEAD APPROVES (ruled 29 Sep, #60; built 12 Oct).
+ * A STATION'S HEAD APPROVES (ruled 29 Sep, #60; built 11 Oct).
  *
  * Where a station requires it, an agreed swap waits for the head before a
  * watch moves, and so does a planner's change to their OWN watch — whoever
