@@ -244,48 +244,74 @@
     <div style="height:12px"></div>
 {% endif %}
 
-<div class="c rband">
+{# EVERY ROTATION, AND EVERY POST THAT RUNS NONE — one house register. The
+   bar is the state with its counts and a search over the post, its code and
+   the team; the Shell foot pages it. Its keys are its own, so narrowing it
+   keeps the chosen rotation and the month above it. #}
+{% import '@UhifadhiRoster/_lfilt.html.twig' as bar %}
+{%- set here = constant('Uhifadhi\\Roster\\Controller\\RosterConfigureController::ROTATION_ROUTE') -%}
+{%- set question = {rotation: app.request.query.get('rotation'), month: app.request.query.get('month')}|merge(registerFilter) -%}
+{%- set kept = question|filter((v, k) => k != 'rotations_state') -%}
+{%- set states = [{label: 'all', count: registerCounts.all, href: path(here, {uuid: area.uuid}|merge(kept)) ~ '#rotations', on: registerFilter.rotations_state is null}] -%}
+{%- for state, label in constant('Uhifadhi\\Roster\\Model\\RotationRow::STATES') -%}
+    {%- set states = states|merge([{label: label, count: registerCounts[state], href: path(here, {uuid: area.uuid}|merge(kept)|merge({rotations_state: state})) ~ '#rotations', on: registerFilter.rotations_state == state}]) -%}
+{%- endfor -%}
+<div class="c rband" id="rotations">
     <div class="rb-hd">
         <span class="tab">Every rotation in this area</span>
         <span class="rb-ttl"><b>{{ rotations|length }}</b> declared &middot; the area&rsquo;s other {{ postsWithoutARotation|length }} post{{ postsWithoutARotation|length == 1 ? '' : 's' }} run none</span>
     </div>
     <div class="rb-body">
+        <div class="lfilt">
+            {{ bar.chip('Filter by state', states) }}
+            {{ bar.search(path(here, {uuid: area.uuid}) ~ '#rotations', question, 'rotations_q', registerFilter.rotations_q, 'A post or a team') }}
+        </div>
         <table class="tbl">
-            <tr><th>applies to</th><th>the ring</th><th>per day</th><th>pool</th><th>generated to</th></tr>
-            {% for rotation in rotations %}
-                <tr>
-                    <td>
-                        {%- if rotation.station %}
-                            <b>{{ rotation.station.name }}</b> <span class="mono">{{ rotation.station.code ?: '—' }}</span>
-                        {%- else %}
-                            <b>{{ rotation.teamName }}</b> <span class="mono">per team{% if rotation.baseStation %} &middot; based at {{ rotation.baseStation.name }}{% endif %}</span>
-                        {%- endif %}
-                        {%- if not rotation.active %} <span class="fog">stood down</span>{% endif %}
-                    </td>
-                    <td>{{ rotation.cycle.positions|join(' · ') }}</td>
-                    <td>
-                        {%- for key, count in rotation.slotsPerShift -%}
-                            {{ loop.first ? '' : ', ' }}{{ key }} {{ count }}
-                        {%- else -%}
-                            <span class="fog">&mdash;</span>
-                        {%- endfor -%}
-                    </td>
-                    <td>{{ rotation.pool|length }}</td>
-                    <td>
-                        {%- if rotation.generatedThrough -%}
-                            <time datetime="{{ rotation.generatedThrough.format('Y-m-d') }}" data-localtime-format="day">{{ rotation.generatedThrough.format('j M')|lower }}</time>
-                        {%- else -%}
-                            <span class="fog">never run</span>
-                        {%- endif -%}
-                    </td>
-                </tr>
+            <thead><tr><th>applies to</th><th>the ring</th><th>per day</th><th>pool</th><th>generated to</th></tr></thead>
+            <tbody>
+            {% for row in register.rows %}
+                {%- set rotation = row.rotation -%}
+                {% if rotation %}
+                    <tr>
+                        <td>
+                            {%- if rotation.station %}
+                                <b>{{ rotation.station.name }}</b><span class="sub">{{ rotation.station.code ?: '—' }}{% if not rotation.active %} &middot; stood down{% endif %}</span>
+                            {%- else %}
+                                <b>{{ rotation.teamName }}</b><span class="sub">per team{% if rotation.baseStation %} &middot; based at {{ rotation.baseStation.name }}{% endif %}{% if not rotation.active %} &middot; stood down{% endif %}</span>
+                            {%- endif %}
+                        </td>
+                        <td>{{ rotation.cycle.positions|join(' · ') }}</td>
+                        <td>
+                            {%- for key, count in rotation.slotsPerShift -%}
+                                {{ loop.first ? '' : ', ' }}{{ key }} {{ count }}
+                            {%- else -%}
+                                <span class="fog">&mdash;</span>
+                            {%- endfor -%}
+                        </td>
+                        <td>{{ rotation.pool|length }}</td>
+                        <td>
+                            {%- if rotation.generatedThrough -%}
+                                <time datetime="{{ rotation.generatedThrough.format('Y-m-d') }}" data-localtime-format="day">{{ rotation.generatedThrough.format('j M')|lower }}</time>
+                            {%- else -%}
+                                <span class="fog">never run</span>
+                            {%- endif -%}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td class="fog">{{ row.station.name }}<span class="sub">{{ row.station.code ?: '—' }}</span></td>
+                        <td class="fog">no rotation<span class="sub">and therefore never a hole</span></td>
+                        <td class="fog">&mdash;</td>
+                        <td class="fog">&mdash;</td>
+                        <td class="fog">&mdash;</td>
+                    </tr>
+                {% endif %}
             {% else %}
-                <tr><td colspan="5" class="fog">No rotation is declared in this area, so nothing is generated and no post is short.</td></tr>
+                <tr><td colspan="5" class="fog">{{ registerFilter.rotations_state or registerFilter.rotations_q ? 'No rotation matches this filter.' : 'No rotation is declared in this area, so nothing is generated and no post is short.' }}</td></tr>
             {% endfor %}
-            {% for station in postsWithoutARotation %}
-                <tr><td class="fog">{{ station.name }} <span class="mono">{{ station.code ?: '—' }}</span></td><td class="fog" colspan="4">no rotation &mdash; and therefore never a hole</td></tr>
-            {% endfor %}
+            </tbody>
         </table>
+        {{ include('@Shell/_foot.html.twig', register.foot, with_context: false) }}
     </div>
 </div>
 {% endblock %}

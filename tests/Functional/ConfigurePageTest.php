@@ -16,6 +16,7 @@ namespace Uhifadhi\Roster\Tests\Functional;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\DomCrawler\Crawler;
 use Uhifadhi\Bundle\AreaBundle\Entity\AreaOfInterest;
 use Uhifadhi\Bundle\AreaBundle\Entity\Station;
 use Uhifadhi\Bundle\TeamBundle\Entity\User;
@@ -367,12 +368,12 @@ final class ConfigurePageTest extends WebTestCase
 
         self::assertSame(
             ['Filling'],
-            $crawler->filter('.rgrphd')->each(static fn (\Symfony\Component\DomCrawler\Crawler $head): string => trim($head->text())),
+            $crawler->filter('.rgrphd')->each(static fn (Crawler $head): string => trim($head->text())),
             'One group head, over the rules that came across from the sheet.',
         );
 
         $card = $crawler->filter('.rb-body')->reduce(
-            static fn (\Symfony\Component\DomCrawler\Crawler $body): bool => str_contains($body->text(), 'Rest between watches'),
+            static fn (Crawler $body): bool => str_contains($body->text(), 'Rest between watches'),
         );
         self::assertGreaterThan(0, $card->count(), 'The filling rules live on the rules card.');
 
@@ -533,6 +534,64 @@ final class ConfigurePageTest extends WebTestCase
     }
 
     /**
+     * EVERY ROTATION IS A HOUSE REGISTER: the state chip with its counts and
+     * the search above, a row per ring or per post that runs none — the post
+     * on the cell, its code on the `.sub` line — and the Shell foot under it,
+     * on its own keys so it never moves the rest of the page.
+     */
+    public function testEveryRotationIsAHouseRegisterUnderTheBarAndOverTheFoot(): void
+    {
+        $this->signIn(FixedManageVoter::MANAGER_EMAIL);
+
+        $card = $this->rotationRegister($this->client->request('GET', $this->url('rotation')));
+
+        self::assertCount(1, $card->filter('.lfilt > details.i-dd > summary.mchip.i-ddt'));
+        self::assertSame('all · 2', trim($card->filter('.lfilt summary .i-ddval')->text()));
+        self::assertSame(
+            ['all', 'running', 'stood down', 'no rotation'],
+            $card->filter('.lfilt a.i-ddopt .i-ddopt-l')->each(static fn (Crawler $l): string => trim($l->text())),
+        );
+        self::assertCount(1, $card->filter('.lfilt form.lsearch input[name=rotations_q]'));
+
+        $rows = $card->filter('table.tbl tbody tr');
+        self::assertCount(2, $rows);
+        self::assertSame(['ST-01', 'ST-02'], $rows->each(static fn (Crawler $r): string => trim($r->filter('td')->first()->filter('.sub')->text())));
+        self::assertCount(0, $card->filter('table.tbl tbody td[colspan]'), 'a post that runs none is a row, not a band');
+
+        $foot = $card->filter('.rdf-foot');
+        self::assertCount(1, $foot);
+        self::assertStringStartsWith('2 rows · 20 per page', trim($foot->filter('span')->first()->text()));
+        self::assertSame('page 1 of 1', trim($foot->filter('.rdf-page')->text()));
+        foreach ($foot->filter('details.rdf-size a.i-ddopt')->each(static fn (Crawler $a): string => (string) $a->attr('href')) as $href) {
+            self::assertStringContainsString('rotations_per=', $href);
+        }
+    }
+
+    public function testTheStateChipAndTheSearchNarrowTheRotations(): void
+    {
+        $this->signIn(FixedManageVoter::MANAGER_EMAIL);
+
+        $card = $this->rotationRegister($this->client->request('GET', $this->url('rotation').'?rotations_q=west'));
+        self::assertCount(1, $card->filter('table.tbl tbody tr'));
+        self::assertStringContainsString('west outpost', $card->filter('table.tbl tbody')->text());
+        self::assertSame('west', $card->filter('.lsearch input[name=rotations_q]')->attr('value'));
+
+        $card = $this->rotationRegister($this->client->request('GET', $this->url('rotation').'?rotations_state=running'));
+        self::assertStringContainsString('running · 0', trim($card->filter('.lfilt summary .i-ddval')->text()));
+        self::assertStringContainsString('No rotation matches', $card->filter('table.tbl tbody')->text());
+        self::assertStringStartsWith('0 rows', trim($card->filter('.rdf-foot span')->first()->text()));
+    }
+
+    private function rotationRegister(Crawler $crawler): Crawler
+    {
+        self::assertResponseIsSuccessful();
+        $card = $crawler->filter('.c')->reduce(static fn (Crawler $c): bool => str_contains($c->filter('.tab')->count() > 0 ? $c->filter('.tab')->first()->text() : '', 'Every rotation'));
+        self::assertCount(1, $card);
+
+        return $card;
+    }
+
+    /**
      * WHERE AN AREA HAS PARKED THIS MODULE, EVERY PAGE HERE IS 404 — the
      * registry's gate, not this module's, and 404 rather than 403 because a
      * parked module is not withheld: the area is not running it.
@@ -577,7 +636,7 @@ final class ConfigurePageTest extends WebTestCase
 
         $crawler = $this->client->request('GET', $this->url('watches'));
         $offered = $crawler->filter('#roster-add-post option')->each(
-            static fn (\Symfony\Component\DomCrawler\Crawler $option): string => trim($option->text()),
+            static fn (Crawler $option): string => trim($option->text()),
         );
 
         self::assertCount(1, $offered);

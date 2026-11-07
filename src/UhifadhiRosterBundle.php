@@ -72,6 +72,7 @@ use Uhifadhi\Roster\Service\RosterFiguresService;
 use Uhifadhi\Roster\Service\RosterLiveService;
 use Uhifadhi\Roster\Service\RosterOrgService;
 use Uhifadhi\Roster\Service\RosterWidgetUrls;
+use Uhifadhi\Roster\Service\RotationRegisterService;
 use Uhifadhi\Roster\Shell\RosterConfigurationSections;
 use Uhifadhi\Roster\Shell\RosterModuleTabs;
 use Uhifadhi\Roster\Shell\RosterStationSections;
@@ -488,6 +489,9 @@ final class UhifadhiRosterBundle extends AbstractBundle
         $services->set('roster.register_foot', RegisterFootService::class)
             ->args([service('shell.table_page')]);
 
+        // EVERY ROTATION AND EVERY POST THAT RUNS NONE, as one register.
+        $services->set('roster.rotation_register', RotationRegisterService::class);
+
         // THE DAY'S FIGURES — one read, folded once, so five cards on one
         // screen can never disagree about the same day.
         $services->set('roster.figures', RosterFiguresService::class)
@@ -667,6 +671,8 @@ final class UhifadhiRosterBundle extends AbstractBundle
                     service('roster.rotation_preview'),
                     service('roster.rotation_generator'),
                     service(RotationRepository::class),
+                    service('roster.rotation_register'),
+                    service('roster.register_foot'),
                     service('security.csrf.token_manager'),
                     service('roster.approvals'),
                 ])

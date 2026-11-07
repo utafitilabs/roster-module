@@ -52,12 +52,14 @@ use Uhifadhi\Roster\Model\RuleValue;
 use Uhifadhi\Roster\Module\RosterModuleProvider;
 use Uhifadhi\Roster\Repository\RotationRepository;
 use Uhifadhi\Roster\Service\ApprovalService;
+use Uhifadhi\Roster\Service\RegisterFootService;
 use Uhifadhi\Roster\Service\RosteredPeople;
 use Uhifadhi\Roster\Service\RosterIdentityService;
 use Uhifadhi\Roster\Service\RosterSettingsService;
 use Uhifadhi\Roster\Service\RotationEditor;
 use Uhifadhi\Roster\Service\RotationGenerator;
 use Uhifadhi\Roster\Service\RotationPreview;
+use Uhifadhi\Roster\Service\RotationRegisterService;
 use Uhifadhi\Roster\Service\ShiftRuleService;
 use Uhifadhi\Roster\Service\ShiftVocabularyService;
 use Uhifadhi\Roster\Service\StationWatchService;
@@ -164,6 +166,8 @@ final class RosterConfigureController
         private readonly RotationPreview $preview,
         private readonly RotationGenerator $generator,
         private readonly RotationRepository $rotations,
+        private readonly RotationRegisterService $register,
+        private readonly RegisterFootService $feet,
         private readonly CsrfTokenManagerInterface $csrfTokenManager,
         /** Whether each station's head approves (#60). */
         private readonly ?ApprovalService $approvals = null,
@@ -178,6 +182,14 @@ final class RosterConfigureController
     ): Response {
         $rotations = $this->rotations->findByArea($area);
         $chosen = $this->chosenRotation($rotations, $request->query->get('rotation'));
+        $idle = $this->postsWithoutARotation($area);
+        // EVERY ROTATION AND EVERY POST THAT RUNS NONE, one register on its
+        // own keys (`rotations_state`, `rotations_q`, and the foot's
+        // `rotations_page`, `rotations_per`), so narrowing it never moves the
+        // chosen rotation or the month above it.
+        $rows = $this->register->rows($rotations, $idle);
+        $state = self::text($request->query->get('rotations_state'));
+        $search = self::text($request->query->get('rotations_q'));
 
         return new Response($this->twig->render('@UhifadhiRoster/configure/rotation.html.twig', [
             'area' => $area,
@@ -197,7 +209,10 @@ final class RosterConfigureController
             // rather than counted: "a post with no rotation is never counted,
             // reported on or called a hole" is only trustworthy if the page
             // says which posts it means.
-            'postsWithoutARotation' => $this->postsWithoutARotation($area),
+            'postsWithoutARotation' => $idle,
+            'register' => $this->feet->page($request, $this->register->narrow($rows, $state, $search), 'rotations', 'rows', 'row'),
+            'registerFilter' => ['rotations_state' => $state, 'rotations_q' => $search],
+            'registerCounts' => $this->register->stateCounts($rows),
             // THE BLANK DECLARATION, opened by the page header's one accent
             // action. It is a STATE of this section rather than a page of
             // its own: a rotation is declared and then edited, and sending
@@ -1047,10 +1062,17 @@ final class RosterConfigureController
         ));
     }
 
+    /** A query value as typed, or null where nothing was. */
+    private static function text(mixed $value): ?string
+    {
+        return \is_string($value) && '' !== trim($value) ? trim($value) : null;
+    }
+
     /**
      * BACK TO THE SECTION THAT WAS SAVED, as a redirect: a POST answered with
      * a rendered page is a page a refresh re-submits.
      */
+
     /**
      * SAY IT IN THE FRAME'S OWN FLASHES.
      *
