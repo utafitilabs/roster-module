@@ -5,10 +5,50 @@ has to do for a release is in [docs/upgrading.md](docs/upgrading.md).
 
 ## Contents
 
+- [Unreleased](#unreleased)
 - [0.2.1](#021)
 - [0.2.0](#020)
 - [0.1.3](#013)
 - [0.1.2](#012)
+
+## Unreleased
+
+ * THE TAB PAGES FOLLOW THE 8 NOV DESIGN SWEEP (design-sweep-strips, batches b and g). The band and
+   the figures stay on the Overview only: Today, Week, Day board, Calendar and Live lose the identity
+   band and their KPI rows. Today, Week and the Day board carry the shell's in-page index
+   (`@Shell/_onpage.html.twig`) with one row per card — Today · Tomorrow; The sheet · Swap a watch ·
+   Swaps; The day board · Here now — and their cards in one column. Every table's filter is the house bar,
+   `.lfilt` (`_lfilt.html.twig`): each axis a `details.i-dd` chip naming the chosen option and its
+   count, every option a link carrying the GET question, the `.lsearch` box at the right end. Post,
+   state and shift on Today, the Day board and Live; station, weeks and a ranger search on the sheet
+   (`Sheet::matching()`); area, state and shift on the organization's Today and Live
+   (`RosterOrgService::narrow()`, `::options()`). The Calendar's ranger picker stays the shell's
+   searchable dropdown, sent by the new `roster--filter` controller, so a chosen ranger is an
+   address.
+ * THE WEEK'S SWAPS ARE THE HOUSE `table.tbl` (Swap · Who · When · a door to the day's plan), with
+   their own bar — the state with its counts and a search, on keys of their own (`swaps_state`,
+   `swaps_q`, `SwapService::narrow()`) — and the foot.
+ * EVERY LIST IS THE HOUSE `table.tbl`: Today's two days, the Day board's Here now, Live's roster
+   underneath, the station record's Today's watch, and the organization's Today and Live. No row of
+   a table is a band: Today's station head rows are gone, the station and its call sign are every
+   row's sub-line (the shell's `.sub`), and a hole stays its own row with Fill it
+   (`AgendaService::rows()`, `AgendaRow`). `PostPresence::$stationCode` carries the call sign. The
+   register rules (`.ro-tbl`, `.ro-hole`, `.ro-none`, the chips on the house scale) are in
+   `public/roster.css`.
+ * EVERY TABLE CARRIES THE REGISTER FOOT (`@Shell/_foot.html.twig`), 20 rows a page, paged by GET
+   links with keys of its own (`<key>_page`, `<key>_per`): Today's two days (`today`, `tomorrow`),
+   Here now (`here`), Live's roster (`roster`), the Week's sheet (`sheet`, the station bands kept
+   over the rangers a page holds) and its swaps (`swaps`, every swap of the window rather than the
+   latest five), the station record's watch (`watch`) and the organization's Today and Live
+   (`rangers`). `RegisterFootService` (`roster.register_foot`) over the shell's pager
+   (`shell.table_page`), which the core has to ship first.
+ * WHAT NEEDS A DECISION IS THE BANNER (`.pp-drift`, now the shell's): above the band on the area
+   Overview, and above the content on the organization's Overview, Today and Live. The Needs a decision
+   widget leaves both shipped compositions and stays in the library.
+ * THE ORGANIZATION'S LIVE PAGE IS TWO COLUMNS: the map, capped at 540 px, and every area's rangers
+   beside it (Area · Ranger · Post · Presence · Ping age).
+ * New icons `roster:clock`, `roster:calendar`, `roster:activity`. An installation enables the new
+   controller (the Calendar's picker) in `assets/controllers.json`: `"filter": { "enabled": true, "fetch": "eager" }`.
 
 ## 0.2.1
 

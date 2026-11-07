@@ -23,6 +23,7 @@ use Uhifadhi\Bundle\ShellBundle\Service\Scopes;
 use Uhifadhi\Bundle\ShellBundle\Widget\Service\WidgetEndpoint;
 use Uhifadhi\Bundle\ShellBundle\Widget\Service\WidgetService;
 use Uhifadhi\Contracts\Shell\Scope;
+use Uhifadhi\Roster\Service\RegisterFootService;
 use Uhifadhi\Roster\Service\RosterOrgService;
 use Uhifadhi\Roster\Widget\RosterOrgWidgets;
 
@@ -60,6 +61,7 @@ final class RosterOrgController
         private readonly WidgetService $widgets,
         private readonly WidgetEndpoint $endpoint,
         private readonly Scopes $scopes,
+        private readonly RegisterFootService $feet,
         /** The area's live stream, so the Live page's marks keep moving. */
         private readonly ?PresenceStreamService $streams = null,
     ) {
@@ -82,14 +84,44 @@ final class RosterOrgController
 
     #[Route('/roster/today', name: self::TODAY_ROUTE, methods: ['GET'])]
     #[IsGranted('areas.read')]
-    public function today(): Response
+    public function today(Request $request): Response
     {
         [$scope, $areas, $day, $now] = $this->reading();
+        $rows = $this->org->agenda($areas, $day, $now);
+
+        $chosen = self::chosen($request);
+        $shown = RosterOrgService::narrow($rows, $chosen);
 
         return new Response($this->twig->render('@UhifadhiRoster/org/today.html.twig', [
             ...$this->common($scope, $areas, $day, $now),
-            'rows' => $this->org->agenda($areas, $day, $now),
+            'rows' => $shown,
+            'table' => $this->feet->page($request, $shown, 'rangers', 'rangers', 'ranger'),
+            'chosen' => $chosen,
+            'options' => RosterOrgService::options($rows),
         ]));
+    }
+
+    /**
+     * THE FILTER BAR'S CHOICES, each one query parameter, so a narrowed list
+     * is an address somebody can send.
+     *
+     * @return array{area: ?string, state: ?string, shift: ?string, q: ?string}
+     */
+    private static function chosen(Request $request): array
+    {
+        return [
+            'area' => self::asked($request, 'area'),
+            'state' => self::asked($request, 'state'),
+            'shift' => self::asked($request, 'shift'),
+            'q' => self::asked($request, 'q'),
+        ];
+    }
+
+    private static function asked(Request $request, string $name): ?string
+    {
+        $value = $request->query->get($name);
+
+        return \is_string($value) && '' !== $value ? $value : null;
     }
 
     #[Route('/roster/live', name: self::LIVE_ROUTE, methods: ['GET'])]
@@ -112,6 +144,10 @@ final class RosterOrgController
         $response = new Response($this->twig->render('@UhifadhiRoster/org/live.html.twig', [
             ...$this->common($scope, $areas, $day, $now),
             'plate' => $plate,
+            'rows' => $shown = RosterOrgService::narrow($rows = $this->org->agenda($areas, $day, $now), $chosen = self::chosen($request)),
+            'table' => $this->feet->page($request, $shown, 'rangers', 'rangers', 'ranger'),
+            'chosen' => $chosen,
+            'options' => RosterOrgService::options($rows),
         ]));
         if (null !== $subscription) {
             $response->headers->setCookie($subscription->cookie);

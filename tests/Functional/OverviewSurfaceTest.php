@@ -118,8 +118,8 @@ final class OverviewSurfaceTest extends WebTestCase
     }
 
     /**
-     * THE SHIPPED COMPOSITION IS ON THE PAGE: the figures, what needs a
-     * decision, the posts, and who is reporting right now.
+     * THE SHIPPED COMPOSITION IS ON THE PAGE: the figures, the posts, and
+     * who is reporting right now. What needs a decision is the banner above.
      */
     public function testTheShippedCompositionRendersItsFourWidgets(): void
     {
@@ -131,7 +131,7 @@ final class OverviewSurfaceTest extends WebTestCase
             static fn (\Symfony\Component\DomCrawler\Crawler $cell): string => (string) $cell->attr('data-w'),
         );
 
-        self::assertSame(['kpis', 'decisions', 'stations', 'live'], $drawn);
+        self::assertSame(['kpis', 'stations', 'live'], $drawn);
     }
 
     /**
@@ -179,16 +179,24 @@ final class OverviewSurfaceTest extends WebTestCase
         self::assertSame('1', trim($crawler->filter('[data-kpi="needs-an-answer"] .disp')->text()), 'One due and nothing reported is one thing to answer.');
     }
 
-    /** WHAT NEEDS A DECISION SAYS WHICH, and the row names the person. */
-    public function testTheDecisionsCardNamesWhoAndWhy(): void
+    /**
+     * WHAT NEEDS A DECISION IS THE BANNER above the band and the figures: how
+     * many, then which, and the door to the day. No card says it again.
+     */
+    public function testWhatNeedsADecisionIsTheBannerAboveTheBand(): void
     {
         $crawler = $this->open();
 
-        $card = $crawler->filter('[data-w="decisions"]');
-        self::assertCount(1, $card);
-        self::assertStringContainsString('Needs a decision', $card->filter('.tab')->text());
-        self::assertStringContainsString('Ada Example', $card->text());
-        self::assertStringContainsString('no check-in', $card->text());
+        $banner = $crawler->filter('.banner');
+        self::assertCount(1, $banner);
+        self::assertMatchesRegularExpression('/^\d+ needs? a decision$/', trim($banner->filter('.banner-t > b')->text()), 'How many, said first.');
+        self::assertMatchesRegularExpression('/, and \d+ more$/', trim($banner->filter('.banner-c')->text()), 'The holes of the week ahead are counted, not listed.');
+        self::assertStringContainsString('Ada Example', $banner->filter('.banner-c')->text());
+        self::assertStringContainsString('no check-in', $banner->filter('.banner-c')->text());
+        self::assertSame('Today', trim($banner->filter('.banner-acts a.btn')->text()));
+        self::assertStringEndsWith('/today', (string) $banner->filter('.banner-acts a.btn')->attr('href'));
+        self::assertCount(1, $crawler->filter('.banner + .factband'), 'The banner sits directly above the band.');
+        self::assertCount(0, $crawler->filter('[data-w="decisions"]'), 'No card says it again.');
     }
 
     /** THE POSTS CARD CARRIES THE AREA'S OWN DENOMINATOR. */
@@ -221,7 +229,7 @@ final class OverviewSurfaceTest extends WebTestCase
     public function testTheCatalogueIsWhatThePageDraws(): void
     {
         self::assertSame(
-            ['kpis' => 12, 'decisions' => 12, 'stations' => 12, 'live' => 12],
+            ['kpis' => 12, 'stations' => 12, 'live' => 12],
             RosterWidgets::declaration()->defaultLayout(),
         );
     }

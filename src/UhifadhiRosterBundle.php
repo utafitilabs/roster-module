@@ -66,6 +66,7 @@ use Uhifadhi\Roster\Repository\ShiftRepository;
 use Uhifadhi\Roster\Repository\StationWatchRepository;
 use Uhifadhi\Roster\Service\AgendaService;
 use Uhifadhi\Roster\Service\DayPlanService;
+use Uhifadhi\Roster\Service\RegisterFootService;
 use Uhifadhi\Roster\Service\RosterDashboardService;
 use Uhifadhi\Roster\Service\RosterFiguresService;
 use Uhifadhi\Roster\Service\RosterLiveService;
@@ -365,6 +366,7 @@ final class UhifadhiRosterBundle extends AbstractBundle
                 service('roster.shift_rules'),
                 service('roster.settings'),
                 service('router'),
+                service('roster.register_foot'),
                 /*
                  * THE DOOR ON AN OFF-THE-BOOKS POST'S CARD writes, so it
                  * carries a token — and it exists only where the configure
@@ -480,6 +482,11 @@ final class UhifadhiRosterBundle extends AbstractBundle
                 service(DutyRepository::class),
                 service(StationRepository::class),
             ]);
+
+        // THE REGISTER FOOT's page and links for every table the module
+        // draws, read off the request by the shell's pager.
+        $services->set('roster.register_foot', RegisterFootService::class)
+            ->args([service('shell.table_page')]);
 
         // THE DAY'S FIGURES — one read, folded once, so five cards on one
         // screen can never disagree about the same day.
@@ -603,6 +610,7 @@ final class UhifadhiRosterBundle extends AbstractBundle
                 service(AbsenceRepository::class),
                 service(WidgetService::class),
                 service('router'),
+                service('roster.register_foot'),
                 // Null where the installation runs no security: the week tab
                 // then offers no swap, because there is nobody to attribute
                 // an offer to and nothing to refuse one with.
@@ -737,6 +745,7 @@ final class UhifadhiRosterBundle extends AbstractBundle
                     service(WidgetService::class),
                     service(WidgetEndpoint::class),
                     service(\Uhifadhi\Bundle\ShellBundle\Service\Scopes::class),
+                    service('roster.register_foot'),
                     // The Live page's stream, the area's own.
                     service('area.presence_stream')->nullOnInvalid(),
                 ])

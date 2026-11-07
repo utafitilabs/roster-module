@@ -7,8 +7,9 @@
    shift handover and for a screen on an office wall, and it knows nothing
    about tomorrow.
 
-   TWO SECTIONS. The hours, then who is actually on those posts — the plan
-   and the measurement, in that order and never merged.
+   TWO SECTIONS, one index row each: the hours, then who is actually on
+   those posts — the plan and the measurement, in that order and never
+   merged. The band and the figures are the Overview's.
    ========================================================================== #}
 {% extends '@UhifadhiRoster/base.html.twig' %}
 
@@ -28,88 +29,66 @@
 {% endblock %}
 
 {% block roster_page %}
-    {{ include('@UhifadhiRoster/_identity_band.html.twig') }}
+    {% embed '@Shell/_onpage.html.twig' with {rows: [
+        {id: 'board', label: 'The day board'},
+        {id: 'presence', label: 'Here now', count: posts|length},
+    ], area: area, day: day, isToday: isToday, filter: filter, posts: posts, here: here, blocks: blocks, chosenPost: chosenPost, allPosts: allPosts,
+       stateLabels: stateLabels, stateCounts: stateCounts, shiftLabels: shiftLabels, shiftCounts: shiftCounts, figures: figures} only %}
+        {% block shell_onpage_main %}
+            {{ include('@UhifadhiRoster/today/_filters.html.twig', {here: constant('Uhifadhi\\Roster\\Controller\\RosterController::BOARD_ROUTE')}) }}
 
-    {{ include('@UhifadhiRoster/today/_filters.html.twig', {
-        area: area, day: day, isToday: isToday, filter: filter, posts: posts,
-        chosenPost: chosenPost, stateLabels: stateLabels, stateCounts: stateCounts,
-        shiftLabels: shiftLabels, shiftCounts: shiftCounts, here: constant('Uhifadhi\\Roster\\Controller\\RosterController::BOARD_ROUTE'),
-    }, with_context: false) }}
+            {# BOTH CARDS ARE BOUNDED — RULED 25 sep, the sheet's height rule
+               (`roster--bound`, `.rscroll`): they never grow with the posts,
+               and scroll inside themselves under a head that stays. #}
+            <h2 class="zone">The day, hour by hour</h2>
+            <div class="c" id="board" data-controller="roster--bound">
+                <span class="tab">The day board<span class="src">&middot; <time datetime="{{ day.format('Y-m-d') }}" data-localtime-format="day">{{ day.format('D j M')|lower }}</time> &middot; {{ figures.onTheWatchNow }} rostered &middot; {{ figures.day.verified }} verified at a post</span></span>
+                <a class="more" href="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterController::PLAN_ROUTE'), {uuid: area.uuid, day: day.format('Y-m-d')}) }}">Edit the day &rarr;</a>
 
-    <div class="grid kstrip">
-        <div class="c kpi hot" data-kpi="rostered-now">
-            <span class="tab">Rostered now</span>
-            <b class="disp">{{ figures.onTheWatchNow }}<em>of {{ figures.day.expected }}</em></b>
-            <span class="sub">{{ figures.dueLaterToday }} more when their watch begins</span>
-        </div>
-        <div class="c kpi" data-kpi="verified">
-            <span class="tab">Verified at a post</span>
-            <b class="disp">{{ figures.day.verified }}<em>of {{ figures.day.verified + figures.day.flagged }}</em></b>
-            <span class="sub">pings inside the station&rsquo;s catchment</span>
-        </div>
-        {# FLAGGED AND NO CHECK-IN ARE ONE CARD — a row is four, never
-           five — and the fragment keeps them apart, because a claim the
-           pings disagree with and a claim nobody made are answered by
-           different people in different ways. #}
-        <div class="c kpi{{ figures.needingAnAnswer > 0 ? ' bad' : '' }}" data-kpi="needs-an-answer">
-            <span class="tab">Needs an answer</span>
-            <b class="disp">{{ figures.needingAnAnswer }}</b>
-            <span class="sub">
-                {%- if figures.needingAnAnswer > 0 %}<span class="r">{{ figures.day.flagged }} unverified &middot; {{ figures.day.noCheckIn }} no check-in</span>
-                {%- else %}every claim is borne out and everybody due has reported{% endif -%}
-            </span>
-        </div>
-        <div class="c kpi" data-kpi="posts-reporting">
-            <span class="tab">Posts reporting</span>
-            <b class="disp">{{ figures.day.postsReporting }}<em>of {{ figures.day.postsOnTheBooks }}</em></b>
-            <span class="sub">{{ quiet|length }} late or offline</span>
-        </div>
-    </div>
+                {% if posts is empty %}
+                    <div class="rfrag"><b>No post is on the roster&rsquo;s books</b><em>a watch is given to a post deliberately, so none is assumed</em></div>
+                {% else %}
+                    {{ include('@UhifadhiRoster/board/_wall.html.twig', {posts: posts, blocks: blocks, day: day, area: area, bounded: true}, with_context: false) }}
+                {% endif %}
+            </div>
 
-    {# BOTH CARDS ARE BOUNDED — RULED 25 sep, the sheet's height rule
-       (`roster--bound`, `.rscroll`): they never grow with the posts, and
-       scroll inside themselves under a head that stays. #}
-    <h2 class="zone">The day, hour by hour</h2>
-    <div class="c" data-controller="roster--bound">
-        <span class="tab">The day board<span class="src">&middot; <time datetime="{{ day.format('Y-m-d') }}" data-localtime-format="day">{{ day.format('D j M')|lower }}</time> &middot; {{ figures.onTheWatchNow }} rostered &middot; {{ figures.day.verified }} verified at a post</span></span>
-        <a class="more" href="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterController::TODAY_ROUTE'), {uuid: area.uuid}) }}">The agenda &rarr;</a>
+            <h2 class="zone">Who is actually on those posts</h2>
+            <div class="c" id="presence" data-controller="roster--bound">
+                <span class="tab">Here now, against the watch<span class="src">&middot; from the pings &middot; {{ figures.day.verified }} of {{ figures.day.expected }} rostered are verified</span></span>
+                <a class="more" href="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterController::LIVE_ROUTE'), {uuid: area.uuid}) }}">On the map &rarr;</a>
 
-        {% if posts is empty %}
-            <div class="rfrag"><b>No post is on the roster&rsquo;s books</b><em>a watch is given to a post deliberately, so none is assumed</em></div>
-        {% else %}
-            {{ include('@UhifadhiRoster/board/_wall.html.twig', {posts: posts, blocks: blocks, day: day, area: area, bounded: true}, with_context: false) }}
-        {% endif %}
-    </div>
-
-    <h2 class="zone">Who is actually on those posts</h2>
-    <div class="c" data-controller="roster--bound">
-        <span class="tab">Here now, against the watch<span class="src">&middot; from the pings &middot; {{ figures.day.verified }} of {{ figures.day.expected }} rostered are verified</span></span>
-        <a class="more" href="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterController::LIVE_ROUTE'), {uuid: area.uuid}) }}">On the map &rarr;</a>
-
-        {# ROSTERED AND MEASURED, SIDE BY SIDE. The count on the right is how
-           many of the post's own expectation the pings actually bear out;
-           the sentence beside each name is why. #}
-        <div class="r-preslist rscroll" data-roster--bound-target="scroller">
-            {% for post in posts %}
-                <div class="r-pres">
-                    <span class="nm">{{ post.stationName }}<em>{{ post.state.label }}</em></span>
-                    <span class="who">
-                        {%- for person in post.rostered %}
-                            {%- if not loop.first %} &middot; {% endif -%}
-                            {%- if person.isFlagged %}<b class="r">{{ person.personName }} &mdash; unverified</b>
-                            {%- elseif person.watchCount == 0 %}<b class="r">{{ person.personName }} &mdash; no check-in</b>
-                            {%- else %}{{ person.personName }} {{ person.state.label }}{% endif -%}
-                        {%- else -%}
-                            nobody rostered
-                        {%- endfor %}
-                    </span>
-                    <span class="cnt {{ post.expected == 0 ? 'd' : (post.verified >= post.expected ? 'g' : (post.verified > 0 ? 'w' : 'r')) }}">
-                        {{- post.expected == 0 ? '—' : post.verified ~ ' of ' ~ post.expected -}}
-                    </span>
+                {# ROSTERED AND MEASURED, SIDE BY SIDE. The count on the right is
+                   how many of the post's own expectation the pings actually
+                   bear out; the sentence beside it is why. #}
+                <div class="rscroll" data-roster--bound-target="scroller">
+                    <table class="tbl ro-tbl">
+                        <colgroup><col style="width:30%"><col><col style="width:14%"></colgroup>
+                        <thead><tr><th>Post</th><th>Who is there</th><th class="num">Verified</th></tr></thead>
+                        <tbody>
+                        {% for post in here.rows %}
+                            <tr>
+                                <td><b>{{ post.stationName }}</b>{% if post.stationCode %}<span class="sub">{{ post.stationCode }}</span>{% endif %}</td>
+                                <td>
+                                    {%- for person in post.rostered %}
+                                        {%- if not loop.first %} &middot; {% endif -%}
+                                        {%- if person.isFlagged %}<b class="w">{{ person.personName }} unverified</b>
+                                        {%- elseif person.watchCount == 0 %}<b class="r">{{ person.personName }} no check-in</b>
+                                        {%- else %}{{ person.personName }} {{ person.state.label|lower }}{% endif -%}
+                                    {%- else -%}
+                                        nobody rostered &middot; {{ post.state.label|lower }}
+                                    {%- endfor -%}
+                                </td>
+                                <td class="num {{ post.expected == 0 ? 'd' : (post.verified >= post.expected ? 'g' : (post.verified > 0 ? 'w' : 'r')) }}">
+                                    {{- post.expected == 0 ? '—' : post.verified ~ ' of ' ~ post.expected -}}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                            <tr class="ro-none"{% if posts is not empty %} hidden{% endif %}><td colspan="3">No post matches.</td></tr>
+                        </tbody>
+                    </table>
                 </div>
-            {% else %}
-                <div class="rfrag"><b>No post is on the roster&rsquo;s books</b><em>there is nothing to measure anybody against</em></div>
-            {% endfor %}
-        </div>
-    </div>
+                {{ include('@Shell/_foot.html.twig', here.foot, with_context: false) }}
+            </div>
+        {% endblock %}
+    {% endembed %}
 {% endblock %}

@@ -92,6 +92,7 @@ final readonly class PresenceReader
                 flagged: \count(array_filter($people, static fn (RosteredPerson $p): bool => $p->isFlagged())),
                 state: $this->stateOf($watch, $people, $now, $silentFor),
                 silentFor: $silentFor,
+                stationCode: $station->getCode(),
             );
         }
 

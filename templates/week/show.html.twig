@@ -131,19 +131,22 @@
     {% set here = constant('Uhifadhi\\Roster\\Controller\\RosterController::WEEK_ROUTE') %}
     {% set base = {uuid: area.uuid, weeks: window.weeks} %}
     {% if chosenStation %}{% set base = base|merge({station: chosenStation.uuidString}) %}{% endif %}
+    {# THE WHOLE QUESTION THE PAGE IS ASKING, which every option of both bars
+       carries forward: the window, the station, the sheet's search and the
+       swaps bar's own two keys. #}
+    {% set question = {
+        from: window.from.format('Y-m-d'), weeks: window.weeks,
+        station: chosenStation ? chosenStation.uuidString : null, q: search,
+        swaps_state: swapFilter.state, swaps_q: swapFilter.q,
+    }|filter(v => v is not null) %}
 
-    {# THE FOUR FIGURES, every one measuring the window the sheet under them
-       draws — a band that counted a different fortnight would be a band
-       nobody could check against the picture. #}
-    <div class="factband">
-        <span class="f"><span class="k">Rangers</span><span class="v">{{ sheet.rangers }}<em>across {{ sheet.stations }} station{{ sheet.stations == 1 ? '' : 's' }}</em></span></span>
-        <span class="f"><span class="k">Days planned</span><span class="v">{{ sheet.daysPlanned }}<em>{{ window.weeks == 1 ? 'this week' : (window.weeks == 2 ? 'this fortnight' : 'these four weeks') }}{% if sheet.filledTo %} &middot; filled to {{ sheet.filledTo|date('j M')|lower }}{% endif %}</em></span></span>
-        <span class="f"><span class="k">Short cover</span><span class="v">{{ sheet.shortCover }}<em>station-days under the number</em></span></span>
-        <span class="f"><span class="k">Edited by hand</span><span class="v">{{ sheet.editedByHand }}<em>a pattern will not touch them</em></span></span>
-        <span class="sp"></span>
-        <a class="more" href="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterConfigureController::SETTINGS_ROUTE'), {uuid: area.uuid}) }}">Roster settings &rarr;</a>
-    </div>
-
+    {% embed '@Shell/_onpage.html.twig' with {label: 'On this page', rows: [
+        {id: 'sheet', label: 'The sheet', count: sheet.rangers},
+        {id: 'swap', label: 'Swap a watch'},
+        {id: 'swaps', label: 'Swaps', count: swaps.foot.count},
+    ]} %}
+    {% block shell_onpage_main %}
+    {% import '@UhifadhiRoster/_lfilt.html.twig' as bar %}
     {# ====================================================================
        THE FILL ROW — the only thing above the sheet card (layout C). A
        pattern, a station, a start date, and the two buttons; and under it,
@@ -236,7 +239,7 @@
        THE SHEET. A bounded card whose HEAD carries every control it has and
        whose BODY is the only thing that scrolls.
        ==================================================================== #}
-    <div class="c rband sheetcard" data-controller="roster--sheet roster--sheet-folds roster--day-menu"
+    <div class="c rband sheetcard" id="sheet" data-controller="roster--sheet roster--sheet-folds roster--day-menu"
          data-roster--sheet-folds-url-value="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterController::SHEET_PREFS_ROUTE'), {uuid: area.uuid}) }}"
          data-roster--sheet-folds-token-value="{{ csrfToken }}">
         <div class="rb-hd shead">
@@ -255,41 +258,25 @@
 
             <span class="shsp"></span>
 
-            {# THE HOUSE'S GROUPED DROPDOWN, which is a `<details>`: it opens,
-               chooses and clears with no script of ours, and a filtered
-               sheet is a url somebody can send. #}
-            <details class="i-dd">
-                <summary class="mchip i-ddt">
-                    <span class="i-ddval">{{ chosenStation ? (chosenStation.name|lower ~ (chosenStation.code ? ' · ' ~ chosenStation.code|lower : '')) : 'all stations · ' ~ sheet.stations }}</span><span class="i-ddcaret">&#9662;</span>
-                </summary>
-                <div class="i-ddmenu" aria-label="station">
-                    <span class="i-ddhead">station</span>
-                    <a class="i-ddopt{{ chosenStation ? '' : ' on' }}" href="{{ path(here, {uuid: area.uuid, weeks: window.weeks, from: window.from.format('Y-m-d')}) }}"><span class="i-dot"></span><span class="i-ddopt-l">All stations with somebody stationed</span><span class="i-ddopt-n">{{ sheet.stations }}</span></a>
-                    <span class="i-ddsep"></span>
-                    {% for option in stationOptions %}
-                        <a class="i-ddopt{{ chosenStation and chosenStation.uuidString == option.uuid ? ' on' : '' }}"
-                           href="{{ path(here, {uuid: area.uuid, weeks: window.weeks, from: window.from.format('Y-m-d'), station: option.uuid}) }}"><span class="i-dot"></span><span class="i-ddopt-l">{{ option.name }}{% if option.code %} &middot; {{ option.code }}{% endif %}</span><span class="i-ddopt-n">{{ option.rangers }}</span></a>
-                    {% endfor %}
-                </div>
-            </details>
-
-            {# ONE, TWO OR FOUR, and never anything between: anything between
-               a week and a month is a stretched fortnight. Four is the MONTH
-               view and compacts the cell the way the calendar does. #}
-            <details class="i-dd">
-                <summary class="mchip i-ddt">
-                    <span class="i-ddval">{{ {1: 'one week', 2: 'two weeks', 4: 'four weeks'}[window.weeks] }}</span><span class="i-ddcaret">&#9662;</span>
-                </summary>
-                <div class="i-ddmenu" aria-label="weeks in view">
-                    <span class="i-ddhead">weeks in view</span>
-                    {% for weeks, label in {1: 'One week', 2: 'Two weeks', 4: 'Four weeks'} %}
-                        <a class="i-ddopt{{ window.weeks == weeks ? ' on' : '' }}"
-                           href="{{ path(here, base|merge({weeks: weeks, from: window.from.format('Y-m-d')})) }}"><span class="i-dot"></span><span class="i-ddopt-l">{{ label }}</span>
-                            {%- if weeks == 2 %}<span class="i-ddopt-n">the default</span>{% elseif weeks == 4 %}<span class="i-ddopt-n">a month, cells compacted</span>{% endif -%}
-                        </a>
-                    {% endfor %}
-                </div>
-            </details>
+            {# THE HOUSE BAR, `.lfilt`, in the head that carries every control:
+               the station, the window and the search, each option a link that
+               keeps the rest of the question, so a filtered sheet is an
+               address somebody can send. One, two or four weeks and never
+               anything between: anything between a week and a month is a
+               stretched fortnight. #}
+            {%- set options = [{label: 'All stations', count: stationOptions|reduce((sum, o) => sum + o.rangers, 0), href: path(here, {uuid: area.uuid}|merge(question|filter((v, k) => k != 'station'))), on: chosenStation is null}] -%}
+            {%- for option in stationOptions -%}
+                {%- set options = options|merge([{label: option.name, count: option.rangers, href: path(here, {uuid: area.uuid}|merge(question)|merge({station: option.uuid})), on: chosenStation and chosenStation.uuidString == option.uuid}]) -%}
+            {%- endfor -%}
+            {%- set windows = [] -%}
+            {%- for weeks, label in {2: 'Two weeks', 1: 'One week', 4: 'Four weeks'} -%}
+                {%- set windows = windows|merge([{label: label, count: null, href: path(here, {uuid: area.uuid}|merge(question)|merge({weeks: weeks})), on: window.weeks == weeks}]) -%}
+            {%- endfor -%}
+            <div class="lfilt">
+                {{ bar.chip('Filter by station', options) }}
+                {{ bar.chip('How many weeks', windows) }}
+                {{ bar.search(path(here, {uuid: area.uuid}), question, 'q', search, 'Find a ranger…') }}
+            </div>
 
             <button type="button" class="mchip ghost" data-action="roster--sheet-folds#foldAll">Fold all</button>
             <button type="button" class="mchip ghost" data-action="roster--sheet-folds#openAll">Open all</button>
@@ -313,7 +300,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for band in sheet.bands %}
+                            {% for band in sheetPage.bands %}
                                 {% set shut = band.foldKey in folded %}
                                 {# A FOLD HEAD IS A ROW and not a `<details>`: a
                                    `<details>` cannot wrap `<tr>`s, and the day
@@ -376,6 +363,7 @@
                         </tbody>
                     </table>
                 </div>
+                {{ include('@Shell/_foot.html.twig', sheetTable.foot, with_context: false) }}
 
                 {# THE KEY. The area's own shifts in the area's own colours, so
                    nobody is ever asked what a tint means. #}
@@ -400,11 +388,10 @@
        in. A swap is offered to the handset and accepted there, so the web
        app never puts a person on a watch they have not seen.
        ==================================================================== #}
-    {# ONE COLUMN, the design's: the trade above, the register under it, each the full width — two cards side by side halved the rows a trade states. #}
+    {# ONE COLUMN under the index: the trade above, the register under it, each the full width. #}
     <h2 class="zone">The swap in progress</h2>
-    <div class="grid">
 
-        <div class="c">
+        <div class="c" id="swap">
             <span class="tab">Swap a watch<span class="src">&middot; two cells, and what the trade costs</span></span>
 
             {% if offering %}
@@ -433,20 +420,32 @@
             {% endif %}
         </div>
 
-        <div class="c">
-            <span class="tab">Swaps<span class="src">&middot; this window &middot; latest {{ recent|length }}</span></span>
+        <div class="c" id="swaps">
+            <span class="tab">Swaps<span class="src">&middot; this window</span></span>
 
-            {% for swap in recent %}
-                <div class="rln">
-                    {#- THE STATION BY ITS CODE, and after the chip the design's phrase for
-                        the state. An offer's sent time is the instant its identifier was
-                        minted — a v7 uuid carries it, so no column says it twice. -#}
-                    <span><b>{{ swap.offeredTo.fullName }}</b> <span class="mono">
-                        {{- swap.state.value == 'accepted' ? 'took' : (swap.state.value in ['offered', 'waiting'] ? 'takes' : 'asked for') }}
-                        {{ swap.duty.person.fullName }}&rsquo;s {{ swap.duty.onDay.format('D j')|lower }} {{ swap.duty.shiftKey }} at {{ swap.duty.station.code }}</span></span>
-                    <span style="display:flex;align-items:center;gap:9px">
-                        <span class="chip {{ {'offered': 'acc', 'waiting': 'warn', 'accepted': 'ok', 'declined': 'fail', 'withdrawn': 'idle', 'refused': 'fail'}[swap.state.value] }}">{{ swap.state.label }}</span>
-                        <span class="mono d">
+            {# THE BAR: the state with its counts, and the search over the two
+               people and the station — the register's own keys. #}
+            {%- set states = [{label: 'All', count: swapCounts.all, href: path(here, {uuid: area.uuid}|merge(question|filter((v, k) => k != 'swaps_state'))) ~ '#swaps', on: swapFilter.state is null}] -%}
+            {%- for state in swapStates -%}
+                {%- set states = states|merge([{label: state.label, count: swapCounts[state.value]|default(0), href: path(here, {uuid: area.uuid}|merge(question)|merge({swaps_state: state.value})) ~ '#swaps', on: swapFilter.state == state.value}]) -%}
+            {%- endfor -%}
+            <div class="lfilt">
+                {{ bar.chip('Filter by state', states) }}
+                {{ bar.search(path(here, {uuid: area.uuid}) ~ '#swaps', question, 'swaps_q', swapFilter.q, 'Find a person or a post…') }}
+            </div>
+
+            {#- THE STATION BY ITS CODE, and under the chip the design's phrase for
+                the state. An offer's sent time is the instant its identifier was
+                minted — a v7 uuid carries it, so no column says it twice. -#}
+            <table class="tbl ro-tbl">
+                <thead><tr><th>Swap</th><th>Who</th><th>When</th><th></th></tr></thead>
+                <tbody>
+                {% for swap in swaps.rows %}
+                    <tr>
+                        <td><b>{{ swap.duty.person.fullName }}&rsquo;s {{ swap.duty.onDay.format('D j')|lower }} {{ swap.duty.shiftKey }}</b><span class="sub">at {{ swap.duty.station.code }}</span></td>
+                        <td><b>{{ swap.offeredTo.fullName }}</b><span class="sub">
+                            {{- swap.state.value == 'accepted' ? 'took' : (swap.state.value in ['offered', 'waiting'] ? 'takes' : 'asked for') }} it</span></td>
+                        <td><span class="chip {{ {'offered': 'acc', 'waiting': 'warn', 'accepted': 'ok', 'declined': 'fail', 'withdrawn': 'idle', 'refused': 'fail'}[swap.state.value] }}">{{ swap.state.label }}</span><span class="sub">
                             {%- if swap.state.value == 'offered' -%}
                                 sent <time datetime="{{ swap.uuid.dateTime.format('c') }}" data-localtime-format="time">{{ swap.uuid.dateTime.format('H:i') }}</time>, not answered
                             {%- elseif swap.state.value == 'accepted' -%}
@@ -460,13 +459,16 @@
                             {%- else -%}
                                 withdrawn by {{ swap.offeredBy ? swap.offeredBy.fullName : 'the duty officer' }}
                             {%- endif -%}
-                        </span>
-                    </span>
-                </div>
-            {% else %}
-                <div class="rfrag"><b>No swap in this window</b><em>every watch is standing exactly as it was filled</em></div>
-            {% endfor %}
+                        </span></td>
+                        <td class="door"><a class="more" href="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterController::PLAN_ROUTE'), {uuid: area.uuid, day: swap.duty.onDay.format('Y-m-d')}) }}">Open &rarr;</a></td>
+                    </tr>
+                {% endfor %}
+                    <tr class="ro-none"{% if swaps.rows is not empty %} hidden{% endif %}><td colspan="4">{{ swapFilter.state or swapFilter.q ? 'No swap in this window matches.' : 'No swap in this window — every watch is standing exactly as it was filled.' }}</td></tr>
+                </tbody>
+            </table>
+            {{ include('@Shell/_foot.html.twig', swaps.foot, with_context: false) }}
         </div>
 
-    </div>
+    {% endblock %}
+    {% endembed %}
 {% endblock %}

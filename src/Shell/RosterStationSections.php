@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Uhifadhi\Roster\Shell;
 
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
@@ -29,8 +30,11 @@ use Uhifadhi\Roster\Controller\RosterConfigureController;
 use Uhifadhi\Roster\Entity\Shift;
 use Uhifadhi\Roster\Entity\StationWatch;
 use Uhifadhi\Roster\Enum\RuleKind;
+use Uhifadhi\Roster\Model\AgendaRow;
 use Uhifadhi\Roster\Module\RosterModuleProvider;
+use Uhifadhi\Roster\Service\AgendaService;
 use Uhifadhi\Roster\Service\PresenceReader;
+use Uhifadhi\Roster\Service\RegisterFootService;
 use Uhifadhi\Roster\Service\RosterSettingsService;
 use Uhifadhi\Roster\Service\ShiftRuleService;
 use Uhifadhi\Roster\Service\ShiftVocabularyService;
@@ -100,6 +104,7 @@ final readonly class RosterStationSections implements StationSectionsInterface
         private ShiftRuleService $rules,
         private RosterSettingsService $settings,
         private UrlGeneratorInterface $router,
+        private RegisterFootService $feet,
         private ?CsrfTokenManagerInterface $csrfTokenManager = null,
         // A TOKEN IS A THING IN A SESSION, so it can only be issued inside
         // a request that has one. This contributor is called from a page
@@ -167,6 +172,11 @@ final readonly class RosterStationSections implements StationSectionsInterface
             variables: [
                 'watch' => $watch,
                 'presence' => $presence,
+                'table' => $this->feet->page(
+                    $this->requests?->getCurrentRequest() ?? new Request(),
+                    null === $presence ? [] : array_values(array_filter(AgendaService::rows([$presence]), static fn (AgendaRow $row): bool => \in_array($row->kind, [AgendaRow::WATCH, AgendaRow::UNREPORTED], true))),
+                    'watch', 'watches', 'watch',
+                ),
                 'shifts' => $this->labelsFor($station),
                 'day' => $today,
                 // THE RING IS THE POST'S, and this section draws the post.

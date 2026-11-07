@@ -40,6 +40,7 @@ final class SheetSeamTest extends TestCase
     private const string MENU = __DIR__.'/../../../assets/controllers/day_menu_controller.js';
 
     private const string FILL = __DIR__.'/../../../assets/controllers/fill_controller.js';
+    private const string FILTER = __DIR__.'/../../../assets/controllers/filter_controller.js';
 
     private const string PAGE = __DIR__.'/../../../templates/week/show.html.twig';
 
@@ -139,6 +140,7 @@ final class SheetSeamTest extends TestCase
             'roster--sheet-folds' => self::read(self::FOLDS),
             'roster--day-menu' => self::read(self::MENU),
             'roster--fill' => self::read(self::FILL),
+            'roster--filter' => self::read(self::FILTER),
         ];
 
         foreach ([self::PAGE, self::CELL] as $page) {

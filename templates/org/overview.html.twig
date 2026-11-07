@@ -8,6 +8,8 @@
 {% block title %}Roster · {{ scope.label }}{% endblock %}
 
 {% block roster_org_page %}
+    {{ include('@UhifadhiRoster/org/_banner.html.twig', {decisions: decisions, word: 'decision', door: {label: 'Today', route: constant('Uhifadhi\\Roster\\Controller\\RosterOrgController::TODAY_ROUTE')}}, with_context: false) }}
+
     <div class="w-grid" data-widget-dashboard>
         {% for widget in widgets %}
             {% if widget.on %}

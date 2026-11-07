@@ -3,34 +3,45 @@
    WHICH AREA IS THAT COLUMN, and it is the only thing this scope adds: the
    rows are the areas' own, read from the same service the area page calls.
 
-   THE FILTER BAR IS THE HOUSE'S GROUPED DROPDOWNS, three of them — area,
-   state, shift — and it closes with what it is letting through, so a
-   narrowed list never lies about how much it is hiding. #}
+   THE FILTER BAR IS THE HOUSE BAR, `.lfilt` — area, state, shift and the
+   search — and it closes with what the day came to, so a narrowed list
+   never lies about how much it is hiding. #}
 {% extends '@UhifadhiRoster/org/base.html.twig' %}
 
 {% block title %}Roster · today · {{ scope.label }}{% endblock %}
 
 {% block roster_org_page %}
+    {{ include('@UhifadhiRoster/org/_banner.html.twig', {decisions: decisions, word: 'answer', door: {label: 'Live', route: constant('Uhifadhi\\Roster\\Controller\\RosterOrgController::LIVE_ROUTE')}}, with_context: false) }}
+
     <div class="c">
         <span class="tab">Today, every area<span class="src">&middot; <time datetime="{{ day.format('Y-m-d') }}" data-localtime-format="day">{{ day.format('D j M')|lower }}</time> &middot; <time datetime="{{ now.format('c') }}" data-localtime-format="time">{{ now.format('H:i') }}</time></span></span>
 
-        <div class="rfrag"><b>{{ figures.expected }} due &middot; {{ figures.checkedIn }} checked in &middot; {{ figures.needingADecision }} need an answer</b><em>across {{ areas|length }} area{{ areas|length == 1 ? '' : 's' }}, counted from each area&rsquo;s own reading</em></div>
+        {{ include('@UhifadhiRoster/org/_filters.html.twig', {
+            here: constant('Uhifadhi\\Roster\\Controller\\RosterOrgController::TODAY_ROUTE'), chosen: chosen, options: options, total: options.area|reduce((sum, o) => sum + o.count, 0),
+            tail: figures.expected ~ ' due · ' ~ figures.checkedIn ~ ' checked in · ' ~ figures.needingADecision ~ ' need an answer',
+        }, with_context: false) }}
 
-        {% if rows is empty %}
-            <div class="rfrag"><b>Nobody is due in any area today</b><em>a watch is given to a post deliberately, so an empty day is a real answer</em></div>
-        {% else %}
-            <table class="tbl">
-                <tr><th>area</th><th>ranger</th><th>post</th><th>shift</th><th>state</th></tr>
-                {% for row in rows %}
-                    <tr>
-                        <td><span class="orgarea sm" data-cat="{{ row.position }}"><i></i>{{ row.areaName }}</span></td>
-                        <td><b>{{ row.person.personName }}</b></td>
-                        <td>{{ row.post.stationName }}</td>
-                        <td>{{ row.person.shiftLabel }}</td>
-                        <td>{{ row.person.state.label }}</td>
-                    </tr>
-                {% endfor %}
-            </table>
-        {% endif %}
+        <table class="tbl">
+            <thead><tr><th>Area</th><th>Ranger</th><th>Post</th><th>Shift</th><th>Check-in</th><th>State</th><th class="num">Ping age</th><th></th></tr></thead>
+            <tbody>
+            {% for row in table.rows %}
+                {%- set first = row.person.watches|first -%}
+                {%- set seen = row.person.lastSeenAt -%}
+                <tr>
+                    <td><span class="orgarea" data-cat="{{ row.position }}"><i></i>{{ row.areaName }}</span></td>
+                    <td><b>{{ row.person.personName }}</b></td>
+                    <td>{{ row.post.stationName }}</td>
+                    <td><span class="mono d">{{ row.person.shiftLabel|lower }}</span></td>
+                    <td>{% if first and first.occurredAt %}<span class="mono"><time datetime="{{ first.occurredAt.format('c') }}" data-localtime-format="time">{{ first.occurredAt.format('H:i') }}</time></span>{% else %}<span class="mono d">&mdash;</span>{% endif %}</td>
+                    <td><span class="r-ci {{ row.person.state.value }}"><i></i>{{ row.person.state.label }}</span></td>
+                    <td class="num"><span class="mono d">{% if seen %}<time datetime="{{ seen.format('c') }}" data-localtime-format="time">{{ seen.format('H:i') }}</time>{% else %}&mdash;{% endif %}</span></td>
+                    <td><a class="open-btn" href="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterController::TODAY_ROUTE'), {uuid: row.areaUuid}) }}">Open &rarr;</a></td>
+                </tr>
+            {% else %}
+                <tr><td colspan="8" class="fog">{{ chosen|filter(v => v is not null) is empty ? 'Nobody is due in any area today.' : 'Nobody matches.' }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {{ include('@Shell/_foot.html.twig', table.foot, with_context: false) }}
     </div>
 {% endblock %}

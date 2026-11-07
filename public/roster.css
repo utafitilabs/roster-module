@@ -1582,3 +1582,40 @@ select.psbs { padding-right: 24px; }
 .ap-strip { margin: 0 0 14px; border-color: color-mix(in srgb, rgb(var(--c-warn)) 45%, rgb(var(--c-ln))); }
 .ap-act { display: inline-flex; gap: 8px; align-items: center; }
 .ap-act form { margin: 0; }
+
+/* ============================================================================
+   THE TAB PAGES' REGISTERS — the design's modules/roster/roster-pages.css.
+   Every list on Today, the Day board, Live and the station record is the
+   shell's table.tbl; these are the roster's own adjustments inside it.
+   Font pairs: 13.5/700 sans the row title, the shell's mono `.sub` line
+   under it, 10.5/700 mono the chips, 11/400 mono the age of a ping.
+   ========================================================================== */
+
+/* A register lays out on its own column widths, so a long cell wraps inside
+   its column and never widens the page. */
+table.tbl.ro-tbl { table-layout: fixed; }
+table.tbl.ro-tbl td { vertical-align: middle; overflow-wrap: anywhere; }
+table.tbl.ro-tbl td.ro-end { text-align: right; }
+table.tbl.ro-tbl th { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* the roster's own chips, on the house scale while they sit in a register;
+   a narrow column wraps a chip instead of pushing past its cell */
+table.tbl .r-ci, table.tbl .r-sh { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; white-space: normal; border-radius: 10px; line-height: 1.3; }
+table.tbl .r-ping { font-size: 11px; font-weight: 400; white-space: normal; }
+
+/* a watch nobody fills, and the row a filter leaves when nothing matches */
+table.tbl tr.ro-hole td { background: color-mix(in srgb, var(--fail) 5%, transparent); }
+table.tbl tr.ro-none td { color: var(--dim); text-align: center; }
+
+/* a station a filter has taken out of the sheet, kept apart from the fold's
+   own [hidden] so neither undoes the other */
+.ro-out { display: none !important; }
+
+/* THE CALENDAR'S RANGER PICKER is the shell's searchable dropdown in the
+   month's own nav row; a narrow screen gives it the whole row. */
+.cal-nav .dd[data-dd="ranger"] { width: 300px; }
+.cal-nav .dd { flex: none; }
+@media (max-width: 640px) { .cal-nav .dd { width: 100% !important; } }
+/* the sheet head's filter bar gives its chips and its search to the head's
+   own row */
+.shead .lfilt { display: contents; }

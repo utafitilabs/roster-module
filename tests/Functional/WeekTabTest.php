@@ -121,16 +121,44 @@ final class WeekTabTest extends WebTestCase
         $swaps->withdraw($swaps->offer($duties[3], $other, $this->ada), $at);
         $this->em->flush();
 
-        $rows = $this->open()->filter('h2.zone + .grid > .c')->eq(1)->filter('.rln')->each(static fn (Crawler $r): string => html_entity_decode(preg_replace('/\s+/', ' ', trim($r->text())) ?? ''));
-        self::assertCount(4, $rows);
+        $card = $this->open()->filter('#swaps.c');
+        self::assertCount(0, $card->filter('.rln'), 'The swaps are a table, not a row list.');
+        $table = $card->filter('table.tbl');
+        self::assertCount(1, $table);
+        self::assertSame(['Swap', 'Who', 'When', ''], $table->filter('thead th')->each(static fn (Crawler $th): string => trim($th->text())));
+        $body = $table->filter('tbody tr:not(.ro-none)');
+        self::assertCount(4, $body);
+        $body->each(static function (Crawler $row): void {
+            self::assertCount(1, $row->filter('td.door a.more[href*="/modules/roster/plan"]'), 'Every swap has a door to its day.');
+            self::assertCount(1, $row->filter('td .chip'), 'The state is a chip.');
+        });
+        $rows = $body->each(static fn (Crawler $r): string => html_entity_decode(preg_replace('/\s+/', ' ', implode(' ', $r->filter('td b, td .chip, td .sub')->each(static fn (Crawler $part): string => trim($part->text())))) ?? ''));
         $all = implode("\n", $rows);
 
         self::assertStringContainsString(' at '.$this->gate->getCode(), $all, 'The station by its code.');
         self::assertStringNotContainsString(' at '.$this->gate->getName(), $all);
-        self::assertMatchesRegularExpression('/takes .* offered sent \d\d:\d\d, not answered/', $all);
-        self::assertMatchesRegularExpression('/took .* accepted accepted on the handset 16:02/', $all);
-        self::assertMatchesRegularExpression('/asked for .* declined declined 09:14 — no reason given/', $all);
-        self::assertMatchesRegularExpression('/asked for .* withdrawn withdrawn by /', $all);
+        self::assertMatchesRegularExpression('/takes it offered sent \d\d:\d\d, not answered/', $all);
+        self::assertMatchesRegularExpression('/took it accepted accepted on the handset 16:02/', $all);
+        self::assertMatchesRegularExpression('/asked for it declined declined 09:14 — no reason given/', $all);
+        self::assertMatchesRegularExpression('/asked for it withdrawn withdrawn by /', $all);
+
+        // THE BAR: the state chip with its counts, the search at the right end.
+        $bar = $card->filter('div.lfilt');
+        self::assertCount(1, $bar);
+        self::assertSame('all · 4', html_entity_decode(trim($bar->filter('details.i-dd summary .i-ddval')->text())));
+        self::assertCount(0, $bar->filter('.i-ddhead'));
+        self::assertCount(1, $bar->filter('form.lsearch input[name="swaps_q"]'));
+        self::assertCount(1, $card->filter('.rdf-foot'), 'The foot stays under the table.');
+
+        $accepted = $this->open('swaps_state=accepted')->filter('#swaps.c');
+        self::assertCount(1, $accepted->filter('table.tbl tbody tr:not(.ro-none)'));
+        $chip = $accepted->filter('div.lfilt details.i-dd summary');
+        self::assertSame('accepted · 1', html_entity_decode(trim($chip->filter('.i-ddval')->text())));
+        self::assertStringContainsString(' on', (string) $chip->attr('class'));
+
+        $none = $this->open('swaps_q=nobody')->filter('#swaps.c');
+        self::assertCount(0, $none->filter('table.tbl tbody tr:not(.ro-none)'));
+        self::assertCount(1, $none->filter('table.tbl tbody tr.ro-none'));
     }
 
     private function aStation(string $name, string $code): Station
@@ -211,12 +239,12 @@ final class WeekTabTest extends WebTestCase
     /** TWO WEEKS IS THE DEFAULT, and the chip moves it to one or four. */
     public function testTheWindowIsTwoWeeksAndTheChipResizesIt(): void
     {
-        self::assertCount(14, $this->open()->filter('thead th:not(.who)'));
-        self::assertCount(7, $this->open('weeks=1')->filter('thead th:not(.who)'));
-        self::assertCount(28, $this->open('weeks=4')->filter('thead th:not(.who)'));
+        self::assertCount(14, $this->open()->filter('table.csheet thead th:not(.who)'));
+        self::assertCount(7, $this->open('weeks=1')->filter('table.csheet thead th:not(.who)'));
+        self::assertCount(28, $this->open('weeks=4')->filter('table.csheet thead th:not(.who)'));
         // AND THERE IS NO THREE: anything between is a stretched fortnight,
         // so an asked-for three falls back rather than drawing one.
-        self::assertCount(14, $this->open('weeks=3')->filter('thead th:not(.who)'));
+        self::assertCount(14, $this->open('weeks=3')->filter('table.csheet thead th:not(.who)'));
     }
 
     /** AND THE WEEKS ARE REMEMBERED, per person. */
@@ -225,7 +253,7 @@ final class WeekTabTest extends WebTestCase
         $this->open('weeks=4');
         $this->em->clear();
 
-        self::assertCount(28, $this->open()->filter('thead th:not(.who)'), 'Coming back gets the month back.');
+        self::assertCount(28, $this->open()->filter('table.csheet thead th:not(.who)'), 'Coming back gets the month back.');
 
         $remembered = $this->em->getRepository(SheetPreference::class)->findAll();
         self::assertCount(1, $remembered);
@@ -317,7 +345,20 @@ final class WeekTabTest extends WebTestCase
 
         self::assertCount(1, $crawler->filter('tr.stfold'));
         self::assertStringContainsString('north gate post', $crawler->filter('tr.stfold')->text());
-        self::assertCount(3, $crawler->filter('.i-ddmenu[aria-label="station"] .i-ddopt'), 'All stations, plus the two.');
+        $station = $crawler->filter('.shead .lfilt details.i-dd')->first();
+        self::assertCount(3, $station->filter('a.i-ddopt'), 'All stations, plus the two.');
+        self::assertMatchesRegularExpression('/^north gate post · 2$/', html_entity_decode(trim($station->filter('summary .i-ddval')->text())));
+        self::assertStringContainsString(' on', (string) $station->filter('summary')->attr('class'), 'The chosen chip narrows.');
+    }
+
+    /** THE SEARCH NARROWS THE SHEET to the rangers it names. */
+    public function testTheSearchNarrowsTheSheet(): void
+    {
+        $crawler = $this->open('q=bea');
+
+        $names = $crawler->filter('tr.strow td.who b')->each(static fn (Crawler $b): string => trim($b->text()));
+        self::assertSame(['Bea Example'], $names);
+        self::assertSame('bea', $crawler->filter('.shead .lfilt form.lsearch input[name="q"]')->attr('value'));
     }
 
     /** FILLING FROM A PATTERN WRITES THE DAYS, and says how many. */
@@ -437,5 +478,46 @@ final class WeekTabTest extends WebTestCase
             'No station is on the area’s books',
             $this->open()->filter('body')->text(),
         );
+    }
+
+    /** THE SHEET AND THE SWAPS EACH CARRY THE REGISTER FOOT, paged by their own keys. */
+    public function testTheSheetAndTheSwapsCarryTheRegisterFoot(): void
+    {
+        $crawler = $this->open();
+
+        foreach (['#sheet' => 'sheet', '#swaps' => 'swaps'] as $card => $key) {
+            $foot = $crawler->filter($card.' .rdf-foot');
+            self::assertCount(1, $foot, $card);
+            self::assertSame('page 1 of 1', trim($foot->filter('.rdf-page')->text()), $card);
+            self::assertStringContainsString($key.'_per=50', (string) $foot->filter('.rdf-size a.i-ddopt')->eq(1)->attr('href'), $card);
+        }
+    }
+
+    /** THE SHEET PAGES TWENTY RANGERS AT A TIME, the bands kept over the rows they hold. */
+    public function testTheSheetPagesTwentyRangersAtATime(): void
+    {
+        for ($i = 1; $i <= 21; ++$i) {
+            $ranger = new User()->setPassword('x')->setEmail(\sprintf('sheet%02d@example.test', $i))->setFirstName('Sheet')->setLastName(\sprintf('%02d', $i));
+            $this->em->persist($ranger);
+            $this->em->persist(
+                new Posting()->setStation($this->gate)->setPerson($ranger)
+                    ->setSince(new \DateTimeImmutable('-1 year'))->setSource(PostingSource::WrittenHere),
+            );
+        }
+        $this->em->flush();
+
+        $first = $this->open();
+        $rangers = $first->filter('#sheet .rdf-foot')->text();
+        self::assertStringStartsWith('page 1 of 2', trim($first->filter('#sheet .rdf-page')->text()), $rangers);
+        $next = $first->filter('#sheet .rdf-page a[aria-label="Next page"]');
+        self::assertCount(1, $next);
+        self::assertStringContainsString('sheet_page=2', (string) $next->attr('href'));
+        self::assertCount(20, $first->filter('#sheet tbody tr.strow'));
+        self::assertStringContainsString('23 rangers', $rangers);
+
+        $second = $this->client->request('GET', (string) $next->attr('href'));
+        self::assertResponseIsSuccessful();
+        self::assertStringStartsWith('page 2 of 2', trim($second->filter('#sheet .rdf-page')->text()));
+        self::assertCount(3, $second->filter('#sheet tbody tr.strow'));
     }
 }

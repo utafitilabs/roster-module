@@ -1,0 +1,34 @@
+{# THE HOUSE FILTER BAR'S PARTS — `.lfilt`, drawn the way the Patrols bar
+   draws it. The roster filters on the server, so every option is a link
+   carrying the whole question and the search is a GET form that keeps it.
+
+   An axis is a list of options, the first being "all": the chip names the
+   chosen option and its count, and reads `on` only when it narrows. #}
+
+{# options: [{label, count, href, on}] #}
+{% macro chip(aria, options) %}
+    {%- set chosen = options|filter(option => option.on)|first ?: options|first -%}
+    {%- set narrows = not (options|first).on -%}
+    <details class="i-dd">
+        <summary class="mchip i-ddt{{ narrows ? ' on' }}">
+            <span class="i-ddval">{{ chosen.label|lower }}{% if chosen.count is not null %} &middot; {{ chosen.count }}{% endif %}</span><span class="i-ddcaret">&#9662;</span>
+        </summary>
+        <div class="i-ddmenu" aria-label="{{ aria }}">
+            {%- for option in options %}
+                <a class="i-ddopt{{ option.on ? ' on' }}" href="{{ option.href }}"><span class="i-ddopt-l">{{ option.label|lower }}</span>
+                    {%- if option.count is not null %}<span class="i-ddopt-n">{{ option.count }}</span>{% endif -%}
+                </a>
+                {%- if loop.first and not loop.last %}<span class="i-ddsep"></span>{% endif %}
+            {%- endfor %}
+        </div>
+    </details>
+{% endmacro %}
+
+{# query: every other choice the page carries, kept as hidden fields #}
+{% macro search(action, query, name, value, placeholder) %}
+    <form class="lsearch" method="get" action="{{ action }}" role="search">
+        {%- for key, kept in query %}{% if key != name and kept is not null and kept != '' %}<input type="hidden" name="{{ key }}" value="{{ kept }}">{% endif %}{% endfor %}
+        {{ ux_icon('roster:search') }}
+        <input class="fld" type="search" name="{{ name }}" value="{{ value }}" placeholder="{{ placeholder }}" aria-label="{{ placeholder }}">
+    </form>
+{% endmacro %}

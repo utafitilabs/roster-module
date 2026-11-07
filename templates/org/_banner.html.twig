@@ -1,0 +1,19 @@
+{# WHAT NEEDS SOMEBODY, ORG-WIDE, as the banner above the content: how many
+   and in how many areas, then who and why, and one door. Drawn only when
+   something waits. `word` is what the page calls it — a decision on the
+   Overview, an answer on Today and Live — and `door` is {label, route}. #}
+{%- if decisions is not empty -%}
+    {%- set n = decisions|length -%}
+    {%- set inAreas = decisions|map(row => row.areaName)|reduce((carry, name) => name in carry ? carry : carry|merge([name]), [])|length -%}
+    {%- set shown = decisions|slice(0, 4) -%}
+    {%- set cause = '—' -%}
+    {%- for row in shown -%}
+        {%- set cause = cause ~ ' ' ~ row.decision.who ~ ', ' ~ row.decision.kindLabel ~ ' in ' ~ row.areaName ~ (loop.last ? '' : (loop.revindex0 == 1 and n == shown|length ? ' and' : ';')) -%}
+    {%- endfor -%}
+    {%- set cause = n > shown|length ? cause ~ ', and ' ~ (n - shown|length) ~ ' more' : cause -%}
+    {{ include('@Shell/_banner.html.twig', {
+        title: n ~ ' need' ~ (n == 1 ? 's' : '') ~ ' ' ~ (word == 'answer' ? 'an' : 'a') ~ ' ' ~ word ~ ', in ' ~ inAreas ~ ' area' ~ (inAreas == 1 ? '' : 's'),
+        text: cause,
+        actions: {(door.label): path(door.route)},
+    }, with_context: false) }}
+{%- endif -%}

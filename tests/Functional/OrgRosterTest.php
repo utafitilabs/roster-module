@@ -177,15 +177,87 @@ final class OrgRosterTest extends WebTestCase
         }
     }
 
-    /** TODAY NAMES THE AREA ON EVERY ROW. */
+    /** TODAY NAMES THE AREA ON EVERY ROW, in the design's columns. */
     public function testTodayNamesTheAreaOnEveryRow(): void
     {
-        $rows = $this->open(RosterOrgController::TODAY_ROUTE)->filter('table.tbl tr')->slice(1);
+        $table = $this->open(RosterOrgController::TODAY_ROUTE)->filter('.c table.tbl');
+        self::assertSame(
+            ['Area', 'Ranger', 'Post', 'Shift', 'Check-in', 'State', 'Ping age', ''],
+            $table->filter('thead th')->each(static fn (Crawler $th): string => trim($th->text())),
+        );
 
+        $rows = $table->filter('tbody tr');
         self::assertGreaterThan(0, $rows->count());
         $rows->each(static function (Crawler $row): void {
             self::assertCount(1, $row->filter('.orgarea'), 'A row at this scope says which area it is about.');
         });
+    }
+
+    /**
+     * TODAY'S FILTER ROW is the shell's three dropdowns, area, state and
+     * shift, and closes with what the day came to; choosing an area keeps
+     * that area's rows only.
+     */
+    public function testTodaysFilterRowNarrowsTheRows(): void
+    {
+        $crawler = $this->open(RosterOrgController::TODAY_ROUTE);
+
+        $row = $crawler->filter('.c div.lfilt');
+        self::assertCount(1, $row);
+        self::assertCount(0, $row->filter('.dd'));
+        self::assertCount(0, $crawler->filter('[data-controller~="roster--filter"]'));
+        $chips = $row->filter('details.i-dd summary.mchip.i-ddt .i-ddval')->each(static fn (Crawler $v): string => html_entity_decode(trim($v->text())));
+        self::assertCount(3, $chips);
+        self::assertMatchesRegularExpression('/^all areas · \d+$/', $chips[0]);
+        self::assertMatchesRegularExpression('/^every state · \d+$/', $chips[1]);
+        self::assertMatchesRegularExpression('/^every shift · \d+$/', $chips[2]);
+        self::assertCount(0, $row->filter('.i-ddhead'));
+        self::assertCount(1, $row->filter('form.lsearch input[name="q"]'));
+        self::assertMatchesRegularExpression('/^\d+ due · \d+ checked in · \d+ need an answer$/', html_entity_decode(trim($row->filter('.lfilt-n')->text())));
+        self::assertCount(0, $crawler->filter('.factband'), 'The band is the Overview\'s.');
+
+        $first = (string) $this->areas[0]->getName();
+        $narrowed = $this->open(RosterOrgController::TODAY_ROUTE, ['area' => $first]);
+        $names = array_unique($narrowed->filter('.c table.tbl tbody .orgarea')->each(static fn (Crawler $a): string => trim($a->text())));
+        self::assertSame([$first], array_values($names));
+        $chip = $narrowed->filter('.lfilt details.i-dd summary')->first();
+        self::assertStringStartsWith(mb_strtolower($first).' · ', html_entity_decode(trim($chip->filter('.i-ddval')->text())));
+        self::assertStringContainsString(' on', (string) $chip->attr('class'));
+
+        $nobody = $this->open(RosterOrgController::TODAY_ROUTE, ['q' => 'nobody by this name']);
+        self::assertCount(0, $nobody->filter('.c table.tbl tbody .orgarea'));
+    }
+
+    /** LIVE'S RANGERS CARRY THE SAME BAR, and choosing an area keeps its rows only. */
+    public function testLivesRangersCarryTheHouseBar(): void
+    {
+        $crawler = $this->open(RosterOrgController::LIVE_ROUTE);
+
+        $row = $crawler->filter('.c div.lfilt');
+        self::assertCount(1, $row);
+        self::assertCount(3, $row->filter('details.i-dd summary.mchip.i-ddt'));
+        self::assertCount(1, $row->filter('form.lsearch input[name="q"]'));
+        $row->filter('a.i-ddopt')->each(static function (Crawler $option): void {
+            self::assertStringContainsString('/roster/live', (string) $option->attr('href'));
+        });
+
+        $first = (string) $this->areas[0]->getName();
+        $narrowed = $this->open(RosterOrgController::LIVE_ROUTE, ['area' => $first]);
+        $names = array_unique($narrowed->filter('.c table.tbl tbody .orgarea')->each(static fn (Crawler $a): string => trim($a->text())));
+        self::assertSame([$first], array_values($names));
+        self::assertCount(1, $narrowed->filter('.rdf-foot'), 'The foot stays under the table.');
+    }
+
+    /** WHAT NEEDS AN ANSWER IS THE BANNER on Today and Live; on the Overview it needs a decision. */
+    public function testAttentionIsTheBannerOnEveryOrgPage(): void
+    {
+        foreach ([[RosterOrgController::OVERVIEW_ROUTE, 'decision', 'Today'], [RosterOrgController::TODAY_ROUTE, 'answer', 'Live'], [RosterOrgController::LIVE_ROUTE, 'answer', 'Today']] as [$route, $word, $door]) {
+            $banner = $this->open($route)->filter('.banner');
+            self::assertCount(1, $banner, $route);
+            self::assertMatchesRegularExpression('/^\d+ needs? an? '.$word.', in \d+ areas?$/', trim($banner->filter('.banner-t > b')->text()), $route);
+            self::assertSame($door, trim($banner->filter('.banner-acts a.btn')->text()), $route);
+        }
+        self::assertCount(0, $this->open(RosterOrgController::OVERVIEW_ROUTE)->filter('[data-w="decisions"]'), 'No card says it again.');
     }
 
     /** THE ORGANIZATION'S LIVE PAGE STREAMS every area in scope, one topic each. */
@@ -212,17 +284,36 @@ final class OrgRosterTest extends WebTestCase
         self::assertCount(1, $overview->filter('[data-w="kpis"] a.more[href="'.$router->generate(RosterOrgController::LIVE_ROUTE).'"]'));
     }
 
-    /** AND LIVE DRAWS ONE PLATE, with the map sheet the page owes it. */
-    public function testLiveDrawsOnePlateAndLinksTheMapSheet(): void
+    /**
+     * AND LIVE IS TWO COLUMNS: the map, and the rangers of every area beside
+     * it, with the map sheet the page owes it.
+     */
+    public function testLiveDrawsTheMapAndTheRangersBesideIt(): void
     {
         $live = $this->open(RosterOrgController::LIVE_ROUTE);
 
+        self::assertCount(0, $live->filter('h2.zone'));
+        $columns = $live->filter('.grid.g32 > .c');
+        self::assertCount(2, $columns);
+        self::assertStringStartsWith('Every area, live', trim($columns->eq(0)->filter('.tab')->text()));
+        self::assertStringStartsWith('Rangers, every area', trim($columns->eq(1)->filter('.tab')->text()));
         self::assertSame(
-            ['The plate first', 'Needs an answer, everywhere'],
-            $live->filter('h2.zone')->each(static fn (Crawler $h): string => trim($h->text())),
+            ['Area', 'Ranger', 'Post', 'Presence', 'Ping age'],
+            $columns->eq(1)->filter('table.tbl thead th')->each(static fn (Crawler $th): string => trim($th->text())),
         );
 
         $sheets = $live->filter('link[rel="stylesheet"]')->each(static fn (Crawler $l): string => (string) $l->attr('href'));
         self::assertNotEmpty(array_filter($sheets, static fn (string $href): bool => str_contains($href, 'map')));
+    }
+
+    /** THE ORGANIZATION'S TODAY AND LIVE TABLES CARRY THE REGISTER FOOT. */
+    public function testTheOrgTablesCarryTheRegisterFoot(): void
+    {
+        foreach ([RosterOrgController::TODAY_ROUTE, RosterOrgController::LIVE_ROUTE] as $route) {
+            $foot = $this->open($route)->filter('.c table.tbl + .rdf-foot');
+            self::assertCount(1, $foot, $route);
+            self::assertSame('page 1 of 1', trim($foot->filter('.rdf-page')->text()), $route);
+            self::assertStringContainsString('rangers_per=50', (string) $foot->filter('.rdf-size a.i-ddopt')->eq(1)->attr('href'), $route);
+        }
     }
 }

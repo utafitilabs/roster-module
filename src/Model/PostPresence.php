@@ -46,6 +46,8 @@ final readonly class PostPresence
         public int $flagged,
         public PostState $state,
         public ?int $silentFor = null,
+        /** The station's call sign, the area's; null where the area gave it none. */
+        public ?string $stationCode = null,
     ) {
     }
 

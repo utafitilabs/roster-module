@@ -65,12 +65,12 @@ final class SwapRepository extends ServiceEntityRepository
     /**
      * THE LATEST OFFERS OVER A WINDOW, in whatever state they ended in.
      *
-     * Bounded by the caller, because a card never grows with its data: the
-     * register shows the latest few and says how many there were.
+     * Bounded by the caller where a card shows the latest few; null reads
+     * them all, for the register foot to page.
      *
      * @return list<Swap>
      */
-    public function findRecentBetween(AreaOfInterest $area, \DateTimeImmutable $from, \DateTimeImmutable $through, int $limit): array
+    public function findRecentBetween(AreaOfInterest $area, \DateTimeImmutable $from, \DateTimeImmutable $through, ?int $limit = null): array
     {
         /** @var list<Swap> $swaps */
         $swaps = $this->createQueryBuilder('s')
@@ -97,7 +97,7 @@ final class SwapRepository extends ServiceEntityRepository
      *
      * @return list<Swap>
      */
-    public function findInvolving(string $personUuid, \DateTimeImmutable $from, \DateTimeImmutable $through, int $limit): array
+    public function findInvolving(string $personUuid, \DateTimeImmutable $from, \DateTimeImmutable $through, ?int $limit = null): array
     {
         /** @var list<Swap> $swaps */
         $swaps = $this->createQueryBuilder('s')

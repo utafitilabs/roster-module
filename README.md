@@ -75,6 +75,8 @@ fortnight without the org chart quietly rewriting itself.
 | One ranger's month, fed to the house calendar | `src/Service/RosterCalendar.php` |
 | The day as a wall | `src/Service/DayBoardService.php` |
 | Rotation · Watches · Settings | `src/Controller/RosterConfigureController.php` |
+| The Calendar's ranger picker, sent as its GET form | `assets/controllers/filter_controller.js` |
+| One page of a register, and the foot under it | `src/Service/RegisterFootService.php` |
 | The module's own vocabulary | `public/roster.css` |
 | Static service wiring | `config/services.php` |
 | Test installation | `tests/Integration/TestKernel.php` |
@@ -122,7 +124,8 @@ it is missing:
 "@uhifadhi/roster-module": {
     "rotation": { "enabled": true, "fetch": "eager" },   // the cycle editor
     "now-line":  { "enabled": true, "fetch": "eager" },  // the day board's line at "now"
-    "bound":     { "enabled": true, "fetch": "eager" }   // one height for every bounded card
+    "bound":     { "enabled": true, "fetch": "eager" },  // one height for every bounded card
+    "filter":    { "enabled": true, "fetch": "eager" }   // the Calendar's ranger picker sends its form
 }
 ```
 

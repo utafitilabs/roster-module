@@ -23,44 +23,12 @@
 {% block roster_trail_tail %} <a href="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterController::OVERVIEW_ROUTE'), {uuid: area.uuid}) }}">roster</a> / calendar{% endblock %}
 
 {% block roster_page %}
-    {{ include('@UhifadhiRoster/_identity_band.html.twig') }}
-
     {% if chosen is null %}
         <div class="c">
             <span class="tab">The month</span>
             <div class="rfrag"><b>No rotation in this area draws from anybody yet</b><em>a month is one ranger&rsquo;s watches, and there is nobody in a pool to show one for</em></div>
         </div>
     {% else %}
-        <div class="grid kstrip">
-            <div class="c kpi hot" data-kpi="watches">
-                <span class="tab">Watches this month</span>
-                <b class="disp">{{ figures.watches }}<em>of {{ figures.daysInMonth }} days</em></b>
-                <span class="sub">{{ figures.nights }} night{{ figures.nights == 1 ? '' : 's' }} &middot; {{ figures.days }} day{{ figures.days == 1 ? '' : 's' }}</span>
-            </div>
-            <div class="c kpi" data-kpi="verified">
-                <span class="tab">Verified</span>
-                <b class="disp">{{ figures.verified }}<em>of {{ figures.worked }} worked</em></b>
-                <span class="sub">the pings agreed with the post</span>
-            </div>
-            {# UNVERIFIED AND NO CHECK-IN ARE ONE CARD — a row is four,
-               never five — and the fragment says which is which, because
-               a claim the pings disagreed with and a day nothing arrived
-               for are two different conversations to have. #}
-            <div class="c kpi{{ figures.needsAnAnswer > 0 ? ' bad' : '' }}" data-kpi="needs-an-answer">
-                <span class="tab">Needs an answer</span>
-                <b class="disp">{{ figures.needsAnAnswer }}</b>
-                <span class="sub">
-                    {%- if figures.needsAnAnswer > 0 %}<span class="r">{{ figures.unverified }} unverified &middot; {{ figures.noCheckIn }} never explained</span>
-                    {%- else %}every past watch was reported and borne out{% endif -%}
-                </span>
-            </div>
-            <div class="c kpi" data-kpi="nights-in-a-row">
-                <span class="tab">Nights in a row, most</span>
-                <b class="disp">{{ figures.longestNightRun }}</b>
-                <span class="sub">{% if figures.longestNightRun > 0 %}the longest run the ring produced{% else %}no night watch this month{% endif %}</span>
-            </div>
-        </div>
-
         <h2 class="zone">{{ chosen.name }} &mdash; {{ month.label|lower }}</h2>
         <div class="c">
             {# THE CAPTION CARRIES WHO, WHAT THEY ARE AND WHERE — the design's
@@ -69,28 +37,21 @@
             <span class="tab">The month<span class="src">&middot; {{ chosen.name }}{% if chosen.role %} &middot; {{ chosen.role }}{% endif %}{% if chosen.post %} &middot; {{ chosen.post }}{% endif %} &middot; {{ figures.watches }} watch{{ figures.watches == 1 ? '' : 'es' }} &middot; {{ figures.nights }} night{{ figures.nights == 1 ? '' : 's' }}</span></span>
             {% if chosen.postUrl %}<a class="more" href="{{ chosen.postUrl }}">The post &rarr;</a>{% endif %}
 
-            {# THE RANGER PICKER — the house's grouped dropdown, which is a
-               `<details>`: the browser opens it, and a panel rendered as a
-               div is a panel rendered OPEN. Every option is a real link, so
-               a chosen ranger is a url somebody can send.
-
-               IT RIDES IN THE MONTH'S OWN NAV ROW, through the atlas's
-               `controls` slot — one line, the stepper at the left and this
-               at the right, as the design draws it. It had a row of its
-               own until the slot landed. #}
+            {# THE RANGER PICKER — the shell's dropdown, searchable, in the
+               month's own nav row through the atlas's `controls` slot. It is
+               a GET form: a choice is carried into its field and sent
+               (`roster--filter`), so a chosen ranger is an address somebody
+               can send, and the month stays the one on screen. #}
             {% set rangerPicker %}
-                <details class="i-dd">
-                    <summary class="mchip i-ddt">
-                        <span class="i-ddval">{{ chosen.name|lower }}{% if chosen.post %} &middot; {{ chosen.post|lower }}{% endif %}</span><span class="i-ddcaret">&#9662;</span>
-                    </summary>
-                    <div class="i-ddmenu" aria-label="Choose a ranger">
-                        <span class="i-ddhead">ranger</span>
-                        {% for person in people %}
-                            <a class="i-ddopt{{ person.uuid == chosen.uuid ? ' on' : '' }}"
-                               href="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterController::CALENDAR_ROUTE'), {uuid: area.uuid, ranger: person.uuid, month: month.year ~ '-' ~ '%02d'|format(month.month)}) }}"><span class="i-dot"></span><span class="i-ddopt-l">{{ person.name }}</span></a>
-                        {% endfor %}
-                    </div>
-                </details>
+                <form method="get" action="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterController::CALENDAR_ROUTE'), {uuid: area.uuid}) }}" data-controller="roster--filter" data-action="uhifadhi--shell-bundle--dropdown:choose->roster--filter#chosen">
+                    <input type="hidden" name="month" value="{{ month.year ~ '-' ~ '%02d'|format(month.month) }}">
+                    <input type="hidden" name="ranger" value="{{ chosen.uuid }}">
+                    {{ include('@Shell/_dropdown.html.twig', {
+                        name: 'ranger', label: 'Choose a ranger', icon: 'shell:user-round', default: chosen.uuid, value: chosen.uuid,
+                        searchable: true, end: true, search: 'Find a ranger…', none: 'No ranger matches.',
+                        groups: [{label: 'Rangers', options: people|map(person => {value: person.uuid, label: person.name, count: null})}],
+                    }, with_context: false) }}
+                </form>
             {% endset %}
 
             {# The feed is handed over by the controller rather than reached

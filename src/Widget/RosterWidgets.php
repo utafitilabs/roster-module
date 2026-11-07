@@ -55,7 +55,7 @@ final class RosterWidgets implements WidgetSurfaceInterface
     /** What the composition this module ships with is CALLED when it leads the preset strip. */
     public const string DEFAULT_LABEL = 'The roster dashboard';
 
-    public const string DEFAULT_DESCRIPTION = 'What the module ships with: the day\'s figures, then what needs a decision, then the posts and who the pings put on them, then the plate. The direction-neutral screen — adopt one of the five below to lead with something sharper.';
+    public const string DEFAULT_DESCRIPTION = 'What the module ships with: the day\'s figures, then the posts and who the pings put on them, then who is reporting right now; what needs a decision is the banner above them. The direction-neutral screen — adopt one of the five below to lead with something sharper.';
 
     public function catalog(): WidgetCatalog
     {
@@ -103,13 +103,15 @@ final class RosterWidgets implements WidgetSurfaceInterface
     {
         return [
             new Widget('kpis', 'The day\'s check-ins', 'a', 12, [12, 9, 6], on: true, note: 'Check-ins in, verified at a post, flagged, missing, and the posts still reporting.'),
-            new Widget('decisions', 'Needs a decision', 'b', 12, [12, 9], on: true, note: 'Every ranger and every watch that needs somebody to act: a missing check-in, a claim the device disagrees with, a hole.'),
             new Widget('stations', 'Stations & who is actually on', 'b', 12, [12, 9, 6], on: true, note: 'One banded row per post that runs a watch: who was rostered, who the pings put there, and the way into the area\'s record.'),
             // WHO IS REPORTING, NOT WHERE (ruled 2026-09-26): the area's marks
             // are the area overview's and the Live tab's to draw, so the
             // shipped composition carries this list and its door to the plate.
             new Widget('live', 'Reporting right now', 'e', 12, [12, 6], on: true, note: 'Who is on a watch this minute, with the age of their last ping, and the way to the live plate.'),
             // ---- in the library, off the shipped composition ----
+            // WHAT NEEDS A DECISION is the banner above the band on the
+            // Overview; the card stays in the library for a surface that wants it.
+            new Widget('decisions', 'Needs a decision', 'b', 12, [12, 9], on: false, note: 'Every ranger and every watch that needs somebody to act: a missing check-in, a claim the device disagrees with, a hole.'),
             new Widget('day', 'The day board', 'a', 12, [12, 9], on: false, note: 'Twenty-four hours across, one station per row, a block per watch and a line at now.'),
             new Widget('handover', 'Next shift change', 'a', 6, [12, 6], on: false, note: 'Who goes off at the shift change, who comes on, and what the outgoing watch has to hand over.'),
             new Widget('offline', 'Silent & offline', 'b', 6, [12, 6], on: false, note: 'Every station that is late, silent or offline, with how long it has been that way.'),

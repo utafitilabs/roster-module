@@ -16,6 +16,7 @@ namespace Uhifadhi\Roster\Tests\Functional;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\DomCrawler\Crawler;
 use Uhifadhi\Bundle\AreaBundle\Entity\AreaOfInterest;
 use Uhifadhi\Bundle\AreaBundle\Entity\Station;
 use Uhifadhi\Bundle\TeamBundle\Entity\User;
@@ -102,7 +103,7 @@ use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
         $this->em->flush();
     }
 
-    private function open(): \Symfony\Component\DomCrawler\Crawler
+    private function open(): Crawler
     {
         $user = $this->em->getRepository(User::class)->findOneBy(['email' => FixedManageVoter::MANAGER_EMAIL]);
         self::assertInstanceOf(User::class, $user);
@@ -117,18 +118,26 @@ use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
         return $crawler;
     }
 
-    /** THE FOUR KPI CARDS the design names, in its order — four, never five. */
-    public function testTheStripDrawsTheDesignsFourCards(): void
+    /** NO STRIP AND NO FIGURES: they are the Overview's. */
+    public function testThePageCarriesNoStripAndNoFigures(): void
     {
         $crawler = $this->open();
 
-        $cards = $crawler->filter('.kstrip .c.kpi');
-        self::assertCount(4, $cards, 'A KPI row is four cards, never five.');
+        self::assertCount(0, $crawler->filter('.factband'));
+        self::assertCount(0, $crawler->filter('.kpi'));
+    }
 
-        self::assertSame(
-            ['rostered-now', 'verified', 'needs-an-answer', 'posts-reporting'],
-            $cards->each(static fn (\Symfony\Component\DomCrawler\Crawler $card): string => (string) $card->attr('data-kpi')),
-        );
+    /** THE INDEX, one row per card: the board, then who is here now with its count. */
+    public function testTheIndexNamesTheBoardAndHereNow(): void
+    {
+        $crawler = $this->open();
+
+        $rows = $crawler->filter('.onpage-nav a.onpage-row');
+        self::assertSame(['#board', '#presence'], $rows->each(static fn (Crawler $row): string => (string) $row->attr('href')));
+        self::assertSame(['The day board', 'Here now'], $rows->each(static fn (Crawler $row): string => trim($row->filter('.onpage-l')->text())));
+        self::assertSame('1', trim($rows->eq(1)->filter('.onpage-n')->text()), 'Here now counts the posts it lists.');
+        self::assertCount(1, $crawler->filter('.onpage-main #board.c'));
+        self::assertCount(1, $crawler->filter('.onpage-main #presence.c'));
     }
 
     /** THE FILTER ROW, the same one the agenda wears, pointed at this page. */
@@ -136,14 +145,19 @@ use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
     {
         $crawler = $this->open();
 
-        $row = $crawler->filter('form.lfilt');
+        $row = $crawler->filter('.onpage-main > div.lfilt');
         self::assertCount(1, $row);
-        self::assertCount(3, $row->filter('details.i-dd'));
-        self::assertCount(1, $row->filter('.lsearch input[name="q"]'));
+        self::assertCount(0, $row->filter('.dd'));
+        self::assertCount(3, $row->filter('details.i-dd > summary.mchip.i-ddt'));
+        self::assertCount(0, $row->filter('.i-ddhead'));
+        $row->filter('a.i-ddopt')->each(static function (Crawler $option): void {
+            self::assertStringContainsString('/modules/roster/board', (string) $option->attr('href'));
+        });
+        self::assertCount(1, $row->filter('form.lsearch input[name="q"]'));
 
         self::assertStringContainsString(
             '/board',
-            (string) $row->attr('action'),
+            (string) $row->filter('form.lsearch')->attr('action'),
             'The row re-queries the page it is on, not the agenda.',
         );
     }
@@ -155,7 +169,7 @@ use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
 
         self::assertSame(
             ['The day, hour by hour', 'Who is actually on those posts'],
-            $crawler->filter('h2.zone')->each(static fn (\Symfony\Component\DomCrawler\Crawler $h): string => trim($h->text())),
+            $crawler->filter('h2.zone')->each(static fn (Crawler $h): string => trim($h->text())),
         );
     }
 
@@ -170,7 +184,7 @@ use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
         self::assertCount(1, $crawler->filter('.r-day'));
         self::assertSame(
             ['00', '03', '06', '09', '12', '15', '18', '21'],
-            $crawler->filter('.r-ruler .hrs span')->each(static fn (\Symfony\Component\DomCrawler\Crawler $h): string => trim($h->text())),
+            $crawler->filter('.r-ruler .hrs span')->each(static fn (Crawler $h): string => trim($h->text())),
         );
 
         $line = $crawler->filter('.r-now');
@@ -219,7 +233,7 @@ use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
     {
         $crawler = $this->open();
 
-        $card = $crawler->filter('.c[data-controller="roster--bound"]')->reduce(static fn (\Symfony\Component\DomCrawler\Crawler $c): bool => $c->filter('.r-day')->count() > 0);
+        $card = $crawler->filter('.c[data-controller="roster--bound"]')->reduce(static fn (Crawler $c): bool => $c->filter('.r-day')->count() > 0);
         self::assertCount(1, $card);
         self::assertSame('roster--bound', $card->attr('data-controller'));
 
@@ -233,15 +247,14 @@ use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
     {
         $crawler = $this->open();
 
-        $card = $crawler->filter('.c[data-controller="roster--bound"]')->reduce(static fn (\Symfony\Component\DomCrawler\Crawler $c): bool => $c->filter('.r-preslist')->count() > 0);
-        self::assertCount(1, $card);
+        $card = $crawler->filter('#presence.c');
         self::assertSame('roster--bound', $card->attr('data-controller'));
         self::assertStringStartsWith('Here now, against the watch', trim($card->filter('.tab')->text()));
 
-        $list = $card->filter('.r-preslist');
-        self::assertStringContainsString('rscroll', (string) $list->attr('class'));
-        self::assertSame('scroller', $list->attr('data-roster--bound-target'));
-        self::assertCount(0, $list->filter('.tab'), 'The head stays outside the scroll.');
+        $scroller = $card->filter('.rscroll');
+        self::assertSame('scroller', $scroller->attr('data-roster--bound-target'));
+        self::assertCount(1, $scroller->filter('table.tbl.ro-tbl'), 'The register is what scrolls.');
+        self::assertCount(0, $scroller->filter('.tab'), 'The head stays outside the scroll.');
     }
 
     /** A NIGHT WATCH IS TWO BLOCKS — the morning tail of last night's. */
@@ -252,24 +265,38 @@ use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
         $blocks = $crawler->filter('.r-track .r-blk');
         self::assertGreaterThan(0, $blocks->count());
 
-        $lefts = $blocks->each(static fn (\Symfony\Component\DomCrawler\Crawler $b): string => (string) $b->attr('style'));
+        $lefts = $blocks->each(static fn (Crawler $b): string => (string) $b->attr('style'));
         self::assertNotEmpty(array_filter($lefts, static fn (string $style): bool => str_contains($style, 'left:0')));
     }
 
     /**
-     * THE SECOND CARD IS THE MEASUREMENT, and it keeps the plan and the
-     * pings in two columns rather than folding them into one verdict.
+     * THE SECOND CARD IS THE MEASUREMENT, the house register: which post,
+     * what the pings say about its people, and how many of its expectation
+     * they bear out — three columns, never one verdict.
      */
-    public function testThePresenceCardKeepsRosteredAndMeasuredApart(): void
+    public function testThePresenceRegisterKeepsRosteredAndMeasuredApart(): void
     {
         $crawler = $this->open();
 
-        $rows = $crawler->filter('.r-preslist .r-pres');
-        self::assertGreaterThan(0, $rows->count());
+        $table = $crawler->filter('#presence table.tbl.ro-tbl');
+        self::assertSame(['Post', 'Who is there', 'Verified'], $table->filter('thead th')->each(static fn (Crawler $th): string => trim($th->text())));
 
-        $first = $rows->eq(0);
-        self::assertCount(1, $first->filter('.nm'), 'Which post.');
-        self::assertCount(1, $first->filter('.who'), 'What the pings say about its people.');
-        self::assertCount(1, $first->filter('.cnt'), 'And how many of its expectation they bear out.');
+        $row = $table->filter('tbody tr')->eq(0);
+        self::assertSame('north gate post', trim($row->filter('td')->eq(0)->filter('b')->text()));
+        self::assertSame('ST-01', trim($row->filter('td')->eq(0)->filter('.sub')->text()));
+        self::assertStringContainsString('num', (string) $row->filter('td')->eq(2)->attr('class'));
+        self::assertCount(1, $table->filter('tr.ro-none[hidden]'));
+    }
+
+    /** HERE NOW CARRIES THE REGISTER FOOT under its scroll, paged by its own keys. */
+    public function testHereNowCarriesTheRegisterFoot(): void
+    {
+        $card = $this->open()->filter('#presence.c');
+
+        $foot = $card->filter('.rdf-foot');
+        self::assertCount(1, $foot);
+        self::assertCount(0, $card->filter('.rscroll .rdf-foot'), 'The foot stays outside the scroll.');
+        self::assertSame('page 1 of 1', trim($foot->filter('.rdf-page')->text()));
+        self::assertStringContainsString('here_per=50', (string) $foot->filter('.rdf-size a.i-ddopt')->eq(1)->attr('href'));
     }
 }

@@ -107,50 +107,29 @@ final class WeekTabDesignTest extends WebTestCase
         return $crawler;
     }
 
-    /**
-     * THE BAND IS THE DESIGN'S FOUR FIGURES, in its order — and every one
-     * of them measures the window the sheet under it draws.
-     */
-    public function testTheBandDrawsTheDesignsFourFigures(): void
+    /** NO STRIP AND NO FIGURES: they are the Overview's. */
+    public function testThePageCarriesNoStripAndNoFigures(): void
     {
-        $band = $this->open()->filter('.factband');
+        $crawler = $this->open();
 
-        self::assertCount(1, $band);
-        self::assertSame(
-            ['Rangers', 'Days planned', 'Short cover', 'Edited by hand'],
-            $band->filter('.f .k')->each(static fn (Crawler $cell): string => trim($cell->text())),
-        );
-        self::assertSame('Roster settings →', html_entity_decode(trim($band->filter('a.more')->text())));
-
-        // A KPI ROW IS FOUR, never five — and there is no second idiom on
-        // the page: the band or the cards, never both.
-        self::assertCount(0, $this->open()->filter('.kstrip'));
+        self::assertCount(0, $crawler->filter('.factband'));
+        self::assertCount(0, $crawler->filter('.kpi'));
     }
 
-    /**
-     * DAYS PLANNED SAYS HOW FAR THE PLAN REACHES. The design's figure reads
-     * "325 this fortnight · filled to 28 oct": the count is the window's,
-     * the suffix is the last day any watch stands for the area, wherever
-     * that falls — a planner reads in one glance whether the fill has run
-     * ahead of the sheet or stops inside it. With nothing filled there is
-     * no suffix, because "filled to" nowhere is not a fact.
-     */
-    public function testDaysPlannedSaysHowFarTheSheetIsFilled(): void
+    /** THE INDEX, one row per card: the sheet with its rangers, the trade, the swaps. */
+    public function testTheIndexNamesTheSheetTheTradeAndTheSwaps(): void
     {
-        self::assertStringNotContainsString('filled to', $this->open()->filter('.factband')->text());
+        $crawler = $this->open();
 
-        $gate = $this->em->getRepository(Station::class)->findOneBy(['code' => 'ST-01']);
-        $ranger = $this->em->getRepository(User::class)->findOneBy(['email' => 'ada@example.test']);
-        self::assertInstanceOf(Station::class, $gate);
-        self::assertInstanceOf(User::class, $ranger);
-        $far = new \DateTimeImmutable('today')->modify('+40 days');
-        $this->em->persist(new Duty($this->area, $gate, $ranger, 'day', new \DateTimeImmutable('today')));
-        $this->em->persist(new Duty($this->area, $gate, $ranger, 'day', $far));
-        $this->em->flush();
-
-        $planned = $this->open()->filter('.factband .f')->eq(1);
-        self::assertSame('Days planned', trim($planned->filter('.k')->text()));
-        self::assertStringContainsString('this fortnight · filled to '.strtolower($far->format('j M')), html_entity_decode($planned->filter('em')->text()));
+        $rows = $crawler->filter('.onpage-nav a.onpage-row');
+        self::assertSame(['#sheet', '#swap', '#swaps'], $rows->each(static fn (Crawler $row): string => (string) $row->attr('href')));
+        self::assertSame(['The sheet', 'Swap a watch', 'Swaps'], $rows->each(static fn (Crawler $row): string => trim($row->filter('.onpage-l')->text())));
+        self::assertSame('1', trim($rows->eq(0)->filter('.onpage-n')->text()), 'The sheet counts its rangers.');
+        self::assertCount(0, $rows->eq(1)->filter('.onpage-n'), 'The trade counts nothing.');
+        self::assertSame('0', trim($rows->eq(2)->filter('.onpage-n')->text()), 'The swaps count the window\'s; zero is a count.');
+        foreach (['sheet', 'swap', 'swaps'] as $id) {
+            self::assertCount(1, $crawler->filter('.onpage-main #'.$id.'.c'));
+        }
     }
 
     /**
@@ -218,13 +197,20 @@ final class WeekTabDesignTest extends WebTestCase
         self::assertCount(1, $nav->filter('span.mchip.on'), 'The window is the one `on` chip.');
         self::assertSame('Today', trim($nav->filter('a.mchip')->eq(2)->text()));
 
-        // Two grouped dropdowns, and the weeks chip offers one, two, four.
-        self::assertCount(2, $head->filter('details.i-dd'));
+        // The house bar: the station and weeks chips, the weeks one offering two, then one or four, and the search.
+        self::assertCount(0, $head->filter('.dd'));
+        $bar = $head->filter('div.lfilt');
+        self::assertCount(1, $bar);
+        $chips = $bar->filter('details.i-dd');
+        self::assertCount(2, $chips);
+        self::assertMatchesRegularExpression('/^all stations · \d+$/', html_entity_decode(trim($chips->eq(0)->filter('summary .i-ddval')->text())));
+        self::assertSame('two weeks', trim($chips->eq(1)->filter('summary .i-ddval')->text()));
         self::assertSame(
-            ['One week', 'Two weeks', 'Four weeks'],
-            $head->filter('.i-ddmenu[aria-label="weeks in view"] .i-ddopt-l')
-                ->each(static fn (Crawler $option): string => trim($option->text())),
+            ['two weeks', 'one week', 'four weeks'],
+            $chips->eq(1)->filter('a.i-ddopt .i-ddopt-l')->each(static fn (Crawler $option): string => trim($option->text())),
         );
+        self::assertCount(0, $bar->filter('.i-ddhead'));
+        self::assertCount(1, $bar->filter('form.lsearch input[name="q"]'));
 
         self::assertSame(
             ['Fold all', 'Open all'],
@@ -319,7 +305,7 @@ final class WeekTabDesignTest extends WebTestCase
 
     /**
      * THE SWAP SECTION IS LABELLED and is two house cards STACKED, each the
-     * full width — the design's one-column grid. Side by side halved the
+     * full width — one column under the index. Side by side halved the
      * rows a trade states and put the register where the eye reads a
      * comparison, not a sequence.
      */
@@ -331,10 +317,9 @@ final class WeekTabDesignTest extends WebTestCase
             'The swap in progress',
             $crawler->filter('h2.zone')->each(static fn (Crawler $h): string => html_entity_decode(trim($h->text()))),
         );
-        $grid = $crawler->filter('h2.zone + .grid');
-        self::assertCount(1, $grid);
-        self::assertStringNotContainsString('g2', (string) $grid->attr('class'), 'One column, never two.');
-        self::assertCount(2, $grid->children('.c'));
+        self::assertCount(1, $crawler->filter('h2.zone + #swap.c'), 'The trade under its head, the full width.');
+        self::assertCount(1, $crawler->filter('#swap.c + #swaps.c'), 'And the register under it.');
+        self::assertCount(0, $crawler->filter('h2.zone + .grid'), 'No grid around them.');
     }
 
     /**

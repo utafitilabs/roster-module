@@ -294,7 +294,7 @@ final readonly class RosterOrgService
      *
      * @param list<AreaOfInterest> $areas
      *
-     * @return list<array{areaName: string, position: int, post: \Uhifadhi\Roster\Model\PostPresence, person: \Uhifadhi\Roster\Model\RosteredPerson}>
+     * @return list<array{areaName: string, areaUuid: string, position: int, post: \Uhifadhi\Roster\Model\PostPresence, person: \Uhifadhi\Roster\Model\RosteredPerson}>
      */
     public function agenda(array $areas, \DateTimeImmutable $day, \DateTimeImmutable $now): array
     {
@@ -306,12 +306,57 @@ final readonly class RosterOrgService
 
             foreach ($this->presence->postsOn($area, $day, $now) as $post) {
                 foreach ($post->rostered as $person) {
-                    $rows[] = ['areaName' => $name, 'position' => $position, 'post' => $post, 'person' => $person];
+                    $rows[] = ['areaName' => $name, 'areaUuid' => (string) $area->getUuidString(), 'position' => $position, 'post' => $post, 'person' => $person];
                 }
             }
         }
 
         return $rows;
+    }
+
+    /**
+     * THE DAY'S ROWS NARROWED BY THE FILTER BAR — area, state, shift and a
+     * search over the ranger and the post.
+     *
+     * @param list<array{areaName: string, areaUuid: string, position: int, post: \Uhifadhi\Roster\Model\PostPresence, person: \Uhifadhi\Roster\Model\RosteredPerson}> $rows
+     * @param array{area: ?string, state: ?string, shift: ?string, q: ?string}                                                                                         $chosen
+     *
+     * @return list<array{areaName: string, areaUuid: string, position: int, post: \Uhifadhi\Roster\Model\PostPresence, person: \Uhifadhi\Roster\Model\RosteredPerson}>
+     */
+    public static function narrow(array $rows, array $chosen): array
+    {
+        $needle = null === $chosen['q'] ? '' : mb_strtolower($chosen['q']);
+
+        return array_values(array_filter($rows, static fn (array $row): bool => (null === $chosen['area'] || $row['areaName'] === $chosen['area'])
+            && (null === $chosen['state'] || $row['person']->state()->value === $chosen['state'])
+            && (null === $chosen['shift'] || $row['person']->shiftKey === $chosen['shift'])
+            && ('' === $needle || str_contains(mb_strtolower($row['person']->personName.' '.$row['post']->stationName), $needle))));
+    }
+
+    /**
+     * EVERY OPTION THE BAR OFFERS, with how many of the day's rows each
+     * holds — read off the rows themselves, never queried again.
+     *
+     * @param list<array{areaName: string, areaUuid: string, position: int, post: \Uhifadhi\Roster\Model\PostPresence, person: \Uhifadhi\Roster\Model\RosteredPerson}> $rows
+     *
+     * @return array{area: array<string, array{label: string, count: int}>, state: array<string, array{label: string, count: int}>, shift: array<string, array{label: string, count: int}>}
+     */
+    public static function options(array $rows): array
+    {
+        $options = ['area' => [], 'state' => [], 'shift' => []];
+        foreach ($rows as $row) {
+            $person = $row['person'];
+            foreach ([
+                'area' => [$row['areaName'], $row['areaName']],
+                'state' => [$person->state()->value, $person->state()->label()],
+                'shift' => [$person->shiftKey, $person->shiftLabel],
+            ] as $axis => [$value, $label]) {
+                $options[$axis][$value] ??= ['label' => $label, 'count' => 0];
+                ++$options[$axis][$value]['count'];
+            }
+        }
+
+        return $options;
     }
 
     /**

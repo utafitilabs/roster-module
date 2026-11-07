@@ -1,77 +1,39 @@
 {# ============================================================================
-   THE AGENDA'S FILTER ROW — post, check-in state and shift, each the house's
-   grouped dropdown, plus the search box.
+   THE FILTER ROW — post, check-in state and shift, then the search. Today,
+   the Day board and Live wear it.
 
-   NO SCRIPT OF THIS MODULE'S. Each dropdown is a `<details class="i-dd">`
-   whose `<summary>` is the chip: the browser opens and closes it, and EVERY
-   option is a real link driving one query parameter. So a filtered agenda is
-   a url somebody can send, the back button undoes a choice, and the control
-   is closed until it is opened — which a div rendered open is not.
-
-   THE ROW, THE CHIP AND THE SEARCH ARE THE SHELL'S — `.lfilt`, `.i-dd`,
-   `.lsearch`. This module defines none of them, so no two filter bars in the
-   product can drift apart.
+   THE ROW IS THE HOUSE BAR, `.lfilt` (`@UhifadhiRoster/_lfilt.html.twig`):
+   every option is a link carrying the whole question, so a filtered page is
+   an address somebody can send and the back button undoes a choice.
 
    THE COUNTS ARE COUNTED FROM THE SAME READING THE ROWS CAME FROM, never
    queried again: an option that says "1 unverified" and a list that shows
-   none is the one way a filter bar loses its reader.
+   none is the one way a filter bar loses its reader. The post menu lists
+   every post of the day, whatever the rows are narrowed to — a menu that
+   offered only what is showing could never change it.
    ========================================================================== #}
-{# THE PAGE THIS ROW RE-QUERIES. The agenda and the day board are two
-   readings of one day and wear the same filter, so the row is one file and
-   the caller says which page it belongs to. #}
+{% import '@UhifadhiRoster/_lfilt.html.twig' as bar %}
 {% set here = here|default(constant('Uhifadhi\\Roster\\Controller\\RosterController::TODAY_ROUTE')) %}
-<form class="lfilt" method="get" action="{{ path(here, {uuid: area.uuid}) }}">
-    {% if not isToday %}<input type="hidden" name="from" value="{{ day.format('Y-m-d') }}">{% endif %}
-    {% if filter.post %}<input type="hidden" name="post" value="{{ filter.post }}">{% endif %}
-    {% if filter.state %}<input type="hidden" name="state" value="{{ filter.state }}">{% endif %}
-    {% if filter.shift %}<input type="hidden" name="shift" value="{{ filter.shift }}">{% endif %}
+{% set base = {uuid: area.uuid}|merge(isToday ? {} : {from: day.format('Y-m-d')}) %}
 
-    {% set base = {uuid: area.uuid}|merge(isToday ? {} : {from: day.format('Y-m-d')}) %}
+<div class="lfilt">
+    {%- set options = [{label: 'All posts with a watch', count: allPosts|length, href: path(here, base|merge(filter.withPost(null).toQuery)), on: filter.post is null}] -%}
+    {%- for post in allPosts -%}
+        {%- set options = options|merge([{label: post.stationName, count: post.rostered|length, href: path(here, base|merge(filter.withPost(post.stationUuid).toQuery)), on: filter.post == post.stationUuid}]) -%}
+    {%- endfor -%}
+    {{ bar.chip('Filter by post', options) }}
 
-    <details class="i-dd">
-        <summary class="mchip i-ddt">
-            <span class="i-ddval">{{ chosenPost ? chosenPost.stationName|lower : 'all posts · ' ~ posts|length }}</span><span class="i-ddcaret">&#9662;</span>
-        </summary>
-        <div class="i-ddmenu" aria-label="Filter by post">
-            <span class="i-ddhead">post</span>
-            <a class="i-ddopt{{ filter.post is null ? ' on' : '' }}" href="{{ path(here, base|merge(filter.withPost(null).toQuery)) }}"><span class="i-dot"></span><span class="i-ddopt-l">All posts with a watch</span><span class="i-ddopt-n">{{ posts|length }}</span></a>
-            <span class="i-ddsep"></span>
-            {% for post in posts %}
-                <a class="i-ddopt{{ filter.post == post.stationUuid ? ' on' : '' }}" href="{{ path(here, base|merge(filter.withPost(post.stationUuid).toQuery)) }}"><span class="i-dot"></span><span class="i-ddopt-l">{{ post.stationName }}</span><span class="i-ddopt-n">{{ post.rostered|length }}</span></a>
-            {% endfor %}
-        </div>
-    </details>
+    {%- set options = [{label: 'Every state', count: stateCounts.all|default(0), href: path(here, base|merge(filter.withState(null).toQuery)), on: filter.state is null}] -%}
+    {%- for value, label in stateLabels -%}
+        {%- set options = options|merge([{label: label, count: stateCounts[value]|default(0), href: path(here, base|merge(filter.withState(value).toQuery)), on: filter.state == value}]) -%}
+    {%- endfor -%}
+    {{ bar.chip('Filter by check-in state', options) }}
 
-    <details class="i-dd">
-        <summary class="mchip i-ddt">
-            <span class="i-ddval">{{ filter.state ? stateLabels[filter.state]|default(filter.state) : 'every state' }}</span><span class="i-ddcaret">&#9662;</span>
-        </summary>
-        <div class="i-ddmenu" aria-label="Filter by check-in state">
-            <span class="i-ddhead">check-in state</span>
-            <a class="i-ddopt{{ filter.state is null ? ' on' : '' }}" href="{{ path(here, base|merge(filter.withState(null).toQuery)) }}"><span class="i-dot"></span><span class="i-ddopt-l">Every state</span><span class="i-ddopt-n">{{ stateCounts.all|default(0) }}</span></a>
-            <span class="i-ddsep"></span>
-            {% for value, label in stateLabels %}
-                <a class="i-ddopt{{ filter.state == value ? ' on' : '' }}" href="{{ path(here, base|merge(filter.withState(value).toQuery)) }}"><span class="i-dot"></span><span class="i-ddopt-l">{{ label }}</span><span class="i-ddopt-n">{{ stateCounts[value]|default(0) }}</span></a>
-            {% endfor %}
-        </div>
-    </details>
+    {%- set options = [{label: 'All shifts', count: stateCounts.all|default(0), href: path(here, base|merge(filter.withShift(null).toQuery)), on: filter.shift is null}] -%}
+    {%- for key, label in shiftLabels -%}
+        {%- set options = options|merge([{label: label, count: shiftCounts[key]|default(0), href: path(here, base|merge(filter.withShift(key).toQuery)), on: filter.shift == key}]) -%}
+    {%- endfor -%}
+    {{ bar.chip('Filter by shift', options) }}
 
-    <details class="i-dd">
-        <summary class="mchip i-ddt">
-            <span class="i-ddval">{{ filter.shift ? shiftLabels[filter.shift]|default(filter.shift)|lower : 'all shifts' }}</span><span class="i-ddcaret">&#9662;</span>
-        </summary>
-        <div class="i-ddmenu" aria-label="Filter by shift">
-            <span class="i-ddhead">shift</span>
-            <a class="i-ddopt{{ filter.shift is null ? ' on' : '' }}" href="{{ path(here, base|merge(filter.withShift(null).toQuery)) }}"><span class="i-dot"></span><span class="i-ddopt-l">All shifts</span><span class="i-ddopt-n">{{ shiftLabels|length }}</span></a>
-            <span class="i-ddsep"></span>
-            {% for key, label in shiftLabels %}
-                <a class="i-ddopt{{ filter.shift == key ? ' on' : '' }}" href="{{ path(here, base|merge(filter.withShift(key).toQuery)) }}"><span class="i-dot"></span><span class="i-ddopt-l">{{ label }}</span><span class="i-ddopt-n">{{ shiftCounts[key]|default(0) }}</span></a>
-            {% endfor %}
-        </div>
-    </details>
-
-    <span class="lsearch">
-        {{ ux_icon('roster:search') }}
-        <input class="fld" type="search" name="q" value="{{ filter.q }}" placeholder="Search&hellip;" aria-label="Search a ranger or a post">
-    </span>
-</form>
+    {{ bar.search(path(here, {uuid: area.uuid}), (isToday ? {} : {from: day.format('Y-m-d')})|merge(filter.toQuery), 'q', filter.q, searchPlaceholder|default('Find a ranger or a post…')) }}
+</div>

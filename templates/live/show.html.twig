@@ -25,49 +25,13 @@
 {% block roster_trail_tail %} <a href="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterController::OVERVIEW_ROUTE'), {uuid: area.uuid}) }}">roster</a> / live{% endblock %}
 
 {% block roster_page %}
-    {{ include('@UhifadhiRoster/_identity_band.html.twig') }}
-
     {{ include('@UhifadhiRoster/today/_filters.html.twig', {
         area: area, day: day, isToday: true, filter: filter, posts: posts,
-        chosenPost: chosenPost, stateLabels: stateLabels, stateCounts: stateCounts,
+        chosenPost: chosenPost, allPosts: allPosts, stateLabels: stateLabels, stateCounts: stateCounts,
         shiftLabels: shiftLabels, shiftCounts: shiftCounts,
         here: constant('Uhifadhi\\Roster\\Controller\\RosterController::LIVE_ROUTE'),
     }, with_context: false) }}
 
-    <div class="grid kstrip">
-        <div class="c kpi hot" data-kpi="positions-now">
-            <span class="tab">Positions now</span>
-            <b class="disp">{{ live.positions }}<em>of {{ live.expected }} expected</em></b>
-            <span class="sub">{{ live.stale }} stale &middot; {{ silent }} with none at all</span>
-        </div>
-        {# AWAY FROM A POST IS A FRAGMENT OF VERIFIED, not a card — a row
-           is four, never five. Both are readings of the same set of live
-           fixes, so one card carrying "8 of 11 · 3 away" says in one line
-           what two cards said in two. #}
-        <div class="c kpi" data-kpi="verified">
-            <span class="tab">Verified at a post</span>
-            <b class="disp">{{ live.verified }}<em>of {{ live.positions }}</em></b>
-            <span class="sub">
-                {%- if live.awayFromAPost > 0 %}{{ live.awayFromAPost }} away from a post
-                {%- else %}every live fix is a claim to be at a post{% endif -%}
-            </span>
-        </div>
-        <div class="c kpi{{ live.stale > 0 ? ' bad' : '' }}" data-kpi="oldest-ping">
-            <span class="tab">Oldest ping</span>
-            <b class="disp">{{ live.oldestAge ?: '—' }}</b>
-            <span class="sub">
-                {%- if live.oldestName %}{{ live.oldestName }}{% if live.oldestStation %} &middot; {{ live.oldestStation }}{% endif %} &middot; the interval is {{ live.pingIntervalMinutes }} min
-                {%- else %}no handset has reported a position{% endif -%}
-            </span>
-        </div>
-        <div class="c kpi" data-kpi="posts-reporting">
-            <span class="tab">Posts reporting</span>
-            <b class="disp">{{ live.postsReporting }}<em>of {{ live.postsOnTheBooks }}</em></b>
-            <span class="sub">measured against each post&rsquo;s own silence window</span>
-        </div>
-    </div>
-
-    <h2 class="zone">The plate first</h2>
     <div class="c">
         <span class="tab">Where everybody is<span class="src">&middot; <time datetime="{{ now.format('c') }}" data-localtime-format="time">{{ now.format('H:i') }}</time> &middot; {{ live.positions }} position{{ live.positions == 1 ? '' : 's' }} &middot; {{ live.stale }} stale &middot; {{ silent }} with none</span></span>
         {% if stationsUrl %}<a class="more" href="{{ stationsUrl }}">The stations layer &rarr;</a>{% endif %}
@@ -100,28 +64,28 @@
     {# BOUNDED — RULED 25 sep, the sheet's height rule (`roster--bound`,
        `.rscroll`): the table scrolls inside the card under a pinned column
        head, and never grows with the posts. #}
-    <h2 class="zone">The roster, underneath</h2>
     <div class="c" data-controller="roster--bound">
         <span class="tab">The roster, underneath<span class="src">&middot; <time datetime="{{ day.format('Y-m-d') }}" data-localtime-format="day">{{ day.format('D j M')|lower }}</time> &middot; {{ posts|length }} post{{ posts|length == 1 ? '' : 's' }} on the books</span></span>
-        <a class="more" href="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterController::TODAY_ROUTE'), {uuid: area.uuid}) }}">The agenda &rarr;</a>
+        <a class="more" href="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterController::TODAY_ROUTE'), {uuid: area.uuid}) }}">Open the agenda &rarr;</a>
 
-        {% if posts is empty %}
-            <div class="rfrag"><b>No post is on the roster&rsquo;s books</b><em>a watch is given to a post deliberately, so none is assumed</em></div>
-        {% else %}
-            <div class="rscroll" data-roster--bound-target="scroller">
-            <table class="tbl">
-                <thead><tr><th>post</th><th>the watch</th><th>on it now</th><th>check-ins today</th><th>verified</th><th>the state of the post</th></tr></thead>
+        <div class="rscroll" data-roster--bound-target="scroller">
+            <table class="tbl ro-tbl">
+                <colgroup><col style="width:26%"><col style="width:17%"><col style="width:11%"><col style="width:11%"><col></colgroup>
+                <thead><tr><th>Post</th><th>The watch</th><th>On it now</th><th>Verified</th><th>The state of the post</th></tr></thead>
                 <tbody>
-                {% for post in posts %}
+                {% for post in roster.rows %}
+                    {%- set byShift = {} -%}
+                    {%- for person in post.rostered -%}
+                        {%- set byShift = byShift|merge({(person.shiftLabel|lower): (byShift[person.shiftLabel|lower] ?? 0) + 1}) -%}
+                    {%- endfor %}
                     <tr>
-                        <td><b>{{ post.stationName }}</b></td>
-                        <td>{{ post.expected ? post.expected ~ ' asked for' : 'no watch' }}</td>
-                        <td>{{ post.rostered|length }}</td>
-                        {# A DAY HOLDS ANY NUMBER OF WATCHES, so this is the
-                           count of check-ins and not of people. #}
-                        <td>{% set checkins = 0 %}{% for person in post.rostered %}{% set checkins = checkins + person.watchCount %}{% endfor %}{{ checkins }}</td>
-                        <td class="{{ post.expected and post.verified < post.expected ? 'w' : (post.expected ? 'g' : '') }}">
-                            {{- post.expected ? post.verified ~ ' of ' ~ post.expected : '—' -}}
+                        <td><b>{{ post.stationName }}</b>{% if post.stationCode %}<span class="sub">{{ post.stationCode }}</span>{% endif %}</td>
+                        <td{% if byShift is empty %} class="fog"{% endif %}>
+                            {%- if byShift is empty %}no watch{% else %}{% for label, n in byShift %}{{ label }} {{ n }}{% if not loop.last %} &middot; {% endif %}{% endfor %}{% endif -%}
+                        </td>
+                        <td>{{ post.rostered|filter(person => person.isPresent)|length }}</td>
+                        <td class="{{ post.expected and post.verified < post.expected ? (post.verified > 0 ? 'w' : 'r') : (post.expected ? 'g' : 'fog') }}">
+                            {{- post.verified ~ ' of ' ~ post.expected -}}
                         </td>
                         <td class="{{ post.state.value == 'offline' ? 'r' : (post.state.value == 'late' ? 'w' : '') }}">
                             {{- post.state.label -}}
@@ -130,10 +94,10 @@
                         </td>
                     </tr>
                 {% endfor %}
+                    <tr class="ro-none"{% if posts is not empty %} hidden{% endif %}><td colspan="5">No post matches.</td></tr>
                 </tbody>
             </table>
-            </div>
-
-        {% endif %}
+        </div>
+        {{ include('@Shell/_foot.html.twig', roster.foot, with_context: false) }}
     </div>
 {% endblock %}

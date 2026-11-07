@@ -1,0 +1,21 @@
+{# THE ORGANIZATION'S FILTER BAR — the house `.lfilt`: area, state and shift,
+   each option a link carrying the whole question, then the search. The
+   counts are the day's own rows. `tail` is what the bar closes with, if
+   anything. #}
+{% import '@UhifadhiRoster/_lfilt.html.twig' as bar %}
+{% set question = chosen|filter(v => v is not null) %}
+<div class="lfilt">
+    {% for axis in [
+        {name: 'area', all: 'All areas', aria: 'Filter by area'},
+        {name: 'state', all: 'Every state', aria: 'Filter by check-in state'},
+        {name: 'shift', all: 'Every shift', aria: 'Filter by shift'},
+    ] %}
+        {%- set list = [{label: axis.all, count: total, href: path(here, question|filter((v, k) => k != axis.name)), on: chosen[axis.name] is null}] -%}
+        {%- for value, option in options[axis.name] -%}
+            {%- set list = list|merge([{label: option.label, count: option.count, href: path(here, question|merge({(axis.name): value})), on: chosen[axis.name] == value}]) -%}
+        {%- endfor -%}
+        {{ bar.chip(axis.aria, list) }}
+    {% endfor %}
+    {% if tail is defined and tail %}<span class="lfilt-n mono">{{ tail }}</span>{% endif %}
+    {{ bar.search(path(here), question, 'q', chosen.q, 'Find a ranger or a post…') }}
+</div>

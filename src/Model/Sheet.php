@@ -110,6 +110,76 @@ final readonly class Sheet
         return new self($this->window, $bands, $this->stations);
     }
 
+    /**
+     * THE SHEET NARROWED TO THE RANGERS A SEARCH NAMES, by name or call
+     * sign. A station none of whose rangers match leaves the sheet; the
+     * station count stays the area's, as it does under {@see self::only()}.
+     */
+    public function matching(?string $search): self
+    {
+        if (null === $search || '' === trim($search)) {
+            return $this;
+        }
+
+        $needle = mb_strtolower(trim($search));
+        $bands = [];
+        foreach ($this->bands as $band) {
+            $rows = array_values(array_filter(
+                $band->rows,
+                static fn (SheetRow $row): bool => str_contains(mb_strtolower($row->personName.' '.$row->stationCode), $needle),
+            ));
+            if ([] !== $rows) {
+                $bands[] = new SheetBand($band->stationUuid, $band->stationName, $band->stationCode, $rows, $band->cover);
+            }
+        }
+
+        return new self($this->window, $bands, $this->stations, $this->filledTo);
+    }
+
+    /**
+     * Every ranger row, band after band: what the register foot pages.
+     *
+     * @return list<SheetRow>
+     */
+    public function rows(): array
+    {
+        $rows = [];
+        foreach ($this->bands as $band) {
+            array_push($rows, ...$band->rows);
+        }
+
+        return $rows;
+    }
+
+    /**
+     * THE SHEET NARROWED TO ONE PAGE'S ROWS, each band over the rows of it
+     * the page holds. A band with nobody stationed goes on the page that
+     * holds the row before it, so every station is on exactly one page.
+     *
+     * @param list<SheetRow> $rows this page's, taken from {@see self::rows()}
+     */
+    public function keeping(array $rows, bool $firstPage): self
+    {
+        $bands = [];
+        $previousKept = $firstPage;
+        foreach ($this->bands as $band) {
+            if ([] === $band->rows) {
+                if ($previousKept) {
+                    $bands[] = $band;
+                }
+                continue;
+            }
+            $kept = array_values(array_filter($band->rows, static fn (SheetRow $row): bool => \in_array($row, $rows, true)));
+            if ([] !== $kept) {
+                $bands[] = new SheetBand($band->stationUuid, $band->stationName, $band->stationCode, $kept, $band->cover);
+            }
+            $last = $band->rows[\count($band->rows) - 1];
+            $previousKept = \in_array($last, $rows, true);
+        }
+
+        return new self($this->window, $bands, $this->stations, $this->filledTo);
+    }
+
     public function isEmpty(): bool
     {
         return [] === $this->bands;

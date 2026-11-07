@@ -16,6 +16,7 @@ namespace Uhifadhi\Roster\Tests\Functional;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\DomCrawler\Crawler;
 use Uhifadhi\Bundle\AreaBundle\Entity\AreaOfInterest;
 use Uhifadhi\Bundle\AreaBundle\Entity\Station;
 use Uhifadhi\Bundle\AreaBundle\Entity\Zone;
@@ -126,7 +127,7 @@ use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
         self::assertStreamsTheAreas($this->client, [(string) $this->area->getUuidString()]);
     }
 
-    private function open(): \Symfony\Component\DomCrawler\Crawler
+    private function open(): Crawler
     {
         $user = $this->em->getRepository(User::class)->findOneBy(['email' => FixedManageVoter::MANAGER_EMAIL]);
         self::assertInstanceOf(User::class, $user);
@@ -141,29 +142,24 @@ use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
         return $crawler;
     }
 
-    /** THE FOUR KPI CARDS the design names, in its order — four, never five. */
-    public function testTheStripDrawsTheDesignsFourCards(): void
+    /** NO STRIP AND NO FIGURES: they are the Overview's. */
+    public function testThePageCarriesNoStripAndNoFigures(): void
     {
         $crawler = $this->open();
 
-        $cards = $crawler->filter('.kstrip .c.kpi');
-        self::assertCount(4, $cards, 'A KPI row is four cards, never five.');
-
-        self::assertSame(
-            ['positions-now', 'verified', 'oldest-ping', 'posts-reporting'],
-            $cards->each(static fn (\Symfony\Component\DomCrawler\Crawler $card): string => (string) $card->attr('data-kpi')),
-        );
+        self::assertCount(0, $crawler->filter('.factband'));
+        self::assertCount(0, $crawler->filter('.kpi'));
     }
 
-    /** THE PLATE IS FIRST, and the roster is underneath it. */
+    /** THE MAP IS FIRST, and the roster is underneath it, with no zone heads between. */
     public function testThePlateComesFirstAndTheRosterIsUnderneath(): void
     {
         $crawler = $this->open();
 
-        self::assertSame(
-            ['The plate first', 'The roster, underneath'],
-            $crawler->filter('h2.zone')->each(static fn (\Symfony\Component\DomCrawler\Crawler $h): string => html_entity_decode(trim($h->text()))),
-        );
+        self::assertCount(0, $crawler->filter('h2.zone'));
+        $tabs = $crawler->filter('.page .c > .tab')->each(static fn (Crawler $t): string => html_entity_decode(trim($t->text())));
+        self::assertStringStartsWith('Where everybody is', $tabs[0]);
+        self::assertStringStartsWith('The roster, underneath', $tabs[1]);
 
         self::assertCount(1, $crawler->filter('.fg-live'), 'The plate, in the card that leads the page.');
         self::assertGreaterThan(0, $crawler->filter('.fg-live .map-plate')->count(), 'And the atlas plate itself is in it.');
@@ -178,9 +174,9 @@ use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
     {
         $crawler = $this->open();
 
-        $row = $crawler->filter('.map-legend .lay')->reduce(static fn (\Symfony\Component\DomCrawler\Crawler $r): bool => str_starts_with(trim($r->text()), 'No position'));
+        $row = $crawler->filter('.map-legend .lay')->reduce(static fn (Crawler $r): bool => str_starts_with(trim($r->text()), 'No position'));
         $legend = 0 === $row->count() ? null : (int) preg_replace('/\D+/', '', $row->filter('em')->text(''));
-        $strip = $crawler->filter('.lp-off .pp')->reduce(static fn (\Symfony\Component\DomCrawler\Crawler $p): bool => str_contains($p->text(), 'no position'))->count();
+        $strip = $crawler->filter('.lp-off .pp')->reduce(static fn (Crawler $p): bool => str_contains($p->text(), 'no position'))->count();
 
         self::assertNotNull($legend, 'The key states the row whatever its count.');
         self::assertSame($strip, $legend);
@@ -200,23 +196,23 @@ use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
     }
 
     /**
-     * THE ROSTER UNDERNEATH IS BOUNDED AND SCROLLS INSIDE ITS CARD — RULED
-     * 25 sep, the sheet's own height rule — with its column head pinned.
+     * THE ROSTER UNDERNEATH IS THE HOUSE REGISTER, BOUNDED — RULED 25 sep,
+     * the sheet's own height rule — with its column head pinned.
      */
-    public function testTheRosterUnderneathIsBoundedWithItsHeadPinned(): void
+    public function testTheRosterUnderneathIsTheHouseRegisterBounded(): void
     {
         $crawler = $this->open();
 
         $card = $crawler->filter('.c[data-controller="roster--bound"]');
         self::assertCount(1, $card);
-        self::assertSame('roster--bound', $card->attr('data-controller'));
         self::assertStringStartsWith('The roster, underneath', html_entity_decode(trim($card->filter('.tab')->text())));
+        self::assertSame('Open the agenda →', html_entity_decode(trim($card->filter('a.more')->text())));
 
         $scroller = $card->filter('.rscroll');
-        self::assertCount(1, $scroller);
         self::assertSame('scroller', $scroller->attr('data-roster--bound-target'));
-        self::assertCount(1, $scroller->filter('table.tbl > thead > tr'), 'The column head is a thead, which is what pins.');
-        self::assertCount(6, $scroller->filter('table.tbl > thead th'));
+        $table = $scroller->filter('table.tbl.ro-tbl');
+        self::assertSame(['Post', 'The watch', 'On it now', 'Verified', 'The state of the post'], $table->filter('thead th')->each(static fn (Crawler $th): string => trim($th->text())));
+        self::assertCount(1, $table->filter('tr.ro-none[hidden]'));
     }
 
     /** THE FILTER ROW, the house's, pointed at this page. */
@@ -224,10 +220,16 @@ use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
     {
         $crawler = $this->open();
 
-        $row = $crawler->filter('form.lfilt');
+        $row = $crawler->filter('div.lfilt');
         self::assertCount(1, $row);
-        self::assertCount(3, $row->filter('details.i-dd'));
-        self::assertStringContainsString('/live', (string) $row->attr('action'));
+        self::assertCount(0, $row->filter('.dd'));
+        self::assertCount(3, $row->filter('details.i-dd > summary.mchip.i-ddt'));
+        self::assertCount(0, $row->filter('.i-ddhead'));
+        $row->filter('a.i-ddopt')->each(static function (Crawler $option): void {
+            self::assertStringContainsString('/modules/roster/live', (string) $option->attr('href'));
+        });
+        self::assertStringContainsString('/live', (string) $row->filter('form.lsearch')->attr('action'));
+        self::assertCount(1, $row->filter('form.lsearch input[name="q"]'));
     }
 
     /**
@@ -260,5 +262,17 @@ use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
         // AND NO COLOUR ANYWHERE NEAR THIS MODULE'S OWN LAYER. The posts
         // layer is still the roster's; it must not have grown a palette.
         self::assertDoesNotMatchRegularExpression('/roster\.[a-z_.]+[^}]{0,300}#[0-9A-Fa-f]{6}/', $plate);
+    }
+
+    /** THE ROSTER UNDERNEATH CARRIES THE REGISTER FOOT, paged by its own keys. */
+    public function testTheRosterUnderneathCarriesTheRegisterFoot(): void
+    {
+        $card = $this->open()->filter('.c[data-controller="roster--bound"]');
+
+        $foot = $card->filter('.rdf-foot');
+        self::assertCount(1, $foot);
+        self::assertCount(0, $card->filter('.rscroll .rdf-foot'), 'The foot stays outside the scroll.');
+        self::assertSame('page 1 of 1', trim($foot->filter('.rdf-page')->text()));
+        self::assertStringContainsString('roster_per=50', (string) $foot->filter('.rdf-size a.i-ddopt')->eq(1)->attr('href'));
     }
 }

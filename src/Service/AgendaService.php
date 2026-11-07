@@ -16,6 +16,7 @@ namespace Uhifadhi\Roster\Service;
 use Uhifadhi\Bundle\AreaBundle\Entity\AreaOfInterest;
 use Uhifadhi\Bundle\AreaBundle\Repository\StationRepository;
 use Uhifadhi\Roster\Model\AgendaFilter;
+use Uhifadhi\Roster\Model\AgendaRow;
 use Uhifadhi\Roster\Model\PostPresence;
 use Uhifadhi\Roster\Model\RosteredPerson;
 use Uhifadhi\Roster\Model\ShiftWindow;
@@ -102,6 +103,7 @@ final readonly class AgendaService
                 flagged: $post->flagged,
                 state: $post->state,
                 silentFor: $post->silentFor,
+                stationCode: $post->stationCode,
             );
         }
 
@@ -146,6 +148,39 @@ final readonly class AgendaService
         $window = $windows[$person->shiftKey] ?? null;
 
         return null === $window || $window->startsAtMinuteOfDay() <= self::minuteOfDay($now);
+    }
+
+    /**
+     * THE DAY AS THE REGISTER'S ROWS, in the posts' order: under each post a
+     * row for every watch of every person rostered there (one for somebody
+     * who reported nothing), then the hole its watch leaves, or the one row
+     * that says the post asks for nobody. Flat, so the foot can page them.
+     *
+     * @param list<PostPresence> $posts
+     *
+     * @return list<AgendaRow>
+     */
+    public static function rows(array $posts): array
+    {
+        $rows = [];
+        foreach ($posts as $post) {
+            foreach ($post->rostered as $person) {
+                $watches = $person->watches();
+                if ([] === $watches) {
+                    $rows[] = new AgendaRow(AgendaRow::UNREPORTED, $post, $person);
+                }
+                foreach ($watches as $i => $watch) {
+                    $rows[] = new AgendaRow(AgendaRow::WATCH, $post, $person, $watch, $i + 1);
+                }
+            }
+            if ($post->shortfall() > 0) {
+                $rows[] = new AgendaRow(AgendaRow::HOLE, $post);
+            } elseif ([] === $post->rostered) {
+                $rows[] = new AgendaRow(AgendaRow::NOBODY, $post);
+            }
+        }
+
+        return $rows;
     }
 
     /**

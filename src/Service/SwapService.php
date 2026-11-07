@@ -190,9 +190,59 @@ final readonly class SwapService
      *
      * @return list<Swap>
      */
-    public function recentBetween(AreaOfInterest $area, \DateTimeImmutable $from, \DateTimeImmutable $through, int $limit): array
+    public function recentBetween(AreaOfInterest $area, \DateTimeImmutable $from, \DateTimeImmutable $through, ?int $limit = null): array
     {
         return $this->swaps->findRecentBetween($area, $from, $through, $limit);
+    }
+
+    /**
+     * THE REGISTER NARROWED TO ONE STATE AND A SEARCH over the two people's
+     * names and the station, as the swaps bar asks. An unknown state keeps
+     * nothing, which says so rather than failing.
+     *
+     * @param list<Swap> $swaps
+     *
+     * @return list<Swap>
+     */
+    public static function narrow(array $swaps, ?string $state, ?string $search): array
+    {
+        $needle = null === $search ? '' : mb_strtolower(trim($search));
+
+        return array_values(array_filter($swaps, static function (Swap $swap) use ($state, $needle): bool {
+            if (null !== $state && $swap->getState()->value !== $state) {
+                return false;
+            }
+            if ('' === $needle) {
+                return true;
+            }
+            $duty = $swap->getDuty();
+            $hay = mb_strtolower(implode(' ', [
+                $swap->getOfferedTo()->getFullName(),
+                $duty->getPerson()->getFullName(),
+                $duty->getStation()->getName(),
+                $duty->getStation()->getCode(),
+            ]));
+
+            return str_contains($hay, $needle);
+        }));
+    }
+
+    /**
+     * HOW MANY OF THE REGISTER'S SWAPS ARE IN EACH STATE, with `all`.
+     *
+     * @param list<Swap> $swaps
+     *
+     * @return array<string, int>
+     */
+    public static function stateCounts(array $swaps): array
+    {
+        $counts = ['all' => \count($swaps)];
+        foreach ($swaps as $swap) {
+            $key = $swap->getState()->value;
+            $counts[$key] = ($counts[$key] ?? 0) + 1;
+        }
+
+        return $counts;
     }
 
     /**

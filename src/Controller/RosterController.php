@@ -48,6 +48,7 @@ use Uhifadhi\Roster\Entity\Duty;
 use Uhifadhi\Roster\Entity\Pattern;
 use Uhifadhi\Roster\Enum\NightThenDay;
 use Uhifadhi\Roster\Enum\RuleKind;
+use Uhifadhi\Roster\Enum\SwapState;
 use Uhifadhi\Roster\Model\AgendaFilter;
 use Uhifadhi\Roster\Model\FillPlan;
 use Uhifadhi\Roster\Model\PostPresence;
@@ -66,6 +67,7 @@ use Uhifadhi\Roster\Service\DayBoardService;
 use Uhifadhi\Roster\Service\DayPlanService;
 use Uhifadhi\Roster\Service\PatternService;
 use Uhifadhi\Roster\Service\PresenceReader;
+use Uhifadhi\Roster\Service\RegisterFootService;
 use Uhifadhi\Roster\Service\RosterCalendar;
 use Uhifadhi\Roster\Service\RosterDashboardService;
 use Uhifadhi\Roster\Service\RosteredPeople;
@@ -205,6 +207,7 @@ final class RosterController
         private readonly AbsenceRepository $absences,
         private readonly WidgetService $widgetService,
         private readonly UrlGeneratorInterface $router,
+        private readonly RegisterFootService $feet,
         /*
          * NULL WHERE THE INSTALLATION RUNS NO SECURITY. There the week tab
          * offers no swap — there is nobody to attribute an offer to and
@@ -336,14 +339,23 @@ final class RosterController
         // narrowing in memory is both the cheaper answer and the honest
         // one.
         $whole = $this->sheet->read($area, $window);
-        $sheet = null === $chosenStation ? $whole : $whole->only((string) $chosenStation->getUuidString());
+        $search = self::text($request->query->get('q'));
+        $sheet = (null === $chosenStation ? $whole : $whole->only((string) $chosenStation->getUuidString()))->matching($search);
 
         $from = $window->from;
         $through = $window->through;
 
+        // THE SWAPS BAR'S OWN KEYS, prefixed as its foot's are, so narrowing
+        // the register never moves the sheet above it.
+        $register = $this->swaps->recentBetween($area, $from, $through);
+        $swapState = self::text($request->query->get('swaps_state'));
+        $swapSearch = self::text($request->query->get('swaps_q'));
+
         return new Response($this->twig->render('@UhifadhiRoster/week/show.html.twig', [
             'area' => $area,
             'sheet' => $sheet,
+            'sheetTable' => $sheetTable = $this->feet->page($request, $sheet->rows(), 'sheet', 'rangers', 'ranger'),
+            'sheetPage' => $sheet->keeping($sheetTable['rows'], 1 === $sheetTable['foot']['page']),
             'window' => $window,
             'days' => $window->days(),
             'folded' => $this->preferences->foldedFor($viewer, $area),
@@ -376,7 +388,11 @@ final class RosterController
             // the trade being put together, if one is.
             // WHAT WAITS FOR A HEAD (#60), above the sheet: every station's.
             'approvals' => $this->approvals?->waitingIn($area, $viewer) ?? [],
-            'recent' => $this->swaps->recentBetween($area, $from, $through, 5),
+            'search' => $search,
+            'swaps' => $this->feet->page($request, SwapService::narrow($register, $swapState, $swapSearch), 'swaps', 'swaps', 'swap'),
+            'swapFilter' => ['state' => $swapState, 'q' => $swapSearch],
+            'swapCounts' => SwapService::stateCounts($register),
+            'swapStates' => SwapState::cases(),
             'offering' => $offering = $this->swaps->offering($area, $request->query->get('give'), $request->query->get('take')),
             'cost' => null === $offering ? null : $this->cost->of($offering['duty'], $offering['taking']),
             'csrfToken' => $this->csrfTokenManager?->getToken(self::CSRF_TOKEN_ID)->getValue() ?? '',
@@ -897,10 +913,13 @@ final class RosterController
             'tomorrow' => $day->modify('+1 day'),
             'isToday' => $day->format('Y-m-d') === $now->format('Y-m-d'),
             'filter' => $filter,
-            'posts' => $this->agenda->narrow($whole, $filter, $now, $windows),
-            'tomorrowPosts' => $this->agenda->tomorrow($area, $day),
+            'posts' => $narrowed = $this->agenda->narrow($whole, $filter, $now, $windows),
+            'tomorrowPosts' => $tomorrowPosts = $this->agenda->tomorrow($area, $day),
+            'todayTable' => $this->feet->page($request, AgendaService::rows($narrowed), 'today', 'watches', 'watch'),
+            'tomorrowTable' => $this->feet->page($request, AgendaService::rows($tomorrowPosts), 'tomorrow', 'watches', 'watch'),
             'figures' => $this->agenda->figuresFor($area, $whole, $day, $now),
             'chosenPost' => $this->chosenPost($whole, $filter),
+            'allPosts' => $whole,
             'stateLabels' => self::stateLabels(),
             'stateCounts' => self::stateCounts($whole),
             'shiftLabels' => $this->shiftLabels($area),
@@ -946,10 +965,12 @@ final class RosterController
             'isToday' => $day->format('Y-m-d') === $now->format('Y-m-d'),
             'filter' => $filter,
             'posts' => $narrowed,
+            'here' => $this->feet->page($request, $narrowed, 'here', 'posts', 'post'),
             'blocks' => $this->board->blocksFor($area, $day),
             'figures' => $this->agenda->figuresFor($area, $whole, $day, $now),
             'quiet' => self::quiet($whole),
             'chosenPost' => $this->chosenPost($whole, $filter),
+            'allPosts' => $whole,
             'stateLabels' => self::stateLabels(),
             'stateCounts' => self::stateCounts($whole),
             'shiftLabels' => $this->shiftLabels($area),
@@ -1045,6 +1066,7 @@ final class RosterController
             'now' => $now,
             'filter' => $filter,
             'posts' => $narrowed,
+            'roster' => $this->feet->page($request, $narrowed, 'roster', 'posts', 'post'),
             // THE PEOPLE THE READ HAD NO FIX FOR are the plate's business
             // too: they are on no layer, and a plate silent about them
             // would be a plate claiming the park is fully seen.
@@ -1058,6 +1080,7 @@ final class RosterController
             'live' => $this->liveService->figures($live, $whole),
             'stationsUrl' => $this->stationsUrl($area),
             'chosenPost' => $this->chosenPost($whole, $filter),
+            'allPosts' => $whole,
             'stateLabels' => self::stateLabels(),
             'stateCounts' => self::stateCounts($whole),
             'shiftLabels' => $this->shiftLabels($area),
@@ -1149,6 +1172,12 @@ final class RosterController
             $posts,
             static fn (PostPresence $post): bool => PostState::Late === $post->state || PostState::Offline === $post->state,
         ));
+    }
+
+    /** A query field read as text, or null when it is absent or blank. */
+    private static function text(mixed $value): ?string
+    {
+        return \is_string($value) && '' !== trim($value) ? trim($value) : null;
     }
 
     /**

@@ -16,6 +16,7 @@ namespace Uhifadhi\Roster\Tests\Functional;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\DomCrawler\Crawler;
 use Uhifadhi\Bundle\AreaBundle\Entity\AreaOfInterest;
 use Uhifadhi\Bundle\AreaBundle\Entity\Station;
 use Uhifadhi\Bundle\TeamBundle\Entity\User;
@@ -105,7 +106,7 @@ final class TodayAgendaTest extends WebTestCase
         $this->em->flush();
     }
 
-    private function open(): \Symfony\Component\DomCrawler\Crawler
+    private function open(): Crawler
     {
         $user = $this->em->getRepository(User::class)->findOneBy(['email' => FixedManageVoter::MANAGER_EMAIL]);
         self::assertInstanceOf(User::class, $user);
@@ -121,116 +122,133 @@ final class TodayAgendaTest extends WebTestCase
     }
 
     /**
-     * THE DAY'S CARD IS BOUNDED AND SCROLLS INSIDE ITSELF — RULED 25 sep,
-     * the sheet's own height rule; the tab stays above the scroll.
+     * NO STRIP AND NO FIGURES. A strip and a row of figures belong to an
+     * Overview; this is a list page, and the figures live on the tab that
+     * owns them.
      */
-    public function testTheDaysCardIsBoundedAndScrollsInsideItself(): void
+    public function testThePageCarriesNoStripAndNoFigures(): void
     {
         $crawler = $this->open();
 
-        $cards = $crawler->filter('.c[data-controller="roster--bound"]');
-        self::assertCount(2, $cards, 'The day and tomorrow are both bounded cards.');
-        $card = $cards->first();
-        self::assertSame('roster--bound', $card->attr('data-controller'));
-        self::assertCount(1, $cards->last()->filter('.rscroll[data-roster--bound-target="scroller"]'), 'Tomorrow scrolls inside its card too.');
-        self::assertStringStartsWith('Today', trim($card->filter('.tab')->text()));
-
-        $scroller = $card->filter('.rscroll');
-        self::assertCount(1, $scroller);
-        self::assertSame('scroller', $scroller->attr('data-roster--bound-target'));
-        self::assertCount(1, $scroller->filter('.r-ag'), 'The agenda is what scrolls.');
-        self::assertCount(0, $scroller->filter('.tab'), 'The head stays outside the scroll.');
+        self::assertCount(0, $crawler->filter('.factband'), 'The band is the Overview\'s.');
+        self::assertCount(0, $crawler->filter('.kpi'), 'The figures are the Overview\'s.');
     }
 
-    /** THE FILTER ROW: three grouped dropdowns and the search, all closed. */
-    public function testTheFilterRowIsThreeClosedDropdownsAndASearch(): void
+    /**
+     * THE INDEX NAMES THE TWO CARDS, one row each, and each row takes the
+     * reader to its card.
+     */
+    public function testTheIndexListsTodayAndTomorrowOneRowPerCard(): void
     {
         $crawler = $this->open();
 
-        $row = $crawler->filter('form.lfilt');
-        self::assertCount(1, $row, 'The house filter row, not a bespoke one.');
+        $rows = $crawler->filter('.onpage-nav a.onpage-row');
+        self::assertSame(['#today', '#tomorrow'], $rows->each(static fn (Crawler $row): string => (string) $row->attr('href')));
+        self::assertSame(['Today', 'Tomorrow'], $rows->each(static fn (Crawler $row): string => trim($row->filter('.onpage-l')->text())));
+        self::assertCount(1, $crawler->filter('.onpage-main > #today.c'));
+        self::assertCount(1, $crawler->filter('.onpage-main > #tomorrow.c'));
+    }
 
-        $dropdowns = $row->filter('details.i-dd');
-        self::assertCount(3, $dropdowns, 'Post, check-in state, shift.');
+    public function testTheFilterRowIsTheHouseBar(): void
+    {
+        $crawler = $this->open();
 
-        $dropdowns->each(static function (\Symfony\Component\DomCrawler\Crawler $one): void {
-            self::assertNull($one->attr('open'), 'A filter opens when it is asked to, never by default.');
-            self::assertCount(1, $one->filter('summary.mchip.i-ddt'), 'The chip IS the summary — the browser opens it.');
-            self::assertGreaterThan(1, $one->filter('a.i-ddopt')->count(), 'Every option is a real link.');
+        $row = $crawler->filter('.onpage-main > div.lfilt');
+        self::assertCount(1, $row, 'The row sits above both cards, inside the index\'s column.');
+        self::assertCount(0, $row->filter('.dd'), 'No axis is the shell\'s scripted dropdown.');
+        self::assertCount(0, $crawler->filter('[data-controller~="roster--filter"]'));
+        $chips = $row->filter('details.i-dd > summary.mchip.i-ddt .i-ddval')->each(static fn (Crawler $v): string => html_entity_decode(trim($v->text())));
+        self::assertCount(3, $chips);
+        self::assertMatchesRegularExpression('/^all posts with a watch · \d+$/', $chips[0]);
+        self::assertMatchesRegularExpression('/^every state · \d+$/', $chips[1]);
+        self::assertMatchesRegularExpression('/^all shifts · \d+$/', $chips[2]);
+        self::assertCount(0, $row->filter('summary.on'), 'Nothing narrows while nothing is chosen.');
+        self::assertCount(0, $row->filter('.i-ddhead'), 'A single-group menu has no head.');
+        $row->filter('.i-ddmenu .i-ddopt')->each(static function (Crawler $option): void {
+            self::assertSame('a', $option->nodeName());
+            self::assertStringContainsString('/modules/roster/today', (string) $option->attr('href'));
         });
-
-        self::assertCount(1, $row->filter('.lsearch input[name="q"]'));
+        $search = $row->filter('form.lsearch[method="get"]');
+        self::assertCount(1, $search);
+        self::assertSame('Find a ranger or a post…', $search->filter('input[name="q"]')->attr('placeholder'));
     }
 
-    /** EVERY OPTION IS A LINK THAT ACTUALLY NARROWS THE PAGE. */
-    public function testChoosingAPostNarrowsTheAgendaAndLeavesTheFiguresAlone(): void
+    public function testChoosingAPostNarrowsBothDays(): void
     {
+        $this->open();
+        $other = new Station()->setArea($this->area)->setName('south gate post')->setCode('ST-02')->setPoint('{"type":"Point","coordinates":[12.4,-5.6]}');
+        $this->em->persist($other);
+        $this->em->flush();
+        $watches = static::getContainer()->get('test_public.'.StationWatchService::class);
+        self::assertInstanceOf(StationWatchService::class, $watches);
+        $watches->addToRoster($other)->expect(['day']);
+
         $crawler = $this->open();
+        self::assertSame(['north gate post', 'south gate post'], $this->stationsIn($crawler), 'Both posts drawn while nothing is chosen.');
 
-        $before = $crawler->filter('[data-kpi="check-ins-in"] .disp')->text();
+        $gate = $this->em->getRepository(Station::class)->findOneBy(['code' => 'ST-01']);
+        self::assertInstanceOf(Station::class, $gate);
+        $narrowed = $this->client->request('GET', $this->client->getRequest()->getUri().'?post='.$gate->getUuidString());
 
-        $link = $crawler->filter('form.lfilt details.i-dd')->eq(0)->filter('a.i-ddopt')->eq(1)->attr('href');
-        self::assertIsString($link);
-        $narrowed = $this->client->request('GET', $link);
-        self::assertResponseIsSuccessful();
-
-        // The FIRST agenda is the day's; the second is tomorrow's and is
-        // not what the filter narrows.
-        self::assertCount(1, $narrowed->filter('.r-ag')->eq(0)->filter('.r-ag-post'), 'One post chosen, one post drawn.');
-        self::assertSame(
-            $before,
-            $narrowed->filter('[data-kpi="check-ins-in"] .disp')->text(),
-            'The figures are the whole day\'s — narrowing must not quietly rewrite them.',
-        );
-    }
-
-    /**
-     * THE FOUR KPI CARDS the design names, in its order — four and never
-     * five, ruled. Verified is a FRAGMENT of check-ins in here: how many
-     * came in and how many of them the pings bore out is one thought.
-     */
-    public function testTheStripDrawsTheDesignsFourCards(): void
-    {
-        $crawler = $this->open();
-
-        $cards = $crawler->filter('.kstrip .c.kpi');
-        self::assertCount(4, $cards, 'A KPI row is four cards, never five.');
-
-        self::assertSame(
-            ['on-the-watch', 'check-ins-in', 'needs-an-answer', 'holes'],
-            $cards->each(static fn (\Symfony\Component\DomCrawler\Crawler $card): string => (string) $card->attr('data-kpi')),
-        );
-    }
-
-    /** BOTH SECTIONS, LABELLED, in the design's order. */
-    public function testTheDayAndTomorrowAreTwoLabelledSections(): void
-    {
-        $crawler = $this->open();
-
-        self::assertSame(
-            ['Today', 'Tomorrow'],
-            $crawler->filter('h2.zone')->each(static fn (\Symfony\Component\DomCrawler\Crawler $h): string => trim($h->text())),
-        );
-
-        self::assertCount(2, $crawler->filter('.r-ag'), 'One agenda each.');
+        self::assertSame(['north gate post'], $this->stationsIn($narrowed), 'One post chosen, one post drawn.');
+        $chip = $narrowed->filter('.lfilt details.i-dd')->first()->filter('summary');
+        self::assertMatchesRegularExpression('/^north gate post · \d+$/', html_entity_decode(trim($chip->filter('.i-ddval')->text())));
+        self::assertStringContainsString(' on', (string) $chip->attr('class'), 'The chosen chip narrows.');
+        self::assertCount(1, $narrowed->filter('.lfilt details.i-dd')->first()->filter('a.i-ddopt.on[href*="post='.$gate->getUuidString().'"]'));
+        self::assertCount(3, $narrowed->filter('.lfilt details.i-dd')->first()->filter('a.i-ddopt'), 'Every post stays on offer, plus All.');
     }
 
     /**
-     * THE ROW SHAPE: the initials, the name and its role line, the shift
-     * chip, the fact, the state and how old the last position is.
+     * The stations Today's rows name in their sub-lines, once each, in order.
+     *
+     * @return list<string>
      */
-    public function testAnAgendaLineCarriesTheDesignsSixParts(): void
+    private function stationsIn(Crawler $crawler): array
+    {
+        $names = $crawler->filter('#today tbody tr:not(.ro-none) td:first-child .sub')->each(static fn (Crawler $sub): string => explode(' · ', trim($sub->text()))[0]);
+
+        return array_values(array_unique($names));
+    }
+
+    /**
+     * BOTH DAYS ARE THE HOUSE TABLE, the columns the design names for each
+     * day, and no row of either is a band: the station is every row's
+     * sub-line.
+     */
+    public function testBothDaysAreHouseTablesWithTheDesignsColumns(): void
     {
         $crawler = $this->open();
 
-        $line = $crawler->filter('.r-ag .r-ag-line')->eq(0);
+        $today = $crawler->filter('#today table.tbl.ro-tbl');
+        self::assertCount(1, $today);
+        self::assertSame(['Ranger', 'Shift', 'Evidence', 'Check-in', 'Last ping'], $today->filter('thead th')->each(static fn (Crawler $th): string => trim($th->text())));
+        self::assertCount(0, $crawler->filter('tr.sxgrp'), 'No band rows in either table.');
 
-        self::assertCount(1, $line->filter('.av'), 'The initials.');
-        self::assertCount(1, $line->filter('.nm em'), 'The name over its shift.');
-        self::assertCount(1, $line->filter('.r-sh'), 'The watch chip.');
-        self::assertCount(1, $line->filter('.why'), 'The one fact that makes it answerable.');
-        self::assertCount(1, $line->filter('.r-ci'), 'What the area read.');
-        self::assertCount(1, $line->filter('.r-ping'), 'How old the last position is.');
+        $ranger = $today->filter('tbody tr[data-person]')->eq(0);
+        self::assertSame('Ada Example', trim($ranger->filter('td')->eq(0)->children('b')->text()));
+        self::assertSame('north gate post · ST-01', trim($ranger->filter('td')->eq(0)->filter('.sub')->text()));
+        self::assertCount(1, $ranger->filter('td')->eq(1)->filter('.r-sh'), 'The watch chip.');
+        self::assertCount(1, $ranger->filter('td')->eq(3)->filter('.r-ci'), 'What the area read.');
+        self::assertCount(1, $ranger->filter('td')->eq(4)->filter('.r-ping'), 'How old the last position is.');
+
+        $tomorrow = $crawler->filter('#tomorrow table.tbl.ro-tbl');
+        self::assertSame(['Ranger', 'Shift', 'Note', 'Check-in'], $tomorrow->filter('thead th')->each(static fn (Crawler $th): string => trim($th->text())));
+    }
+
+    /**
+     * A HOLE IS ITS OWN ROW, with the door that fills it. The gate asks for
+     * a day and a night and only the day is rostered.
+     */
+    public function testAHoleIsARowWithItsDoor(): void
+    {
+        $crawler = $this->open();
+
+        $hole = $crawler->filter('#today tr.ro-hole');
+        self::assertCount(1, $hole);
+        self::assertSame('Unfilled', trim($hole->filter('td')->eq(0)->children('b')->text()));
+        self::assertSame('north gate post · ST-01 · 1 of 2', trim($hole->filter('td')->eq(0)->filter('.sub')->text()));
+        self::assertSame('Fill it', trim($hole->filter('a.btn')->text()));
+        self::assertCount(1, $crawler->filter('#today tr.ro-none[hidden]'), 'The no-match row waits, hidden.');
     }
 
     /**
@@ -243,11 +261,59 @@ final class TodayAgendaTest extends WebTestCase
         $crawler = $this->open();
 
         $tomorrow = $crawler->filter('.c')->reduce(
-            static fn (\Symfony\Component\DomCrawler\Crawler $card): bool => str_contains($card->filter('.tab')->count() > 0 ? $card->filter('.tab')->text() : '', 'Tomorrow'),
+            static fn (Crawler $card): bool => str_contains($card->filter('.tab')->count() > 0 ? $card->filter('.tab')->text() : '', 'Tomorrow'),
         );
         self::assertGreaterThan(0, $tomorrow->count());
 
         self::assertStringNotContainsString('no check-in', $tomorrow->text());
         self::assertStringContainsString('due', $tomorrow->text());
+    }
+
+    /** BOTH DAYS CARRY THE REGISTER FOOT, even at one page. */
+    public function testBothDaysCarryTheRegisterFoot(): void
+    {
+        $crawler = $this->open();
+
+        foreach (['#today', '#tomorrow'] as $card) {
+            $foot = $crawler->filter($card.' .rdf-foot');
+            self::assertCount(1, $foot, $card);
+            self::assertStringContainsString('20 per page', $foot->text(), $card);
+            self::assertSame('page 1 of 1', trim($foot->filter('.rdf-page')->text()), $card);
+        }
+    }
+
+    /**
+     * TWENTY ROWS A PAGE, PAGED BY GET LINKS. Twenty-five watches at the
+     * gate are two pages of the day; the arrow is a link to the second, and
+     * the other day's table keeps its own page.
+     */
+    public function testTodayPagesTwentyRowsAtATimeByLinks(): void
+    {
+        $gate = $this->em->getRepository(Station::class)->findOneBy(['code' => 'ST-01']);
+        self::assertInstanceOf(Station::class, $gate);
+        for ($i = 1; $i <= 24; ++$i) {
+            $ranger = new User()->setPassword('x')->setEmail(\sprintf('ranger%02d@example.test', $i))->setFirstName('Ranger')->setLastName(\sprintf('%02d', $i));
+            $this->em->persist($ranger);
+            $this->em->persist(new Duty($this->area, $gate, $ranger, 'day', new \DateTimeImmutable('today')));
+        }
+        $this->em->flush();
+
+        $crawler = $this->open();
+        self::assertCount(20, $crawler->filter('#today tbody tr:not(.ro-none)'));
+        self::assertStringStartsWith('page 1 of 2', trim($crawler->filter('#today .rdf-page')->text()));
+        self::assertStringContainsString('25 watches', $crawler->filter('#today .rdf-foot')->text());
+
+        $next = $crawler->filter('#today .rdf-page a[aria-label="Next page"]');
+        self::assertCount(1, $next);
+        self::assertStringContainsString('today_page=2', (string) $next->attr('href'));
+
+        $second = $this->client->request('GET', (string) $next->attr('href'));
+        self::assertResponseIsSuccessful();
+        self::assertCount(5, $second->filter('#today tbody tr:not(.ro-none)'));
+        self::assertStringStartsWith('page 2 of 2', trim($second->filter('#today .rdf-page')->text()));
+        self::assertSame('page 1 of 1', trim($second->filter('#tomorrow .rdf-page')->text()));
+
+        $all = $this->client->request('GET', (string) $crawler->filter('#today .rdf-size a.i-ddopt')->last()->attr('href'));
+        self::assertCount(25, $all->filter('#today tbody tr:not(.ro-none)'));
     }
 }

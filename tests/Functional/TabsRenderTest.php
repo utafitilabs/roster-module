@@ -174,8 +174,8 @@ final class TabsRenderTest extends WebTestCase
         }
     }
 
-    /** The identity band is byte-identical on every tab. */
-    public function testTheIdentityBandIsOnEveryTab(): void
+    /** The identity band is the Overview's: no other tab wears it. */
+    public function testTheIdentityBandIsOnTheOverviewOnly(): void
     {
         $this->signIn();
         $router = static::getContainer()->get('router');
@@ -184,7 +184,11 @@ final class TabsRenderTest extends WebTestCase
         foreach ($this->declaredTabs() as $tab) {
             $crawler = $this->client->request('GET', $router->generate($tab->routeName, ['uuid' => $this->area->getUuidString()]));
 
-            self::assertSame(1, $crawler->filter('.factband')->count(), \sprintf('The "%s" tab has no identity band.', $tab->label));
+            self::assertSame(
+                'Overview' === $tab->label ? 1 : 0,
+                $crawler->filter('.factband')->count(),
+                \sprintf('The "%s" tab draws the identity band wrongly.', $tab->label),
+            );
         }
     }
 
@@ -203,8 +207,8 @@ final class TabsRenderTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSame(1, $crawler->filter('.cal')->count(), 'The month has to be the atlas\'s grid.');
         self::assertGreaterThan(0, $crawler->filter('.cal .dc')->count());
-        // The ranger picker, as a grouped dropdown in the house's cal-nav.
-        self::assertGreaterThan(0, $crawler->filter('.cal-nav .i-dd')->count());
+        // The ranger picker, the shell's dropdown in the month's own nav row.
+        self::assertSame(1, $crawler->filter('.cal-nav form .dd[data-dd="ranger"]')->count());
     }
 
     /**

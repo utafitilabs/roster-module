@@ -27,6 +27,24 @@
 {% endblock %}
 
 {% block roster_page %}
+    {# WHAT NEEDS A DECISION, as the banner above the band: how many, then
+       which, and the door to the day. Drawn only when something waits;
+       the figures under it say how many of each kind. #}
+    {%- set decisions = dash.decisions -%}
+    {% if decisions is not empty %}
+        {%- set shown = decisions|slice(0, 3) -%}
+        {%- set cause = '—' -%}
+        {%- for row in shown -%}
+            {%- set cause = cause ~ ' ' ~ row.who ~ ', ' ~ row.kindLabel ~ ' at ' ~ row.where ~ (loop.last ? '' : (loop.revindex0 == 1 and decisions|length == shown|length ? ' and' : ';')) -%}
+        {%- endfor -%}
+        {%- set cause = decisions|length > shown|length ? cause ~ ', and ' ~ (decisions|length - shown|length) ~ ' more' : cause -%}
+        {{ include('@Shell/_banner.html.twig', {
+            title: decisions|length ~ ' need' ~ (decisions|length == 1 ? 's' : '') ~ ' a decision',
+            text: cause,
+            actions: {'Today': path(constant('Uhifadhi\\Roster\\Controller\\RosterController::TODAY_ROUTE'), {uuid: area.uuid})},
+        }, with_context: false) }}
+    {% endif %}
+
     {{ include('@UhifadhiRoster/_identity_band.html.twig') }}
 
     {# THE LIBRARY DOOR IS NOT HERE YET, and a door to a screen that does not

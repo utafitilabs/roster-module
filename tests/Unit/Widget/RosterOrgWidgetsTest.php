@@ -55,7 +55,7 @@ final class RosterOrgWidgetsTest extends TestCase
             }
         }
 
-        self::assertSame(['kpis', 'decisions', 'areas'], $on);
+        self::assertSame(['kpis', 'areas'], $on);
     }
 
     /** ONE ARRANGEMENT, and it is the one the surface ships on. */
@@ -67,7 +67,7 @@ final class RosterOrgWidgetsTest extends TestCase
         self::assertSame('a', $catalog->presets()[0]->id);
         self::assertSame(RosterOrgWidgets::DEFAULT_LABEL, $catalog->presets()[0]->label);
         self::assertSame(
-            ['kpis' => 12, 'decisions' => 12, 'areas' => 12],
+            ['kpis' => 12, 'areas' => 12],
             $catalog->presets()[0]->layout,
             'The shipped arrangement is the three that are on, each full width.',
         );

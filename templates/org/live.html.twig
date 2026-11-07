@@ -1,33 +1,48 @@
 {# EVERY AREA, LIVE — one plate, every boundary, every position.
 
-   THE PLATE IS FIRST and what needs an answer is underneath it, which is
-   the area tab's shape read one scope wider. #}
+   TWO COLUMNS: the map in its 768:560 box, capped at 540 px, and every
+   area's rangers beside it. What needs an answer is the banner above. #}
 {% extends '@UhifadhiRoster/org/base.html.twig' %}
 
 {% block title %}Roster · live · {{ scope.label }}{% endblock %}
 
 {% block roster_org_page %}
-    <h2 class="zone">The plate first</h2>
-    <div class="c">
-        <span class="tab">Every area, live<span class="src">&middot; <time datetime="{{ now.format('c') }}" data-localtime-format="time">{{ now.format('H:i') }}</time> &middot; {{ areas|length }} area{{ areas|length == 1 ? '' : 's' }}</span></span>
+    {{ include('@UhifadhiRoster/org/_banner.html.twig', {decisions: decisions, word: 'answer', door: {label: 'Today', route: constant('Uhifadhi\\Roster\\Controller\\RosterOrgController::TODAY_ROUTE')}}, with_context: false) }}
 
-        {% if plate %}
-            <div>{{ render_map(plate, {"--map-plate-height": "min(64vh, 560px)"}) }}</div>
-        {% else %}
-            <div class="rfrag"><b>No area has a boundary to draw</b><em>a plate is the area&rsquo;s ground; without one there is nothing to put the positions on</em></div>
-        {% endif %}
-    </div>
+    <div class="grid g32">
+        <div class="c">
+            <span class="tab">Every area, live<span class="src">&middot; <time datetime="{{ now.format('c') }}" data-localtime-format="time">{{ now.format('H:i') }}</time> &middot; {{ areas|length }} area{{ areas|length == 1 ? '' : 's' }}</span></span>
+            {% if plate %}
+                <div>{{ render_map(plate, {"--map-plate-height": "min(540px, calc((100vw - 120px) * .6 * 560 / 768))"}) }}</div>
+            {% else %}
+                <div class="rfrag"><b>No area has a boundary to draw</b><em>a map is the area&rsquo;s ground; without one there is nothing to put the positions on</em></div>
+            {% endif %}
+        </div>
 
-    <h2 class="zone">Needs an answer, everywhere</h2>
-    <div class="c">
-        <span class="tab">Needs an answer<span class="src">&middot; {{ decisions|length }} of {{ figures.expected }}</span></span>
-        {% for row in decisions %}
-            <div class="rln">
-                <span><span class="orgarea sm" data-cat="{{ row.position }}"><i></i>{{ row.areaName }}</span> &middot; <b>{{ row.decision.who }}</b><em>&middot; {{ row.decision.where }}</em></span>
-                <span class="chip {{ row.decision.tone }}">{{ row.decision.fact }}</span>
-            </div>
-        {% else %}
-            <div class="rfrag"><b>Nothing needs an answer in any area</b><em>every watch that is due has been checked into, and no post has gone quiet</em></div>
-        {% endfor %}
+        <div class="c">
+            <span class="tab">Rangers, every area<span class="src">&middot; {{ rows|length }}</span></span>
+            {{ include('@UhifadhiRoster/org/_filters.html.twig', {
+                here: constant('Uhifadhi\\Roster\\Controller\\RosterOrgController::LIVE_ROUTE'), chosen: chosen, options: options, total: options.area|reduce((sum, o) => sum + o.count, 0),
+            }, with_context: false) }}
+            <table class="tbl ro-tbl">
+                <thead><tr><th>Area</th><th>Ranger</th><th>Post</th><th>Presence</th><th class="num">Ping age</th></tr></thead>
+                <tbody>
+                {% for row in table.rows %}
+                    {%- set seen = row.person.lastSeenAt -%}
+                    <tr>
+                        <td><span class="orgarea" data-cat="{{ row.position }}"><i></i>{{ row.areaName }}</span></td>
+                        <td><b>{{ row.person.personName }}</b></td>
+                        <td>{{ row.post.stationName }}</td>
+                        <td><span class="r-ci {{ row.person.state.value }}"><i></i>{{ row.person.state.label }}</span></td>
+                        <td class="num"><span class="mono d">{% if seen %}<time datetime="{{ seen.format('c') }}" data-localtime-format="time">{{ seen.format('H:i') }}</time>{% else %}&mdash;{% endif %}</span></td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="5" class="fog">{{ chosen|filter(v => v is not null) is empty ? 'Nobody is due in any area today.' : 'Nobody matches.' }}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {{ include('@Shell/_foot.html.twig', table.foot, with_context: false) }}
+            <div class="use"><b>The area is named on every row.</b> Narrow the scope and the same rows remain, minus the areas you dropped.</div>
+        </div>
     </div>
 {% endblock %}

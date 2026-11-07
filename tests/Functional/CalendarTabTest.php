@@ -16,6 +16,7 @@ namespace Uhifadhi\Roster\Tests\Functional;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\DomCrawler\Crawler;
 use Uhifadhi\Bundle\AreaBundle\Entity\AreaOfInterest;
 use Uhifadhi\Bundle\AreaBundle\Entity\Station;
 use Uhifadhi\Bundle\TeamBundle\Entity\User;
@@ -103,7 +104,7 @@ use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
         $this->em->flush();
     }
 
-    private function open(): \Symfony\Component\DomCrawler\Crawler
+    private function open(): Crawler
     {
         $user = $this->em->getRepository(User::class)->findOneBy(['email' => FixedManageVoter::MANAGER_EMAIL]);
         self::assertInstanceOf(User::class, $user);
@@ -118,40 +119,35 @@ use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
         return $crawler;
     }
 
-    /** THE FOUR KPI CARDS the design names, in its order — four, never five. */
-    public function testTheStripDrawsTheDesignsFourCards(): void
+    /** NO STRIP AND NO FIGURES: what the month came to is the caption's. */
+    public function testThePageCarriesNoStripAndNoFigures(): void
     {
         $crawler = $this->open();
 
-        $cards = $crawler->filter('.kstrip .c.kpi');
-        self::assertCount(4, $cards, 'A KPI row is four cards, never five.');
-
-        self::assertSame(
-            ['watches', 'verified', 'needs-an-answer', 'nights-in-a-row'],
-            $cards->each(static fn (\Symfony\Component\DomCrawler\Crawler $card): string => (string) $card->attr('data-kpi')),
-        );
+        self::assertCount(0, $crawler->filter('.factband'));
+        self::assertCount(0, $crawler->filter('.kpi'));
     }
 
     /**
-     * THE PICKER IS A CLOSED GROUPED DROPDOWN, not a panel rendered open,
-     * and every ranger in it is a real link.
+     * THE PICKER IS THE SHELL'S DROPDOWN, searchable, in the month's own nav
+     * row; choosing a ranger sends the page's own form, so the choice is an
+     * address somebody can send.
      */
-    public function testTheRangerPickerIsAClosedDropdownOfRealLinks(): void
+    public function testTheRangerPickerIsTheShellsSearchableDropdown(): void
     {
         $crawler = $this->open();
 
-        // IN THE MONTH'S OWN NAV ROW, through the atlas's controls slot:
-        // one line, the stepper at the left and the picker at the right,
-        // as the design draws it.
-        $picker = $crawler->filter('.cal-plate .cal-nav details.i-dd');
-        self::assertCount(1, $picker, 'A details element the browser opens — never a div that is always open.');
+        $form = $crawler->filter('.cal-plate .cal-nav form[data-controller="roster--filter"]');
+        self::assertCount(1, $form, 'The picker rides in the month\'s nav row.');
         self::assertCount(1, $crawler->filter('.cal-nav'), 'One nav row, not the picker in a row of its own.');
-        self::assertNull($picker->attr('open'));
-        self::assertCount(1, $picker->filter('summary.mchip.i-ddt'));
+        self::assertSame('get', strtolower((string) $form->attr('method')));
+        self::assertCount(1, $form->filter('input[type="hidden"][name="month"]'), 'The month stays where it is.');
 
-        $options = $picker->filter('a.i-ddopt');
-        self::assertGreaterThan(0, $options->count());
-        self::assertStringContainsString('ranger=', (string) $options->eq(0)->attr('href'), 'Choosing a ranger is a url somebody can send.');
+        $picker = $form->filter('.dd.dd-end[data-dd="ranger"]');
+        self::assertCount(1, $picker);
+        self::assertCount(1, $picker->filter('.dd-q input'), 'A ranger is found by typing.');
+        self::assertSame('Ada Example', trim($picker->filter('.dd-v')->text()));
+        self::assertSame('true', $picker->filter('.dd-o[data-value]')->reduce(static fn (Crawler $o): bool => 'Ada Example' === $o->attr('data-label'))->attr('aria-selected'));
     }
 
     /** THE MONTH STEPPER IS THE ATLAS'S, and it is on the page. */
@@ -193,18 +189,14 @@ use Uhifadhi\Roster\Tests\Integration\Fixtures\FixedManageVoter;
     }
 
     /**
-     * THE FIGURES ARE ABOUT THIS PERSON'S MONTH. One watch today and one
-     * night yesterday: two watches, one of them a night.
+     * WHAT THE MONTH CAME TO IS THE CAPTION'S. A day watch today and a
+     * night yesterday were seeded; on the 1st the night is last month's.
      */
-    public function testTheFiguresCountThisRangersOwnMonth(): void
+    public function testTheCaptionCountsThisRangersOwnMonth(): void
     {
         $crawler = $this->open();
 
-        self::assertStringContainsString('3', $crawler->filter('[data-kpi="watches"] .disp')->text(), 'Three watches were seeded.');
-
-        // THE NIGHT BEGAN YESTERDAY, which on the 1st is last month's - so
-        // the run is read on the month that holds it.
-        $nights = $this->client->request('GET', $this->client->getRequest()->getPathInfo().'?month='.new \DateTimeImmutable('yesterday')->format('Y-m'));
-        self::assertSame('1', trim($nights->filter('[data-kpi="nights-in-a-row"] .disp')->text()), 'One night, so the longest run is one.');
+        $expected = new \DateTimeImmutable('yesterday')->format('Y-m') === new \DateTimeImmutable('today')->format('Y-m') ? '2 watches · 1 night' : '1 watch · 0 nights';
+        self::assertStringContainsString($expected, $crawler->filter('.c .tab .src')->eq(0)->text());
     }
 }

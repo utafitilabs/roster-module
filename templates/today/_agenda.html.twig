@@ -1,83 +1,79 @@
 {# ============================================================================
-   THE AGENDA ITSELF — one block per post, one line per watch.
+   THE AGENDA — one day as the house register, a row per watch, and the
+   register foot under it.
 
-   THE PLAN AND THE MEASUREMENT SIDE BY SIDE AND NEVER MERGED. Each line
+   NO ROW IS A BAND. The station is every row's sub-line, so a row read on
+   its own, or on the second page, still says whose post it is.
+
+   THE PLAN AND THE MEASUREMENT SIDE BY SIDE AND NEVER MERGED. Each row
    carries the watch this module rostered AND the state the AREA derived from
    that person's own check-in and pings. The gap between the two is the point
    of the module; one verdict in their place would throw it away.
 
-   A HOLE IS ITS OWN LINE, not a missing one — a watch the pattern asked for
+   A HOLE IS ITS OWN ROW, not a missing one — a watch the pattern asked for
    and nobody is on is the thing somebody has to act on, so it is drawn rather
    than left as an absence the eye has to notice.
 
-   A DAY THAT HAS NOT HAPPENED HAS NO STATE. `reported` is false for tomorrow,
-   and the lines then say when a check-in is due rather than inventing one.
+   A DAY THAT HAS NOT HAPPENED HAS NO STATE. `reported` is false for tomorrow:
+   the register then has no evidence and no ping, and says when a check-in is
+   due rather than inventing one.
    ========================================================================== #}
 {% set reported = reported|default(false) %}
-<div class="r-ag">
-    {% for post in posts %}
-        <div class="r-ag-post">
-            <b>{{ post.stationName }}</b>
-            <span class="sp"></span>
-            {% if reported %}<span class="r-st-state {{ post.state.value }}"><i></i>{{ post.state.label }}</span>{% endif %}
-            <span class="unit">{{ post.rostered|length }} on the watch{% if post.expected %} of {{ post.expected }}{% endif %}</span>
-        </div>
-
-        {% for person in post.rostered %}
-            {% for watch in person.watches %}
-                <div class="r-ag-line">
-                    <span class="av">{{ person.personName|split(' ')|map(w => w|first)|join|slice(0, 2)|upper }}</span>
-                    <span class="nm">{{ person.personName }}<em>{{ person.shiftLabel|lower }}{% if person.watchCount > 1 %} &middot; watch {{ loop.index }} of {{ person.watchCount }}{% endif %}</em></span>
-                    <span class="r-sh"><i></i>{{ person.shiftLabel|lower }}</span>
-                    <span class="why">
-                        {%- if watch.state.value == 'at_post_unverified' %}
-                            {{ watch.unverifiedReason ? watch.unverifiedReason.label : 'unverified' }}
-                            {%- if watch.distanceM is not null %} &mdash; the nearest ping is {{ watch.distanceM >= 1000 ? (watch.distanceM / 1000)|number_format(1) ~ ' km' : watch.distanceM|round ~ ' m' }} away{% endif %}
-                        {%- elseif watch.statusLabel %}
-                            {{ watch.statusLabel }}{% if watch.note %} &mdash; {{ watch.note }}{% endif %}
-                        {%- else %}
-                            {{ watch.pings }} position{{ watch.pings == 1 ? '' : 's' }} since the check-in
-                        {%- endif %}
-                        {%- if watch.notCheckedOut %} &middot; <b>nobody closed this watch</b>{% endif %}
-                    </span>
-                    <span class="r-ci {{ watch.state.value }}"><i></i>{{ watch.state.label }}</span>
-                    <span class="r-ping {{ watch.lastPingAt ? 'on' : 'off' }}"><i></i>
-                        {%- if watch.lastPingAt %}<time datetime="{{ watch.lastPingAt.format('c') }}" data-localtime-format="time">{{ watch.lastPingAt.format('H:i') }}</time>{% else %}no ping{% endif -%}
-                    </span>
-                </div>
-            {% else %}
-                <div class="r-ag-line">
-                    <span class="av">{{ person.personName|split(' ')|map(w => w|first)|join|slice(0, 2)|upper }}</span>
-                    <span class="nm">{{ person.personName }}<em>{{ person.shiftLabel|lower }}</em></span>
-                    <span class="r-sh"><i></i>{{ person.shiftLabel|lower }}</span>
-                    <span class="why">
-                        {%- if reported %}nothing has arrived for this day{% else %}the check-in is not expected until the watch begins{% endif -%}
-                    </span>
-                    <span class="r-ci {{ reported ? 'no_check_in' : 'due' }}"><i></i>{{ reported ? 'no check-in' : 'due' }}</span>
-                    <span class="r-ping off"><i></i>no ping</span>
-                </div>
-            {% endfor %}
-        {% endfor %}
-
-        {% if post.shortfall %}
-            <div class="r-ag-line hole">
-                <span class="av">!</span>
-                <span class="nm">{{ post.shortfall }} unfilled<em>{{ post.rostered|length }} of {{ post.expected }}</em></span>
-                <span class="r-sh"><i></i>hole</span>
-                <span class="why">the pattern asked for {{ post.expected }} and nobody is on the rest</span>
-                <span class="r-ci no_check_in"><i></i>hole</span>
-                <a class="btn sm" href="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterController::WEEK_ROUTE'), {uuid: area.uuid}) }}">Fill it</a>
-            </div>
+{% set span = reported ? 5 : 4 %}
+{%- macro station(post) -%}{{ post.stationName }}{% if post.stationCode %} &middot; {{ post.stationCode }}{% endif %}{%- endmacro -%}
+<table class="tbl ro-tbl">
+    <colgroup>
+        {%- if reported %}<col style="width:19%"><col style="width:18%"><col><col style="width:20%"><col style="width:12%">
+        {%- else %}<col style="width:22%"><col style="width:20%"><col><col style="width:24%">{% endif -%}
+    </colgroup>
+    <thead><tr><th>Ranger</th><th>Shift</th><th>{{ reported ? 'Evidence' : 'Note' }}</th><th>Check-in</th>{% if reported %}<th>Last ping</th>{% endif %}</tr></thead>
+    <tbody>
+    {% for row in rows %}
+        {%- set post = row.post -%}
+        {%- set person = row.person -%}
+        {%- set watch = row.watch -%}
+        {% if row.kind == 'watch' %}
+            <tr data-person>
+                <td><b>{{ person.personName }}</b><span class="sub">{{ _self.station(post) }}{% if person.watchCount > 1 %} &middot; watch {{ row.index }} of {{ person.watchCount }}{% endif %}</span></td>
+                <td><span class="r-sh"><i></i>{{ person.shiftLabel|lower }}</span></td>
+                <td class="fog">
+                    {%- if watch.state.value == 'at_post_unverified' %}
+                        {{ watch.unverifiedReason ? watch.unverifiedReason.label : 'unverified' }}
+                        {%- if watch.distanceM is not null %} &mdash; the nearest ping is {{ watch.distanceM >= 1000 ? (watch.distanceM / 1000)|number_format(1) ~ ' km' : watch.distanceM|round ~ ' m' }} away{% endif %}
+                    {%- elseif watch.statusLabel %}
+                        {{ watch.statusLabel }}{% if watch.note %} &mdash; {{ watch.note }}{% endif %}
+                    {%- else %}
+                        {{ watch.pings }} position{{ watch.pings == 1 ? '' : 's' }} since the check-in
+                    {%- endif %}
+                    {%- if watch.notCheckedOut %} &middot; <b>nobody closed this watch</b>{% endif -%}
+                </td>
+                <td><span class="r-ci {{ watch.state.value }}"><i></i>{{ watch.state.label }}</span></td>
+                {% if reported %}<td><span class="r-ping {{ watch.lastPingAt ? 'on' : 'off' }}"><i></i>
+                    {%- if watch.lastPingAt %}<time datetime="{{ watch.lastPingAt.format('c') }}" data-localtime-format="time">{{ watch.lastPingAt.format('H:i') }}</time>{% else %}no ping{% endif -%}
+                </span></td>{% endif %}
+            </tr>
+        {% elseif row.kind == 'unreported' %}
+            <tr data-person>
+                <td><b>{{ person.personName }}</b><span class="sub">{{ _self.station(post) }}</span></td>
+                <td><span class="r-sh"><i></i>{{ person.shiftLabel|lower }}</span></td>
+                <td class="fog">{% if reported %}nothing has arrived for this day{% endif %}</td>
+                <td><span class="r-ci {{ reported ? 'no_check_in' : 'due' }}"><i></i>{{ reported ? 'no check-in' : 'check-in due' }}</span></td>
+                {% if reported %}<td><span class="r-ping off"><i></i>no ping</span></td>{% endif %}
+            </tr>
+        {% elseif row.kind == 'hole' %}
+            <tr class="ro-hole">
+                <td><b class="r">Unfilled</b><span class="sub">{{ _self.station(post) }} &middot; {{ post.rostered|length }} of {{ post.expected }}</span></td>
+                <td><span class="r-sh st-fail"><i></i>hole</span></td>
+                <td class="r">the pattern asked for {{ post.expected }} and nobody is on the rest</td>
+                <td{% if reported %} colspan="2"{% endif %} class="ro-end"><a class="btn sm" href="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterController::WEEK_ROUTE'), {uuid: area.uuid}) }}">Fill it</a></td>
+            </tr>
+        {% else %}
+            <tr>
+                <td><span class="d">Nobody rostered</span><span class="sub">{{ _self.station(post) }}</span></td>
+                <td colspan="{{ span - 1 }}" class="fog">this post asks for nobody on this day &mdash; reporting and unstaffed are different facts</td>
+            </tr>
         {% endif %}
-
-        {% if post.rostered is empty and not post.shortfall %}
-            <div class="r-ag-line">
-                <span class="av">&mdash;</span>
-                <span class="nm">nobody rostered</span>
-                <span class="why">this post asks for nobody on this day &mdash; reporting and unstaffed are different facts</span>
-            </div>
-        {% endif %}
-    {% else %}
-        <div class="rfrag"><b>{{ empty|default('No post is on the roster’s books') }}</b><em>{{ emptyWhy|default('a watch is given to a post deliberately, so none is assumed') }}</em></div>
     {% endfor %}
-</div>
+        <tr class="ro-none"{% if rows is not empty %} hidden{% endif %}><td colspan="{{ span }}">{{ empty|default('Nothing matches.') }}</td></tr>
+    </tbody>
+</table>
