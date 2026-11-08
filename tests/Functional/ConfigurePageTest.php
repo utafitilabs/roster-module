@@ -255,8 +255,8 @@ final class ConfigurePageTest extends WebTestCase
     /**
      * THE ROSTER KEEPS NO SETTINGS OF ITS OWN (0.2, ruled 2 Oct 2026): its
      * four stored answers were read by nothing and went, so the section shows
-     * the area's check-in statuses, read here and written on the area, and
-     * offers nothing to save.
+     * the area's check-in statuses, which are set when the area is created
+     * and have no editor yet, and offers nothing to save.
      */
     public function testTheSettingsSectionShowsTheCheckInStatusesAndNothingToSave(): void
     {
@@ -267,6 +267,8 @@ final class ConfigurePageTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertStringContainsString('Check-in statuses', $crawler->filter('body')->text());
         self::assertStringNotContainsString('Off days on a tour', $crawler->filter('body')->text());
+        self::assertStringNotContainsString('written there', $crawler->filter('body')->text());
+        self::assertStringContainsString('set when the area is created', $crawler->filter('body')->text());
         self::assertSame(0, $crawler->filter('button[type=submit]')->count());
     }
 

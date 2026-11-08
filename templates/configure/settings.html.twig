@@ -47,12 +47,13 @@
 
 {# THE CHECK-IN STATUSES A RANGER IS OFFERED are the AREA's list, not this
    module's. The design puts them on this page because this is where somebody
-   configuring the roster looks for them — read here, written there. #}
+   configuring the roster looks for them. They are set when the area is
+   created; no screen edits them yet. #}
 <div style="height:12px"></div>
 <div class="c rband">
     <div class="rb-hd">
         <span class="tab">Check-in statuses</span>
-        <span class="rb-ttl">what a ranger is offered on the handset &middot; the <b>area&rsquo;s</b> list, read here and written there</span>
+        <span class="rb-ttl">what a ranger is offered on the handset &middot; the <b>area&rsquo;s</b> list, set when the area is created</span>
     </div>
     <div class="rb-body">
         {% for status in checkInStatuses %}
