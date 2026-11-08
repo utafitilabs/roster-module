@@ -37,7 +37,7 @@
         "symfony/twig-bundle": "^7.3 || ^8.0",
         "symfony/uid": "^7.3 || ^8.0",
         "symfony/ux-icons": "^2.20 || ^3.0",
-        "uhifadhi/uhifadhi": "^0.2.4"
+        "uhifadhi/uhifadhi": "^0.2.4 || ^0.3"
     },
     "require-dev": {
         "api-platform/core": "^4.4",
