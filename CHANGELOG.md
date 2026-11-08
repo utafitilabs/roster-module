@@ -13,6 +13,13 @@ has to do for a release is in [docs/upgrading.md](docs/upgrading.md).
 
 ## Unreleased
 
+ * THE STATION BLOCKS ARE STYLED ON THE AREA'S PAGES. The block on Configure › Stations and the band
+   on a station's record are drawn in `.rset`, `.r-sh`, `.r-ci`, `.r-st-state`, `.rfrag` and the
+   `ro-tbl` register, whose rules lived only in roster.css, a sheet the area's pages never link. They
+   move to `public/station.css` (`bundles/uhifadhiroster/station.css`,
+   `UhifadhiRosterBundle::STATION_STYLESHEET`), which `RosterStylesheets` puts in every head beside
+   me.css; roster.css no longer defines them, and the roster's own pages get them from the same head.
+
  * THE TAB PAGES FOLLOW THE 8 NOV DESIGN SWEEP (design-sweep-strips, batches b and g). The band and
    the figures stay on the Overview only: Today, Week, Day board, Calendar and Live lose the identity
    band and their KPI rows. Today, Week and the Day board carry the shell's in-page index

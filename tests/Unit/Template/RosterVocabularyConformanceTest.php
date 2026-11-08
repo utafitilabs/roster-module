@@ -37,9 +37,9 @@ final class RosterVocabularyConformanceTest extends VocabularyConformanceTestCas
 
     protected static function ownStylesheets(): array
     {
-        // AND THE SHEET A PERSON'S OWN ROSTER IS DRAWN IN (#19), which the
-        // head carries onto the core's dashboard for the card.
-        return ['roster.css', 'me.css'];
+        // AND THE SHEETS THE HEAD CARRIES ONTO OTHER PACKAGES' PAGES: the
+        // person's own roster (#19) and the blocks on a station's cards.
+        return ['roster.css', 'me.css', 'station.css'];
     }
 
     /**
@@ -135,8 +135,13 @@ final class RosterVocabularyConformanceTest extends VocabularyConformanceTestCas
 
     private static function theOwnSheet(): string
     {
-        $sheet = file_get_contents(self::bundlePath().'/public/roster.css');
-        self::assertIsString($sheet);
+        // The setting row's family lives in station.css, the rest in roster.css.
+        $sheet = '';
+        foreach (['roster.css', 'station.css'] as $name) {
+            $css = file_get_contents(self::bundlePath().'/public/'.$name);
+            self::assertIsString($css);
+            $sheet .= $css;
+        }
 
         return $sheet;
     }

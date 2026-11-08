@@ -115,6 +115,15 @@ final class UhifadhiRosterBundle extends AbstractBundle
     public const string ME_STYLESHEET = 'bundles/uhifadhiroster/me.css';
 
     /**
+     * THE SHEET THE ROSTER'S STATION BLOCKS ARE DRAWN IN — the block on an
+     * area's Configure › Stations card and the band on a station's record,
+     * and the shift and check-in chips and setting rows they are made of.
+     * Those blocks are drawn on the area's pages, so this one is published
+     * into every head ({@see RosterStylesheets}).
+     */
+    public const string STATION_STYLESHEET = 'bundles/uhifadhiroster/station.css';
+
+    /**
      * The AssetMapper namespace for the bundle's Stimulus controllers. It MUST
      * be the npm-style form of the composer package name: Flex keys
      * assets/controllers.json by '@'.<package name> and StimulusBundle

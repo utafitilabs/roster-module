@@ -71,101 +71,6 @@
 
 .rband .rb-body { padding: 12px 15px 13px; }
 
-/* ---- FRAGMENTS, NOT ESSAYS ------------------------------------------------
- * RULED 2026-09-18. A screen states facts. Where a card has to say one thing
- * that is not in its rows, it says it as a fragment line — a label and a
- * value — never as a paragraph. */
-.rfrag {
-    display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap;
-    font: 500 11px var(--font-mono); color: var(--dim);
-    padding-top: 8px; margin-top: 8px; border-top: 1px dashed var(--ln);
-}
-
-.rfrag b { font-weight: 700; color: var(--fog); }
-.rfrag em { font-style: normal; color: var(--fog); }
-
-/* A FRAGMENT THAT NAMES A GAP RATHER THAN A RULE — something the product
- * cannot honour yet, marked so a reader does not take it for ordinary
- * commentary and go on setting a field that changes nothing. It is a colour
- * on the lead and nothing else: a left bar on anything but the focus line
- * was ruled out on 21 sep. */
-.rfrag.flagged b { color: var(--warn); }
-
-/* ---- THE SHIFT CHIP -------------------------------------------------------
- * ONE vocabulary for a shift, everywhere the module draws one. A shift is a
- * NAMED WINDOW; it is never a free pair of times typed twice.
- *
- * It is a <label> wrapping a checkbox on the Watches section and a plain
- * <span> everywhere else, so the rules dress both and the input itself is
- * visually hidden rather than removed — a checkbox that is display:none is a
- * checkbox nothing can tab to. */
-.r-sh {
-    display: inline-flex; align-items: center; gap: 5px;
-    font: 600 9px var(--font-mono); letter-spacing: .06em; text-transform: uppercase;
-    border: 1px solid var(--ln2); border-radius: 99px; padding: 3px 8px 2px;
-    color: var(--fog); white-space: nowrap; cursor: pointer;
-}
-
-.r-sh i { width: 6px; height: 6px; border-radius: 2px; font-style: normal; flex: none; background: var(--fog); }
-
-.r-sh input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-
-.r-sh:focus-within { outline: 2px solid var(--acc); outline-offset: 2px; }
-
-/* A CHIP, NOT A CONTROL. `.r-sh.on` is the shell's `.chip.acc` reading — an
-   outlined accent chip — and not the filled `.mchip.on` a picked control
-   wears. The two are different gestures: one says "this is so", the other
-   says "you chose this". */
-.r-sh.on { color: var(--acc); border-color: color-mix(in srgb, var(--acc) 45%, transparent); }
-.r-sh.on i { background: var(--acc); }
-
-/* A closed shift is dimmed, never hidden: a past month keeps the words that
-   describe it, so the list has to be able to show one. */
-.r-sh.closed { color: var(--dim); border-style: dashed; }
-.r-sh.closed i { background: none; border: 1px solid var(--dim); }
-
-/* THE THREE STATES A CHIP MAY CARRY, and they are the HOUSE's semantic
- * tokens rather than anything of this module's. A module has no hue (ruled
- * 21 sep): borne out, wants an eye, and wrong are facts every screen in the
- * installation states the same colour, and a roster that invented its own
- * would be teaching the reader a second vocabulary for the same three
- * things. The design's day/night/office chip hues are the workspace's own
- * referencing; they are deliberately not ported. */
-.r-sh.st-ok i { background: var(--ok); }
-.r-sh.st-warn i { background: var(--warn); }
-.r-sh.st-fail { color: var(--fail); border-color: color-mix(in srgb, var(--fail) 45%, transparent); }
-.r-sh.st-fail i { background: var(--fail); }
-
-/* ---- THE WATCH / SETTING ROW ----------------------------------------------
- * A label, the controls, and the CONSEQUENCE of choosing wrong. The third
- * column is what makes a setting answerable by somebody who did not design
- * it, so it is part of the component and not an optional extra. */
-.rset {
-    display: grid; grid-template-columns: minmax(0, 200px) minmax(0, 1fr) minmax(0, 1.4fr);
-    gap: 12px; align-items: start;
-    padding: 10px 0; border-bottom: 1px dashed var(--ln);
-}
-
-/* And the two families that predate the redesign, swept with them: both sit
-   above a `.staddrow` on the Settings section. MOVES TO THE SHELL. */
-.rset:last-of-type,
-.rset:has(+ .staddrow) { border-bottom: 0; }
-
-.rset > .lb { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.rset > .lb b { font-size: 12px; color: var(--tx); font-weight: 700; }
-.rset > .lb em { font-style: normal; font-size: 10.5px; color: var(--dim); }
-
-.rset > .ct { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
-.rset > .ct .fld { max-width: 96px; }
-
-.rset > .why { font-size: 11px; line-height: 1.5; color: var(--dim); min-width: 0; }
-.rset > .why b { color: var(--fog); }
-
-.rset .unit {
-    font: 600 9px var(--font-mono); letter-spacing: .06em;
-    text-transform: uppercase; color: var(--dim); white-space: nowrap;
-}
-
 /* ---- THE TWO-STATE SWITCH -------------------------------------------------
  * Two mutually exclusive answers shown side by side, because the point of
  * these settings is that BOTH answers are legitimate for some organization
@@ -186,74 +91,6 @@
 .rsw label:focus-within { outline: 2px solid var(--acc); outline-offset: -2px; }
 
 .rsw input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-
-/* ---- NARROW ---------------------------------------------------------------
- * The three-column row is the first thing to go: a consequence sentence
- * squeezed into a third of a phone is a sentence nobody reads. */
-@media (max-width: 860px) {
-    .rset { grid-template-columns: minmax(0, 1fr); gap: 7px; }
-}
-
-/* ---- HOW A DAY READS, AND HOW A POST READS -------------------------------
- * Two chips and they are deliberately different shapes, because they answer
- * different questions. `.r-ci` is a PERSON's day as the area derived it;
- * `.r-st-state` is a POST's own state, which is the one thing this module
- * derives. A screen that drew them the same would invite somebody to read
- * "offline" as a fact about a ranger.
- *
- * UNVERIFIED IS WARNED, NEVER ACCUSED. It gets the warning hue and not the
- * failure one: no fix arrived, or the post has no ring, or the position fell
- * outside it — and none of those three is "absent". The reason is printed
- * beside the chip for exactly that reason. */
-.r-ci {
-    display: inline-flex; align-items: center; gap: 5px;
-    font: 600 9px var(--font-mono); letter-spacing: .06em; text-transform: uppercase;
-    border: 1px solid var(--ln2); border-radius: 99px; padding: 3px 8px 2px;
-    color: var(--fog); white-space: nowrap;
-}
-
-.r-ci i { width: 6px; height: 6px; border-radius: 99px; font-style: normal; flex: none; background: var(--fog); }
-
-.r-ci.at_post_verified { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, transparent); }
-.r-ci.at_post_verified i { background: var(--ok); }
-
-.r-ci.at_post_unverified { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
-.r-ci.at_post_unverified i { background: var(--warn); }
-
-/* Working elsewhere and special assignment are ON DUTY. Neutral, not warned:
-   a ranger in court has failed at nothing. */
-.r-ci.working_elsewhere i,
-.r-ci.special i { background: var(--acc); }
-
-.r-ci.not_working { color: var(--dim); border-style: dashed; }
-.r-ci.not_working i { background: none; border: 1px solid var(--dim); }
-
-/* No check-in is not "absent" and not a failure either: somebody may be
-   rostered and not yet have tapped. Stated, and left uncoloured. */
-.r-ci.no_check_in { color: var(--dim); border-style: dashed; }
-.r-ci.no_check_in i { background: var(--dim); opacity: .6; }
-
-.r-st-state {
-    display: inline-flex; align-items: center; gap: 5px;
-    font: 700 9px var(--font-mono); letter-spacing: .08em; text-transform: uppercase;
-    border-radius: 4px; padding: 3px 8px 2px; color: var(--fog); background: var(--raised);
-    white-space: nowrap;
-}
-
-.r-st-state i { width: 6px; height: 6px; border-radius: 2px; font-style: normal; flex: none; background: var(--fog); }
-
-.r-st-state.reporting { color: var(--ok); }
-.r-st-state.reporting i { background: var(--ok); }
-
-.r-st-state.late { color: var(--warn); }
-.r-st-state.late i { background: var(--warn); }
-
-.r-st-state.offline { color: var(--fail); }
-.r-st-state.offline i { background: var(--fail); }
-
-/* A post that declares no watch is not in a bad state; it is in no state. */
-.r-st-state.no_watch { color: var(--dim); }
-.r-st-state.no_watch i { background: var(--dim); }
 
 /* ---- THE CHECK-IN STATUS LIST --------------------------------------------
  * The AREA's list, read on this module's Settings section. A retired status
@@ -1591,16 +1428,6 @@ select.psbs { padding-right: 24px; }
    under it, 10.5/700 mono the chips, 11/400 mono the age of a ping.
    ========================================================================== */
 
-/* A register lays out on its own column widths, so a long cell wraps inside
-   its column and never widens the page. */
-table.tbl.ro-tbl { table-layout: fixed; }
-table.tbl.ro-tbl td { vertical-align: middle; overflow-wrap: anywhere; }
-table.tbl.ro-tbl td.ro-end { text-align: right; }
-table.tbl.ro-tbl th { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-/* the roster's own chips, on the house scale while they sit in a register;
-   a narrow column wraps a chip instead of pushing past its cell */
-table.tbl .r-ci, table.tbl .r-sh { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; white-space: normal; border-radius: 10px; line-height: 1.3; }
 table.tbl .r-ping { font-size: 11px; font-weight: 400; white-space: normal; }
 
 /* a watch nobody fills, and the row a filter leaves when nothing matches */
