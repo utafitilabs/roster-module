@@ -17,20 +17,20 @@
    | page subline, three fragments | chrome  | static                   | none             | done   |
    | h2.zone + subhead → Watches   | chrome  | static                   | door to Watches  | done   |
    | Check-in statuses card        | data    | the AREA's list          | none — read here | done   |
+   | "Edit on the area →" door     | control | the core's editor route  | door to the area | done — only where the core has the editor |
+   | n offered, m not offered      | data    | CheckInStatus.active     | none             | done   |
    | one .rstat per status         | data    | CheckInStatus            | none             | done   |
-   | retired row, dimmed and kept  | state   | CheckInStatus            | none             | done   |
+   | not offered row, dimmed, kept | state   | CheckInStatus            | none             | done   |
    | empty status list             | state   | the area offers none     | none             | done   |
    | off days · leave approval     | —       | —                        | —                | RETIRED 2 Oct 2026: read by nothing, return with their feature |
    | catchment / thresholds        | —       | —                        | —                | ON Watches, ruled 20–21 sep |
    | ping interval                 | —       | —                        | —                | SETTINGS › CORE'S: shown read-only on Watches |
    | shift vocabulary row          | —       | —                        | —                | MOVED to Watches, ruled 21 sep |
-   | .rstat re-order / edit / retire | —     | —                        | —                | NOT THIS MODULE'S: the area writes them |
+   | .rstat re-order / edit / deactivate | — | —                       | —                | NOT THIS MODULE'S: the area writes them |
 
-   THE ONE "post" LEFT ON THIS PAGE IS THE AREA'S CHECK-IN STATUS — the
-   `at_post` key, its "At post" label and the kind it carries. The key is
-   issued once and every stored check-in holds it, the label is the area's
-   to reword and not this module's, and the kind's wording is the area
-   module's enum. It stays until the owner rules on it.
+   THE KIND IS SAID IN THE PLATFORM'S WORDS (At a station, Working elsewhere,
+   Not working, Special assignment). The `at_post` key and its "At post"
+   label are the area's own data.
    ========================================================================== #}
 {% extends '@UhifadhiRoster/configure/_frame.html.twig' %}
 
@@ -46,27 +46,30 @@
 <p class="pgsub">The check-in statuses the area offers &middot; shifts and the rules that read them are edited once, on <a href="{{ path(constant('Uhifadhi\\Roster\\Controller\\RosterConfigureController::WATCHES_ROUTE'), {uuid: area.uuid}) }}">Watches</a></p>
 
 {# THE CHECK-IN STATUSES A RANGER IS OFFERED are the AREA's list, not this
-   module's. The design puts them on this page because this is where somebody
-   configuring the roster looks for them. They are set when the area is
-   created; no screen edits them yet. #}
+   module's, READ-ONLY HERE: edited on the area's Configure › Area settings
+   card, and this card's one door goes there — drawn only where the core has
+   that editor, and only for whoever may configure the area. #}
+{%- set _offered = checkInStatuses|filter(s => s.isActive)|length -%}
+{%- set _notOffered = checkInStatuses|length - _offered -%}
 <div style="height:12px"></div>
 <div class="c rband">
+    {%- if checkInStatusEditor and door('areas.configure', area) %}<a class="more" href="{{ checkInStatusEditor }}">Edit on the area &rarr;</a>{% endif %}
     <div class="rb-hd">
         <span class="tab">Check-in statuses</span>
-        <span class="rb-ttl">what a ranger is offered on the handset &middot; the <b>area&rsquo;s</b> list, set when the area is created</span>
+        <span class="rb-ttl">what a ranger is offered on the handset, in this order &mdash; the <b>area&rsquo;s</b> list &middot; <b>{{ _offered }} offered</b>{% if _notOffered %}, {{ _notOffered }} not offered{% endif %}</span>
     </div>
     <div class="rb-body">
         {% for status in checkInStatuses %}
-            <div class="rstat {{ status.isActive ? '' : 'off' }}">
-                <span class="ord">{{ status.isActive ? loop.index : '—' }}</span>
+            <div class="rstat{{ status.isActive ? '' : ' off' }}">
+                <span class="ord"><b>{{ status.isActive ? loop.index : '—' }}</b></span>
                 <span class="nm"><b>{{ status.label }}</b><span class="key">{{ status.key }}</span></span>
-                <span class="kind">{{ status.kind.label }}</span>
+                <span class="kind">{{ status.kind.label|capitalize }}</span>
                 <span class="st">
-                    {%- if status.isActive %}
-                        offered on the handset
-                    {%- else %}
-                        retired &middot; kept, so a past day keeps its word
-                    {%- endif %}
+                    {%- if status.isActive -%}
+                        <b>offered</b> on the handset
+                    {%- else -%}
+                        not offered &middot; its past check-ins keep it
+                    {%- endif -%}
                 </span>
             </div>
         {% else %}

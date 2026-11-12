@@ -34,7 +34,6 @@ use Uhifadhi\Bundle\AreaBundle\Entity\Station;
 use Uhifadhi\Bundle\AreaBundle\Enum\IntervalUnit;
 use Uhifadhi\Bundle\AreaBundle\Repository\PostingRepository;
 use Uhifadhi\Bundle\AreaBundle\Repository\StationRepository;
-use Uhifadhi\Bundle\AreaBundle\Service\CheckInStatusService;
 use Uhifadhi\Contracts\Access\Verb;
 use Uhifadhi\Roster\Access\RosterConcerns;
 use Uhifadhi\Roster\Entity\Rotation;
@@ -52,6 +51,7 @@ use Uhifadhi\Roster\Model\RuleValue;
 use Uhifadhi\Roster\Module\RosterModuleProvider;
 use Uhifadhi\Roster\Repository\RotationRepository;
 use Uhifadhi\Roster\Service\ApprovalService;
+use Uhifadhi\Roster\Service\CheckInStatusesCardService;
 use Uhifadhi\Roster\Service\RegisterFootService;
 use Uhifadhi\Roster\Service\RosteredPeople;
 use Uhifadhi\Roster\Service\RosterIdentityService;
@@ -160,7 +160,7 @@ final class RosterConfigureController
         // on the people the AREA posted there, which is the only list this
         // module could honestly seed a pool from.
         private readonly PostingRepository $postings,
-        private readonly CheckInStatusService $checkInStatuses,
+        private readonly CheckInStatusesCardService $checkInStatuses,
         private readonly RosteredPeople $people,
         private readonly RotationEditor $editor,
         private readonly RotationPreview $preview,
@@ -531,7 +531,8 @@ final class RosterConfigureController
             // the area and so do the statuses it can carry; this section
             // shows them because this is where somebody configuring the
             // roster looks for them, and links to where they are edited.
-            'checkInStatuses' => $this->checkInStatuses->offeredBy($area),
+            'checkInStatuses' => $this->checkInStatuses->statusesOf($area),
+            'checkInStatusEditor' => $this->checkInStatuses->editorUrlFor((string) $area->getUuidString()),
         ]));
     }
 

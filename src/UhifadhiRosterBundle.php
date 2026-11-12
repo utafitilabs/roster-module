@@ -674,7 +674,7 @@ final class UhifadhiRosterBundle extends AbstractBundle
                     service('roster.station_watches'),
                     service(StationRepository::class),
                     service(PostingRepository::class),
-                    service(CheckInStatusService::class),
+                    service('roster.check_in_statuses_card'),
                     service('roster.rostered_people'),
                     service('roster.rotation_editor'),
                     service('roster.rotation_preview'),

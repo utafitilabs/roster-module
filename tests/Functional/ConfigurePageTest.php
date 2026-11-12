@@ -19,6 +19,7 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\DomCrawler\Crawler;
 use Uhifadhi\Bundle\AreaBundle\Entity\AreaOfInterest;
 use Uhifadhi\Bundle\AreaBundle\Entity\Station;
+use Uhifadhi\Bundle\AreaBundle\Service\CheckInStatusService;
 use Uhifadhi\Bundle\TeamBundle\Entity\User;
 use Uhifadhi\Roster\Entity\StationWatch;
 use Uhifadhi\Roster\Enum\ForbiddenDay;
@@ -268,8 +269,35 @@ final class ConfigurePageTest extends WebTestCase
         self::assertStringContainsString('Check-in statuses', $crawler->filter('body')->text());
         self::assertStringNotContainsString('Off days on a tour', $crawler->filter('body')->text());
         self::assertStringNotContainsString('written there', $crawler->filter('body')->text());
-        self::assertStringContainsString('set when the area is created', $crawler->filter('body')->text());
         self::assertSame(0, $crawler->filter('button[type=submit]')->count());
+    }
+
+    /**
+     * THE CARD IS THE AREA'S LIST, READ-ONLY: every status, the offered ones
+     * in order and then the ones not offered, each kind in the platform's
+     * words, and one door to where the area edits them.
+     */
+    public function testTheStatusesCardReadsTheAreasListAndDoorsToItsEditor(): void
+    {
+        /** @var CheckInStatusService $statuses */
+        $statuses = static::getContainer()->get(CheckInStatusService::class);
+        foreach ($statuses->offeredBy($this->area) as $status) {
+            $status->setActive('unfit' !== $status->getKey());
+        }
+        $this->em->flush();
+
+        $this->signIn(FixedManageVoter::MANAGER_EMAIL);
+        $crawler = $this->client->request('GET', $this->url('settings'));
+
+        $card = $crawler->filter('.c.rband')->reduce(static fn (Crawler $c): bool => str_contains($c->filter('.tab')->text(), 'Check-in statuses'));
+        self::assertCount(1, $card);
+        self::assertSame('Edit on the area →', trim($card->filter('a.more')->text()));
+        self::assertSame('/areas/'.$this->area->getUuidString().'/configure/settings#check-in-statuses', $card->filter('a.more')->attr('href'));
+        self::assertStringContainsString('3 offered', $card->filter('.rb-ttl')->text());
+        self::assertStringContainsString('1 not offered', $card->filter('.rb-ttl')->text());
+        self::assertSame(['At a station', 'Working elsewhere', 'Special assignment', 'Not working'], $card->filter('.rstat .kind')->each(static fn (Crawler $k): string => trim($k->text())));
+        self::assertSame('not offered · its past check-ins keep it', trim($card->filter('.rstat.off .st')->text()));
+        self::assertStringNotContainsString('retired', $card->text());
     }
 
     /** And nothing posted to it is taken: the save went with the settings. */

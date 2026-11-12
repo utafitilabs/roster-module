@@ -14,6 +14,8 @@ declare(strict_types=1);
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
 use Uhifadhi\Bundle\AreaBundle\Repository\AreaOfInterestRepository;
+use Uhifadhi\Bundle\AreaBundle\Repository\CheckInStatusRepository;
+use Uhifadhi\Bundle\AreaBundle\Service\CheckInStatusService;
 use Uhifadhi\Bundle\AreaBundle\Service\StationService;
 use Uhifadhi\Contracts\Area\PresenceProviderInterface;
 use Uhifadhi\Roster\Repository\AbsenceRepository;
@@ -30,6 +32,7 @@ use Uhifadhi\Roster\Repository\StationWatchRepository;
 use Uhifadhi\Roster\Repository\SwapRepository;
 use Uhifadhi\Roster\Repository\WatchChangeRepository;
 use Uhifadhi\Roster\Service\ApprovalService;
+use Uhifadhi\Roster\Service\CheckInStatusesCardService;
 use Uhifadhi\Roster\Service\CyclePlanner;
 use Uhifadhi\Roster\Service\DayBoardService;
 use Uhifadhi\Roster\Service\MyRosterService;
@@ -127,6 +130,15 @@ return static function (ContainerConfigurator $container): void {
     // Watches rules.
     $services->set('roster.settings', RosterSettingsService::class)
         ->args([service('area.ping_interval')]);
+
+    // THE AREA'S CHECK-IN STATUSES, read for the settings section's card, and
+    // the door to the core's editor where the core has one.
+    $services->set('roster.check_in_statuses_card', CheckInStatusesCardService::class)
+        ->args([
+            service(CheckInStatusService::class),
+            service(CheckInStatusRepository::class),
+            service('router'),
+        ]);
 
     // THE AREA'S ONE LIST OF NAMED SHIFTS, seeded from the configured
     // vocabulary the first time anybody asks for it.
