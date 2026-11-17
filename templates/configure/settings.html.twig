@@ -53,9 +53,9 @@
 {%- set _notOffered = checkInStatuses|length - _offered -%}
 <div style="height:12px"></div>
 <div class="c rband">
+    <span class="tab">Check-in statuses</span>
     {%- if checkInStatusEditor and door('areas.configure', area) %}<a class="more" href="{{ checkInStatusEditor }}">Edit on the area &rarr;</a>{% endif %}
     <div class="rb-hd">
-        <span class="tab">Check-in statuses</span>
         <span class="rb-ttl">what a ranger is offered on the handset, in this order &mdash; the <b>area&rsquo;s</b> list &middot; <b>{{ _offered }} offered</b>{% if _notOffered %}, {{ _notOffered }} not offered{% endif %}</span>
     </div>
     <div class="rb-body">

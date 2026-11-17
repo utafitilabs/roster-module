@@ -291,7 +291,8 @@ final class ConfigurePageTest extends WebTestCase
 
         $card = $crawler->filter('.c.rband')->reduce(static fn (Crawler $c): bool => str_contains($c->filter('.tab')->text(), 'Check-in statuses'));
         self::assertCount(1, $card);
-        self::assertSame('Edit on the area →', trim($card->filter('a.more')->text()));
+        self::assertSame('Check-in statuses', trim($card->filter('.c.rband > .tab')->text()), 'the house card tab, on the card\'s edge');
+        self::assertSame('Edit on the area →', trim($card->filter('.c.rband > a.more')->text()));
         self::assertSame('/areas/'.$this->area->getUuidString().'/configure/settings#check-in-statuses', $card->filter('a.more')->attr('href'));
         self::assertStringContainsString('3 offered', $card->filter('.rb-ttl')->text());
         self::assertStringContainsString('1 not offered', $card->filter('.rb-ttl')->text());

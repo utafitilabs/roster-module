@@ -18,6 +18,8 @@ has to do for a release is in [docs/upgrading.md](docs/upgrading.md).
    each, and each kind in the platform's words. Its one door, "Edit on the area →", goes to the
    area's Configure › Area settings card — drawn only on a core that has that editor (0.3.1 and
    later; `Service/CheckInStatusesCardService`) and for whoever may configure the area.
+   The card wears the house tab on its edge with the door beside it, and each row reads as the
+   design draws it: the name and its key, the kind as body text, then whether it is offered.
 
  * THE STATION BLOCKS ARE STYLED ON THE AREA'S PAGES. The block on Configure › Stations and the band
    on a station's record are drawn in `.rset`, `.r-sh`, `.r-ci`, `.r-st-state`, `.rfrag` and the

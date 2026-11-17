@@ -93,27 +93,38 @@
 .rsw input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ---- THE CHECK-IN STATUS LIST --------------------------------------------
- * The AREA's list, read on this module's Settings section. A retired status
- * is dimmed and kept, never dropped: a past month has to keep the word that
- * described it. */
+ * The AREA's list, read on this module's Settings section
+ * (uhifadhi-web/roster.css .rstat). A status no longer offered is dimmed and
+ * kept, never dropped: a past month has to keep the word that described it.
+ * The name and the kind hold fixed widths so the kinds stand in one column;
+ * the kind is body text, the platform's words as written. */
 .rstat {
-    display: grid; grid-template-columns: 26px minmax(0, 1fr) minmax(0, 200px) minmax(0, 1fr);
-    gap: 10px; align-items: baseline;
-    padding: 8px 0; border-bottom: 1px dashed var(--ln);
+    display: flex; align-items: center; gap: 11px; min-width: 0;
+    padding: 9px 0; border-bottom: 1px dashed var(--ln);
 }
 
 .rstat:last-of-type,
 .rstat:has(+ .staddrow) { border-bottom: 0; }
-.rstat.off { opacity: .55; }
+.rstat.off { opacity: .62; }
 
-.rstat > .ord { font: 700 10px var(--font-mono); color: var(--dim); }
-.rstat > .nm b { font-size: 12px; color: var(--tx); }
-.rstat > .nm .key { display: block; font: 500 9.5px var(--font-mono); color: var(--dim); }
-.rstat > .kind { font: 600 9px var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--fog); }
-.rstat > .st { font-size: 11px; color: var(--dim); }
+.rstat > .ord { flex: none; display: flex; align-items: center; }
+.rstat > .ord b { font: 700 10px var(--font-mono); color: var(--dim); min-width: 12px; text-align: right; }
+.rstat > .nm { flex: 0 0 190px; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.rstat > .nm b { color: var(--tx); }
+.rstat > .nm .key { font: 600 9.5px var(--font-mono); color: var(--dim); letter-spacing: .05em; }
+.rstat > .kind { flex: 0 0 230px; }
+.rstat > .st {
+    flex: 1 1 auto; min-width: 0; font: 500 10px var(--font-mono); color: var(--dim);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.rstat > .st b { color: var(--ok); }
+.rstat.off > .st b { color: var(--fog); }
 
-@media (max-width: 860px) {
-    .rstat { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+@media (max-width: 1180px) {
+    .rstat { flex-wrap: wrap; }
+    .rstat > .nm { flex: 1 1 180px; }
+    .rstat > .kind { flex: 1 1 200px; }
+    .rstat > .st { flex: 1 1 100%; }
 }
 
 /* ---- THE WEEK PLANNER ----------------------------------------------------
