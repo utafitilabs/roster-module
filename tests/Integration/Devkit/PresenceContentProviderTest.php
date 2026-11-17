@@ -295,6 +295,9 @@ final class PresenceContentProviderTest extends IntegrationTestCase
         $this->provider()->load();
         $after = array_map(static fn (object $d): string => $d->localDate.'/'.$d->personUuid.'/'.\count($d->watches), $this->theMonthAsRead());
 
+        // The same days, compared as a set: rows of one day come back in no fixed order.
+        sort($before);
+        sort($after);
         self::assertSame($before, $after);
     }
 

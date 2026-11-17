@@ -17,6 +17,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\DomCrawler\Crawler;
+use Symfony\Component\Routing\RouterInterface;
 use Uhifadhi\Bundle\AreaBundle\Entity\AreaOfInterest;
 use Uhifadhi\Bundle\AreaBundle\Entity\Station;
 use Uhifadhi\Bundle\AreaBundle\Service\CheckInStatusService;
@@ -292,8 +293,16 @@ final class ConfigurePageTest extends WebTestCase
         $card = $crawler->filter('.c.rband')->reduce(static fn (Crawler $c): bool => str_contains($c->filter('.tab')->text(), 'Check-in statuses'));
         self::assertCount(1, $card);
         self::assertSame('Check-in statuses', trim($card->filter('.c.rband > .tab')->text()), 'the house card tab, on the card\'s edge');
-        self::assertSame('Edit on the area →', trim($card->filter('.c.rband > a.more')->text()));
-        self::assertSame('/areas/'.$this->area->getUuidString().'/configure/settings#check-in-statuses', $card->filter('a.more')->attr('href'));
+        // The door is drawn only on a core that has the area's editor (0.3.1 and later);
+        // on an older core the card is the same list with no door.
+        /** @var RouterInterface $router */
+        $router = static::getContainer()->get('router');
+        if (null !== $router->getRouteCollection()->get('area_check_in_statuses')) {
+            self::assertSame('Edit on the area →', trim($card->filter('.c.rband > a.more')->text()));
+            self::assertSame('/areas/'.$this->area->getUuidString().'/configure/settings#check-in-statuses', $card->filter('a.more')->attr('href'));
+        } else {
+            self::assertCount(0, $card->filter('a.more'), 'no door to an editor this core does not have');
+        }
         self::assertStringContainsString('3 offered', $card->filter('.rb-ttl')->text());
         self::assertStringContainsString('1 not offered', $card->filter('.rb-ttl')->text());
         self::assertSame(['At a station', 'Working elsewhere', 'Special assignment', 'Not working'], $card->filter('.rstat .kind')->each(static fn (Crawler $k): string => trim($k->text())));
